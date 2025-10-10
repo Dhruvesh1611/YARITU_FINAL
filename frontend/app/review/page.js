@@ -7,11 +7,25 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
   const videoRef = useRef(null);
   const overlayRef = useRef(null);
   const observerRef = useRef(null);
+  const DEBUG_VIDEO = false;
   
+  const getMimeFromUrl = (u) => {
+    if (!u || typeof u !== 'string') return undefined;
+    const lower = u.split('?')[0].toLowerCase();
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.webm')) return 'video/webm';
+    if (lower.endsWith('.ogg') || lower.endsWith('.ogv')) return 'video/ogg';
+    if (lower.includes('/video/upload/')) return 'video/mp4'; // common Cloudinary path
+    return undefined;
+  };
+
   useEffect(() => {
     if (!isPlaying && videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
+      const v = videoRef.current;
+      try {
+        v.pause();
+        if (v.currentTime > 0.05) v.currentTime = 0;
+      } catch (e) {}
       if (overlayRef.current) overlayRef.current.style.display = 'flex';
     }
   }, [isPlaying]);
@@ -28,18 +42,13 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
 
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        // If the video is playing but less than 50% visible, stop it
-  if (entry.intersectionRatio < 0.5 && isPlaying) {
-          // call parent's onPlay to toggle off
-          // We cannot call onPlay with an argument here; instead simulate stop by calling a custom stop function if provided
-          // We'll dispatch a custom event so parent can listen — but simpler: pause/reset locally and inform overlay.
+        if (entry.intersectionRatio < 0.5 && isPlaying) {
             try {
               if (videoRef.current) {
                 videoRef.current.pause();
                 videoRef.current.currentTime = 0;
               }
               if (overlayRef.current) overlayRef.current.style.display = 'flex';
-              // inform parent to clear playing state
               if (typeof onStop === 'function') onStop();
             } catch (err) {}
         }
@@ -53,15 +62,73 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
     };
   }, [isPlaying]);
 
+  // Auto-play when this card becomes the active one, or when src changes while active
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!src) return;
+    // If the source changed, ensure the media element reloads it
+    try { v.load(); } catch (e) {}
+    if (isPlaying) {
+      if (overlayRef.current) overlayRef.current.style.display = 'none';
+      const p = v.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(err => { if (err?.name !== 'AbortError') console.warn('Auto play failed', err); });
+      }
+    }
+  }, [src]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!src) return;
+    if (isPlaying) {
+      if (overlayRef.current) overlayRef.current.style.display = 'none';
+      const p = v.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(err => { if (err?.name !== 'AbortError') console.warn('Auto play failed', err); });
+      }
+    }
+  }, [isPlaying]);
+
+  // When the video ends or errors, restore thumbnail and inform parent
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const handleEnded = () => {
+      try { v.pause(); v.currentTime = 0; } catch (e) {}
+      if (overlayRef.current) overlayRef.current.style.display = 'flex';
+      if (typeof onStop === 'function') onStop();
+    };
+    const handleError = () => {
+      try { v.pause(); } catch (e) {}
+      if (overlayRef.current) overlayRef.current.style.display = 'flex';
+      if (typeof onStop === 'function') onStop();
+    };
+    v.addEventListener('ended', handleEnded);
+    v.addEventListener('error', handleError);
+    return () => {
+      v.removeEventListener('ended', handleEnded);
+      v.removeEventListener('error', handleError);
+    };
+  }, [onStop]);
+
   const handlePlay = (e) => {
     // Prevent page-level click handlers from firing when user clicks the video
     e.stopPropagation();
+    if (!src) return; // no video set yet
     if (videoRef.current) {
       onPlay();
-      // Toggle play/pause handled by parent `isPlaying` state. If parent sets isPlaying true, play now.
       if (overlayRef.current) overlayRef.current.style.display = 'none';
-      // Attempt to play; if parent toggles to false right after (toggle off), the useEffect will pause/reset
-      videoRef.current.play();
+      const playPromise = videoRef.current.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch((err) => {
+          // AbortError happens if play is immediately interrupted by pause(); safe to ignore
+          if (err?.name !== 'AbortError') {
+            console.warn('Video play failed:', err);
+          }
+        });
+      }
     }
   };
 
@@ -76,14 +143,22 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
       )}
       <video
         ref={videoRef}
-        src={src}
         controls={false}
         muted={false}
         style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', background: '#222', zIndex: 2 }}
         controlsList="nodownload noremoteplayback nofullscreen noplaybackrate"
         playsInline
         preload="metadata"
-      />
+        onError={async (e) => {
+          if (!DEBUG_VIDEO) return;
+          try {
+            const r = await fetch(src, { method: 'HEAD' });
+            console.warn('Video HEAD', { status: r.status, type: r.headers.get('content-type'), url: src });
+          } catch (err) { console.warn('Video HEAD failed', err); }
+        }}
+      >
+        {src ? <source src={src} type={getMimeFromUrl(src)} /> : null}
+      </video>
       <div ref={overlayRef} style={{
         position: 'absolute',
         top: 0,
@@ -106,6 +181,17 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
 
 export default function Review() {
   const [playingIdx, setPlayingIdx] = useState(null);
+
+  const normalizeVideoUrl = (u) => {
+    try {
+      if (typeof u !== 'string') return u;
+      if (u.includes('res.cloudinary.com') && u.includes('/video/upload/')) {
+        // ensure mp4 delivery
+        return u.replace('/upload/', '/upload/f_mp4/');
+      }
+      return u;
+    } catch { return u; }
+  };
 
   // CHANGE #1: Add a state to track if we are on the client
   const [isClient, setIsClient] = useState(false);
@@ -171,7 +257,9 @@ export default function Review() {
   function uploadWithProgress(file, onProgress) {
     return new Promise((resolve, reject) => {
       if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET) return reject(new Error('Cloudinary env not set'));
-      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+      const isVideo = !!(file && file.type && file.type.startsWith('video/'));
+      const endpointType = isVideo ? 'video' : 'image';
+      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpointType}/upload`;
       const xhr = new XMLHttpRequest();
       const fd = new FormData();
       fd.append('upload_preset', CLOUDINARY_UNSIGNED_PRESET);
@@ -201,7 +289,9 @@ export default function Review() {
 
   async function uploadToCloudinary(file) {
     if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET) throw new Error('Cloudinary env not set');
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+    const isVideo = !!(file && file.type && file.type.startsWith('video/'));
+    const endpointType = isVideo ? 'video' : 'image';
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpointType}/upload`;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UNSIGNED_PRESET);
@@ -318,12 +408,25 @@ export default function Review() {
   
   // Make the review gallery videos editable in-memory (admin-only). No Add option — only Edit.
   const [videos, setVideos] = useState([
-    { src: 'https://yourdomain.com/images/review1.mp4', thumbnail: '/images/Featured1.png' },
-    { src: 'https://yourdomain.com/images/review2.mp4', thumbnail: '/images/reel2.png' },
-    { src: 'https://yourdomain.com/images/review3.mp4', thumbnail: '/images/reel3.png' },
-    { src: 'https://yourdomain.com/images/review4.mp4', thumbnail: '/images/reel4.png' },
-    { src: 'https://yourdomain.com/images/review5.mp4', thumbnail: '/images/reel5.png' },
+    { src: '', thumbnail: '/images/Featured1.png' },
+    { src: '', thumbnail: '/images/reel2.png' },
+    { src: '', thumbnail: '/images/reel3.png' },
+    { src: '', thumbnail: '/images/reel4.png' },
+    { src: '', thumbnail: '/images/reel5.png' },
   ]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/review-videos');
+        const j = await res.json();
+        if (res.ok && j.success && Array.isArray(j.data) && j.data.length) {
+          setVideos(j.data.map(x => ({ src: normalizeVideoUrl(x.src), thumbnail: x.thumbnail })));
+        }
+      } catch (e) { console.warn('Failed to load review videos', e); }
+    })();
+  }, [isClient]);
 
   // video edit modal state
   const [editingVideoIndex, setEditingVideoIndex] = useState(null);
@@ -875,7 +978,16 @@ export default function Review() {
                           newThumb = await uploadWithProgress(thumbFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); });
                         }
                         // update in-memory videos array
-                        setVideos(prev => prev.map((it, i) => i === editingVideoIndex ? { ...it, src: newSrc, thumbnail: newThumb } : it));
+                        const updated = videos.map((it, i) => i === editingVideoIndex ? { ...it, src: normalizeVideoUrl(newSrc), thumbnail: newThumb } : it);
+                        setVideos(updated);
+                        // make the freshly saved video the active one so it plays immediately
+                        setPlayingIdx(editingVideoIndex);
+                        // persist to backend so it survives reload
+                        try {
+                          const r = await fetch('/api/review-videos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+                          const jr = await r.json();
+                          if (!r.ok || !jr.success) console.warn('Failed to persist review videos', jr);
+                        } catch (err) { console.warn('Persist error', err); }
                         setUploadStatusMessage('Upload complete');
                         setTimeout(() => { setUploadStatusMessage(''); setUploadProgress(0); }, 1200);
                         setEditingVideoIndex(null);

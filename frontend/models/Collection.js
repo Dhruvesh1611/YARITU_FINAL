@@ -8,6 +8,7 @@ const CollectionSchema = new mongoose.Schema({
   collectionType: { type: String },
   childCategory: { type: String },
   mainImage: { type: String, required: true },
+  mainImage2: { type: String },
   otherImages: { type: [String], default: [] },
   price: { type: Number },
   discountedPrice: { type: Number },

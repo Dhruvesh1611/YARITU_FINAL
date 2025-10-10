@@ -217,43 +217,7 @@ export default function Offer() {
           </div>
           {/* Global WhatsApp button is provided in app/layout.js */}
         </section>
-        <section id="benefits" className="benefits-section section-padding">
-          <div className="page-container">
-            <div className="benefits-header">
-              <h2 className="benefits-title">Exclusive <span className="highlight-text">Benefits</span></h2>
-              <p className="benefits-subtitle">Join our premium membership for exclusive perks</p>
-            </div>
-            <div className="benefits-grid">
-              <div className="benefit-card">
-                <Image className="benefit-bg-img" src="/images/314cf5c2d333a646384d94a377d3833614dff7ec.png" alt="" fill style={{ objectFit: 'cover' }} />
-                <div className="benefit-content">
-                  <div className="benefit-icon">👑</div>
-                  <h3>VIP Membership</h3>
-                  <p>Get 15% extra discount on all purchases</p>
-                  <a href="#" className="benefit-button">Join Now</a>
-                </div>
-              </div>
-              <div className="benefit-card">
-                <Image className="benefit-bg-img" src="/images/a5d65aa6565e478e0dbc85b03e39b4a6504706d9.png" alt="" fill style={{ objectFit: 'cover' }} />
-                <div className="benefit-content">
-                  <div className="benefit-icon">🎁</div>
-                  <h3>Free Alterations</h3>
-                  <p>Complimentary alterations with every purchase</p>
-                  <a href="#" className="benefit-button">Learn More</a>
-                </div>
-              </div>
-              <div className="benefit-card">
-                <Image className="benefit-bg-img" src="/images/fdf8fb627ebf45a994eb0d6d2adb4892905c8628.png" alt="" fill style={{ objectFit: 'cover' }} />
-                <div className="benefit-content">
-                  <div className="benefit-icon">⭐</div>
-                  <h3>Early Bird Access</h3>
-                  <p>Get first access to new collections</p>
-                  <a href="#" className="benefit-button">Subscribe</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        
         <section id="newsletter" className="newsletter-section section-padding">
           <div className="page-container">
             <div className="newsletter-content">

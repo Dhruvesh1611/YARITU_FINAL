@@ -35,13 +35,41 @@ export async function POST(request) {
 
     const { fields, files } = await parseForm(request);
     
-    if (fields.newOptions && typeof fields.newOptions === 'object') {
-      const entries = Object.entries(fields.newOptions);
+    // Accept newOptions sent either as an object (some clients) or as
+    // FormData bracketed keys like `newOptions[occasion]=...`.
+    const collectNewOptions = async () => {
+      const collected = {};
+
+      // Case 1: fields.newOptions already an object (server-side clients)
+      if (fields.newOptions && typeof fields.newOptions === 'object') {
+        Object.assign(collected, fields.newOptions);
+      }
+
+      // Case 2: FormData may have keys like 'newOptions[foo]'
+      for (const [k, v] of Object.entries(fields)) {
+        const m = k.match(/^newOptions\[(.+)\]$/);
+        if (m) {
+          const optKey = m[1];
+          // Try to parse JSON value else take as string
+          let parsed = v;
+          try { parsed = JSON.parse(v); } catch (e) { /* keep string */ }
+          collected[optKey] = parsed;
+        }
+      }
+
+      // Create MetaOption docs for any collected entries
+      const entries = Object.entries(collected);
       await Promise.all(entries.map(async ([key, value]) => {
-        if (!value) return;
-        try { await MetaOption.create({ key, value }); } catch (e) { /* ignore dupes */ }
+        if (value === undefined || value === null || value === '') return;
+        try {
+          await MetaOption.create({ key, value });
+        } catch (e) {
+          // ignore duplicates / validation errors
+        }
       }));
-    }
+    };
+
+    await collectNewOptions();
 
     let imageUrl = '';
     if (files.mainImage) {
@@ -51,10 +79,35 @@ export async function POST(request) {
         imageUrl = result.secure_url;
       }
     }
+
+    let imageUrl2 = '';
+    if (files.mainImage2) {
+      const mainImage2File = files.mainImage2;
+      const result = await processImage(mainImage2File);
+      if (result) {
+        imageUrl2 = result.secure_url;
+      }
+    }
+
+    let otherImageUrls = [];
+    if (files.otherImages) {
+        const otherImageFiles = Array.isArray(files.otherImages) ? files.otherImages : [files.otherImages];
+        for (const file of otherImageFiles) {
+            const result = await processImage(file);
+            if (result) {
+                otherImageUrls.push(result.secure_url);
+            }
+        }
+    }
     
     await dbConnect();
 
-    const newCollectionData = { ...fields, mainImage: imageUrl };
+    const newCollectionData = { 
+        ...fields, 
+        mainImage: imageUrl,
+        mainImage2: imageUrl2,
+        otherImages: otherImageUrls
+    };
     const doc = await Collection.create(newCollectionData);
 
     return NextResponse.json({ success: true, data: doc }, { status: 201 });

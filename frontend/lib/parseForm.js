@@ -21,8 +21,14 @@ export const parseForm = async (request) => {
     const [name, value] = entry;
 
     if (value instanceof File) {
-      // IMPORTANT FIX: We are now storing the original file object itself
-      files[name] = value; 
+      if (files[name]) {
+        if (!Array.isArray(files[name])) {
+          files[name] = [files[name]];
+        }
+        files[name].push(value);
+      } else {
+        files[name] = value;
+      }
     } else {
       fields[name] = value;
     }

@@ -1,70 +1,124 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import './ProductModal.css';
+import './ProductModal.css'; // CSS file ko link rehne dein
 
 const ProductModal = ({ product, onClose }) => {
-  if (!product) {
-    return null;
+  // --- FINAL, BULLETPROOF IMAGE HANDLING LOGIC ---
+  let allImageUrls = [];
+
+  // Sabse pehle check karein ki kya 'images' naam ka array hai
+  if (Array.isArray(product?.images) && product.images.length > 0) {
+    allImageUrls = product.images;
+  } 
+  // Agar 'images' array nahi hai, to alag-alag properties se gallery banayein
+  else {
+    allImageUrls = [
+      product?.imageUrl || product?.image,
+      product?.mainImage2Url,
+      ...(Array.isArray(product?.otherImageUrls) ? product.otherImageUrls : [])
+    ];
   }
-  const FALLBACK_IMAGE = '/images/hero1.png';
-  const rawImages = Array.isArray(product.images) && product.images.length
-    ? product.images.slice(0, 5)
-    : product.image
-      ? [product.image]
-      : [];
-  const images = rawImages.filter(Boolean);
-  if (images.length === 0) images.push(FALLBACK_IMAGE);
-  const [activeIndex, setActiveIndex] = useState(0);
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [product]);
+  // Final gallery array, jismein se sabhi empty/null values hata di gayi hain
+  const galleryImages = allImageUrls.filter(Boolean);
+  
+  // Agar koi bhi image nahi milti to ek fallback image use karein
+  const finalGallery = galleryImages.length > 0 ? galleryImages : ['/placeholder.png'];
 
+  const [activeImage, setActiveImage] = useState(finalGallery[0]);
+
+  // Effect to set active image and lock body scroll
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowRight') setActiveIndex(i => Math.min(i + 1, images.length - 1));
-      if (e.key === 'ArrowLeft') setActiveIndex(i => Math.max(i - 1, 0));
+    setActiveImage(finalGallery[0]);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [images.length, onClose]);
+  }, [product]); // Sirf product change hone par run hoga
+
+  // Effect for keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (finalGallery.length <= 1) return;
+
+      const currentIndex = finalGallery.indexOf(activeImage);
+      if (e.key === 'ArrowRight') {
+        const nextIndex = (currentIndex + 1) % finalGallery.length;
+        setActiveImage(finalGallery[nextIndex]);
+      }
+      if (e.key === 'ArrowLeft') {
+        const prevIndex = (currentIndex - 1 + finalGallery.length) % finalGallery.length;
+        setActiveImage(finalGallery[prevIndex]);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeImage, finalGallery, onClose]);
+
+  if (!product) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>&times;</button>
-        <div className="modal-body">
-          <div className="modal-image-column">
-            <div className="modal-image-container">
-              <Image
-                src={images[activeIndex]}
-                alt={`${product.name} ${activeIndex + 1}`}
-                width={400}
-                height={500}
-                className="modal-image"
-                unoptimized
-              />
+    <div className="product-modal-overlay" onClick={onClose}>
+      <div className="product-modal-container" onClick={(e) => e.stopPropagation()}>
+        <button className="close-button" onClick={onClose}>&times;</button>
+        
+        <div className="product-modal-content">
+          <div className="image-gallery">
+            <div className="main-image-container">
+              {activeImage && (
+                <Image
+                  key={activeImage}
+                  src={activeImage}
+                  alt={product.title || product.name || "Product Image"}
+                  width={500}
+                  height={600}
+                  className="main-image"
+                  unoptimized
+                  onError={(e) => { e.currentTarget.src = '/placeholder.png'; }}
+                />
+              )}
             </div>
-            {images.length > 1 && (
-              <div className="modal-thumbnails">
-                {images.map((img, idx) => (
-                  <button key={idx} className={`thumb-btn ${idx === activeIndex ? 'active' : ''}`} onClick={() => setActiveIndex(idx)}>
-                    <Image src={img} alt={`thumb-${idx}`} width={80} height={80} className="thumb-image" unoptimized />
-                  </button>
+
+            {/* Thumbnails ab tabhi dikhenge jab ek se zyada image ho */}
+            {finalGallery.length > 1 && (
+              <div className="thumbnail-container">
+                {finalGallery.map((imgUrl, index) => (
+                  <div
+                    key={index}
+                    className={`thumbnail-item ${imgUrl === activeImage ? 'active' : ''}`}
+                    onClick={() => setActiveImage(imgUrl)}
+                  >
+                    <Image src={imgUrl} alt={`Thumbnail ${index + 1}`} width={100} height={100} unoptimized />
+                  </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="modal-details">
-            <h2>{product.name}</h2>
-            <p className="modal-description">{product.description}</p>
-            <p><strong>Category:</strong> {product.category}</p>
-            <p><strong>Type:</strong> {product.type}</p>
-            {product.occasion && <p><strong>Occasion:</strong> {product.occasion}</p>}
-            <button className="rent-button">Rent Now</button>
+          <div className="product-details">
+            {/* ... Product details ka JSX waise hi rahega ... */}
+            <h1 className="product-title">{product.title || product.name}</h1>
+            <div className="product-meta">
+              <span><strong>Category:</strong> {product.category}</span>
+              {product.collectionType && <span><strong>Type:</strong> {product.collectionType}</span>}
+              {product.occasion && <span><strong>Occasion:</strong> {product.occasion}</span>}
+            </div>
+            <p className="product-description">{product.description || "Elegant and finely crafted attire..."}</p>
+            <div className="price-container">
+              {product.discountedPrice && product.discountedPrice > 0 && product.discountedPrice < product.price ? (
+                <>
+                  <span className="current-price">₹{product.discountedPrice.toLocaleString()}</span>
+                  <span className="original-price">₹{product.price.toLocaleString()}</span>
+                </>
+              ) : (
+                <span className="current-price">₹{(product.price || 0).toLocaleString()}</span>
+              )}
+            </div>
+            <button className="rent-now-button">Rent Now</button>
+            <button className="enquire-button">Enquire on WhatsApp</button>
           </div>
         </div>
       </div>

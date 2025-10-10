@@ -57,7 +57,35 @@ export async function PUT(request, { params }) {
         if (result) {
             updateData.mainImage = result.secure_url;
         }
+    } else if (fields.imageUrl) {
+        updateData.mainImage = fields.imageUrl;
     }
+
+    if (files.mainImage2) {
+        const mainImage2File = files.mainImage2;
+        const result = await processImage(mainImage2File);
+        if (result) {
+            updateData.mainImage2 = result.secure_url;
+        }
+    } else if (fields.mainImage2Url) {
+        updateData.mainImage2 = fields.mainImage2Url;
+    }
+
+    let otherImageUrls = [];
+    if (fields['otherImagesUrls[]']) {
+        otherImageUrls = Array.isArray(fields['otherImagesUrls[]']) ? fields['otherImagesUrls[]'] : [fields['otherImagesUrls[]']];
+    }
+
+    if (files.otherImages) {
+        const otherImageFiles = Array.isArray(files.otherImages) ? files.otherImages : [files.otherImages];
+        for (const file of otherImageFiles) {
+            const result = await processImage(file);
+            if (result) {
+                otherImageUrls.push(result.secure_url);
+            }
+        }
+    }
+    updateData.otherImages = otherImageUrls;
 
     await dbConnect();
     const updated = await Collection.findByIdAndUpdate(id, updateData, { new: true });

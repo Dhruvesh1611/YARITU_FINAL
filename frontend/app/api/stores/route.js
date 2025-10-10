@@ -29,6 +29,10 @@ export async function POST(request) {
   if (!session) {
     return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
   }
+  const isAdmin = !!(session?.user?.isAdmin || session?.user?.role === 'admin');
+  if (!isAdmin) {
+    return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+  }
 
   try {
     await dbConnect();

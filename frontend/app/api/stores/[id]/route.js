@@ -12,6 +12,10 @@ export async function PUT(request, context) {
   if (!session) {
     return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
   }
+  const isAdmin = !!(session?.user?.isAdmin || session?.user?.role === 'admin');
+  if (!isAdmin) {
+    return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+  }
 
   const body = await request.json();
   await dbConnect();
@@ -37,6 +41,10 @@ export async function DELETE(request, context) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
+  }
+  const isAdmin = !!(session?.user?.isAdmin || session?.user?.role === 'admin');
+  if (!isAdmin) {
+    return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   }
 
   try {

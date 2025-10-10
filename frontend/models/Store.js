@@ -12,7 +12,11 @@ const StoreSchema = new mongoose.Schema({
   },
   imageUrl: {
     type: String,
-    required: [true, 'Please provide an image URL for this store.'],
+    required: false, // make optional; use images[] moving forward
+  },
+  images: {
+    type: [String],
+    default: [],
   },
   mapQuery: {
     type: String,

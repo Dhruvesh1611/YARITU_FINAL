@@ -266,3 +266,42 @@
         height: 60px; /* Mobile par height kam kar di */
     }
 }
+
+
+/* === Professional Logout Button Styles === */
+
+/* For Desktop Navigation */
+.logoutButton {
+  border: 1px solid #d1d5db; /* Halki border */
+  padding: 6px 16px;
+  border-radius: 99px; /* Poora gol shape */
+  margin-left: 12px; /* Baaki links se thoda space */
+  background-color: transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Underline hatane ke liye jo navLink se aa rahi thi */
+.logoutButton::after {
+  display: none !important;
+}
+
+.logoutButton:hover {
+  background-color: #f3f4f6; /* Hover par halka background color */
+  border-color: #6b7280;
+  color: #111827;
+}
+
+/* For Mobile Navigation */
+.mobileLogoutButton {
+  background-color: #f3f4f6; /* Alag background color */
+  color: #374151;
+  font-weight: bold;
+  border-radius: 8px;
+  width: calc(100% - 40px); /* Poori width se thoda kam */
+  margin: 10px auto;
+  border: 1px solid #e5e7eb;
+}
+
+.mobileLogoutButton:hover {
+  background-color: #e5e7eb;
+}

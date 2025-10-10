@@ -53,6 +53,7 @@ export const metadata = {
 export default function RootLayout({ children, session }) {
   return (
     <html lang="en" className={`${poppins.variable} ${playfair.variable} ${poiret.variable} ${cinzel.variable} ${sourceSerif4.variable}`}>
+      
       <body>
         <SessionProvider session={session}>
           <UIProvider>
