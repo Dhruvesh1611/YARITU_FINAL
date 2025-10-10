@@ -1,0 +1,383 @@
+/* components/HowItWorks.module.css */
+
+/* --- GENERAL STYLES --- */
+.mainContainer {
+    position: relative;
+    background-color: #fdfaf6; 
+    padding: 80px 0;
+}
+
+.mainHeading {
+    text-align: center;
+    font-family: 'Playfair Display', serif; 
+    font-size: 3rem;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 60px;
+    position: relative;
+}
+
+.contentWrapper {
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+/* --- LEFT COLUMN (STICKY IMAGE) --- */
+.leftStickyColumn {
+    width: 40%;
+    height: 100vh; 
+    position: sticky;
+    top: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.imageContainer {
+    position: relative;
+    width: 90%; 
+    max-width: 500px; 
+    aspect-ratio: 4 / 3.5;
+    transform: translateX(20px); 
+}
+
+.imageFrameWrapper {
+    position: relative;
+    width: 70%;
+    height: 100%;
+    border: 5px solid rgb(142, 112, 64);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    border-radius: 0;
+    overflow: hidden;
+}
+
+.imageFrame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.imageFrame img {
+    width: 100%;
+    height: 100%;
+    border: 5px solid#c9a87c;
+    object-fit: fill; 
+}
+
+.visible {
+    opacity: 1;
+    z-index: 1;
+}
+
+.hidden {
+    opacity: 0;
+    z-index: 0;
+}
+
+.frameStands {
+    position: absolute;
+    bottom: -30px;
+    left: -45px;
+    top: -20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 100px;
+    box-sizing: border-box;
+}
+
+.stand {
+    width: 45px; 
+    height: 30px;
+    background-color: #e3d9c7;
+    border-radius: 5px 5px 0 0;
+    box-shadow: 0 -3px 5px rgba(0, 0, 0, 0.05);
+    position: relative;
+    left: -20px;
+    z-index: 2;
+}
+
+
+/* --- RIGHT COLUMN (SCROLLING TIMELINE) --- */
+.rightScrollingColumn {
+    width: 50%;
+    z-index: 5;
+    position: relative;
+    padding-top: 100px;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 80px; 
+    width: 100%;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 98px; 
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background-color: #d4c0a5;
+    z-index: 1;
+}
+
+.timelineItem {
+    min-height: 80vh; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    padding: 20px 0; 
+}
+
+.timelineNumberWrapper {
+    position: absolute;
+    left: -2px; 
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+}
+
+.timelineDot {
+    width: 12px;
+    height: 12px;
+    background-color: #fdfaf6;
+    border: 3px solid #d4c0a5;
+    border-radius: 50%;
+    transition: all 0.4s ease;
+    margin-left: 42px; 
+}
+
+.timelineItem.active .timelineDot {
+    opacity: 0; 
+}
+
+.timelineNumber {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.6rem; 
+    font-weight: bold;
+    margin-left: -65px; 
+    transition: all 0.4s ease;
+    background-color: #fdfaf6;
+    border: 1px solid #d4c0a5;
+    color: #888;
+}
+
+.timelineItem.active .timelineNumber {
+    background-color: #c9a87c;
+    color: white;
+    transform: scale(1.0);
+    border-color: #c9a87c;
+}
+
+.timelineContent {
+    padding-left: 100px; 
+    color: #555;
+    transform: translateY(-5px); 
+}
+
+.timelineContent .icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: #c9a87c;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-radius: 0;
+}
+
+.timelineContent h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.timelineContent p {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    line-height: 1.7;
+    max-width: 380px;
+    color: #666;
+}
+
+/* === TABLET RESPONSIVE STYLES === */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .mainHeading {
+        font-size: 2.5rem;
+    }
+
+    .contentWrapper {
+        padding: 0 20px;
+    }
+
+    .leftStickyColumn {
+        width: 45%;
+    }
+
+    /* --- Naye changes yahan add kiye hain --- */
+    .frameStands {
+        padding: 0 70px; /* Padding kam ki */
+        left: -32.5px;     /* Left position adjust ki */
+    }
+
+    .stand {
+        left: -15px;    /* Stand ki position adjust ki */
+    }
+    /* --- Yahan tak --- */
+
+    .rightScrollingColumn {
+        width: 55%;
+        padding-top: 50px;
+    }
+
+    .timeline {
+        padding-left: 40px;
+    }
+
+    .timeline::before {
+        left: 58px;
+    }
+
+    .timelineItem {
+        min-height: 65vh;
+    }
+    
+    .timelineNumberWrapper {
+        left: -8px;
+    }
+
+    .timelineContent {
+        padding-left: 80px;
+    }
+
+    .timelineContent h3 {
+        font-size: 1.4rem;
+    }
+
+    .timelineContent p {
+        font-size: 0.95rem;
+        max-width: 100%;
+    }
+}
+
+
+/* --- MOBILE RESPONSIVE STYLES --- */
+@media (max-width: 768px) {
+    .mainContainer {
+        padding: 40px 0;
+    }
+
+    .mainHeading {
+        font-size: 2rem;
+        margin-bottom: 30px;
+    }
+
+    .contentWrapper {
+        flex-direction: column;
+    }
+
+    .leftStickyColumn {
+        position: sticky;
+        top: 88px;
+        width: 100%;
+        height: 50vh;
+        transform: none;
+        box-shadow: rgb(102, 120, 145) 0px 4px 12px;
+        z-index: 10;
+        background-color: #fdfaf6;
+        padding-top: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .imageContainer {
+        width: 70%;
+        max-width: 300px;
+        transform: none;
+        aspect-ratio: 4 / 3.5;
+        display: flex;
+        justify-content: center;
+    }
+
+    .frameStands {
+        padding: 0 75px;
+        left: 0px;
+        top: -10px;
+    }
+
+    .stand {
+        width: 35px;
+        height: 20px;
+        left: 0px;
+         z-index: 2;
+    }
+
+    .rightScrollingColumn {
+        width: 100%;
+        padding-top: 0;
+        z-index: 5;
+    }
+
+    .timeline {
+        padding-left: 40px;
+    }
+
+    .timeline::before {
+        left: 48px;
+    }
+
+    .timelineItem {
+        min-height: 60vh;
+        padding: 20px 0;
+        justify-content: center;
+    }
+
+    .timelineNumberWrapper {
+        left: -12px;
+    }
+
+    .timelineDot {
+        margin-left: 34px;
+    }
+
+    .timelineNumber {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+        margin-left: -50px;
+    }
+
+    .timelineContent {
+        display: block;
+        padding-left: 60px;
+        transform: translateY(0);
+    }
+
+    .timelineContent h3 {
+        font-size: 1.3rem;
+    }
+
+    .timelineContent p {
+        font-size: 0.9rem;
+        max-width: 90%;
+    }
+}

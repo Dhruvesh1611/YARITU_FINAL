@@ -1,0 +1,116 @@
+/* components/ImageSlider.module.css */
+
+.carouselContainer {
+  position: relative;
+  width: 100%;
+  height: 550px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imageWrapper {
+  width: 44%; /* Center image ka size */
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imageCard {
+  width: 50%; /* default: center larger on desktop */
+  height: 90%;
+  border-radius: 16px;
+  overflow: hidden;
+  position: absolute; /* Layering ke liye zaroori */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.imageCard.left,
+.imageCard.right {
+  width: 40%;
+  height: 85%;
+  opacity: 0.8;
+  transform: scale(0.92);
+}
+
+.imageCard.center {
+  z-index: 20;
+  transform: scale(1);
+  opacity: 1;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid rgb(10, 33, 55);
+  z-index: 30;
+}
+
+.leftArrow {
+  left: 5%;
+}
+
+.rightArrow {
+  right: 5%;
+}
+
+/* === TABLET RESPONSIVE STYLES (NEW) === */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .carouselContainer {
+    height: 480px; /* Desktop aur mobile ke beech ki height */
+  }
+  .imageWrapper {
+    width: 70%; /* Tablet par thoda चौड़ा dikhega */
+  }
+  .leftArrow {
+    left: 8%; /* Arrow ko thoda adjust kiya */
+  }
+  .rightArrow {
+    right: 8%; /* Arrow ko thoda adjust kiya */
+  }
+}
+
+/* === MOBILE RESPONSIVE STYLES === */
+@media (max-width: 768px) {
+  .carouselContainer {
+    height: 400px;
+  }
+  .imageWrapper {
+    width: 70%;
+  }
+  .leftArrow {
+    left: -4%;
+  }
+  .rightArrow {
+    right: -4%;
+  }
+  .imageCard {
+    width: 70%;
+    height: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    position: absolute; /* Layering ke liye zaroori */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transform-origin: center center;
+  }
+}
