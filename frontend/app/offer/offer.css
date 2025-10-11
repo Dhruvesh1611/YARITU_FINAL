@@ -64,6 +64,34 @@
     margin-bottom: 16px;
     text-align: center;
 }
+
+/* Landscape phone adjustments */
+@media (orientation: landscape) and (max-width: 900px) {
+    .offer-page .container.reviews-content { padding-top: 36px; padding-bottom: 20px; }
+    .offer-page .store-selector-container { gap: 20px; padding: 0 12px; }
+    .offer-page .store-selector-image { height: 240px; max-width: 48%; }
+    .offer-page .store-photo { object-fit: cover !important; }
+    .offer-page .selected-store-info { padding: 14px; }
+    .offer-page .store-dropdown { padding: 10px 36px 10px 14px; font-size: 16px; }
+    .offer-page .reviews-title { font-size: 36px; }
+    .offer-page .reviews-subtitle { font-size: 15px; }
+    .offer-page .offers-grid { gap: 18px; grid-template-columns: repeat(2, 1fr); }
+    .offer-page .offer-card-image { height: 160px; }
+    .offer-page .offer-card-content { padding: 20px; }
+    .offer-page .offer-card { border-radius: 14px; }
+    .offer-page .newsletter-content { padding: 12px 8px; }
+    .offer-page .whatsapp-float { right: 12px; top: 6px; }
+}
+
+/* Ultra-short landscape: make elements even more compact */
+@media (orientation: landscape) and (max-width: 900px) and (max-height: 420px) {
+    .offer-page .container.reviews-content { padding-top: 18px; }
+    .offer-page .store-selector-image { height: 200px; max-width: 46%; }
+    .offer-page .selected-store-info { padding: 12px; }
+    .offer-page .offers-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .offer-page .offer-card-image { height: 140px; }
+    .offer-page .reviews-title { font-size: 32px; }
+}
     .offer-page .offer-hero-title {
         font-size: 48px;
     }
@@ -809,4 +837,44 @@
     font-size: 14px;
     color: var(--color-black);
     opacity: 0.7;
+}
+
+/* Ensure offer modal is usable on landscape phones: make right column scrollable
+   and cap modal height so users can scroll popup content when device height is short. */
+@media (orientation: landscape) and (max-width: 1150px) {
+    .offer-modal {
+        width: 94vw;
+        max-width: 94vw;
+        max-height: 88vh; /* small cap to leave room for browser chrome */
+        overflow: visible;
+    }
+
+    /* Hide the left visual column on small landscapes to prioritize form content */
+    .offer-modal-left { display: none; }
+
+    .offer-modal-two-col { grid-template-columns: 1fr; }
+
+    /* Make right column scrollable within the viewport */
+    .offer-modal-right {
+        /* Align content to start so it scrolls from top instead of being vertically centered */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+        box-sizing: border-box;
+        max-height: calc(88vh - 40px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 18px 18px 22px 18px;
+        background-clip: padding-box;
+    }
+
+    /* Keep close button visible and reachable */
+    .offer-modal-close {
+        position: sticky;
+        top: 8px;
+        right: 12px;
+        z-index: 9999;
+        background: rgba(255,255,255,0.06);
+    }
 }

@@ -444,7 +444,7 @@ export default function Review() {
   
   return (
     <div id="review-page-wrapper" onClick={() => setPlayingIdx(null)}>
-      <style>{`
+  <style>{`
         /* Global Variables (using CSS variables inside the scoped block) */
         #review-page-wrapper :root {
           --font-heading: 'Garamond', serif;
@@ -527,6 +527,7 @@ export default function Review() {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 29px 20px;
+          justify-items: center; /* center cards within each grid cell */
         }
 
         #review-page-wrapper .testimonial-card {
@@ -624,26 +625,48 @@ export default function Review() {
         @media (max-width: 768px) {
           /* Re-apply safe padding-top for fixed header on mobile */
           #review-page-wrapper #reviews { 
-          #review-page-wrapper .reviews-title { font-size: 30px; }
-             padding-top: 160px; /* Safe value for small screens */ 
-             margin-top: -88px; /* Remove conflicting margin */
+             padding-top: 150px; /* Safe value for small screens */ 
+             margin-top: -88px; /* counter header */
           }
           #review-page-wrapper #testimonials { padding: 60px 0; }
           /* Switch testimonials to 1 column */
-          #review-page-wrapper .reviews-title { font-size: 40px; }
+          #review-page-wrapper .reviews-title { font-size: 32px; }
+          #review-page-wrapper .reviews-subtitle { font-size: 18px; }
           #review-page-wrapper .review-testimonials-grid { grid-template-columns: 1fr; }
           #review-page-wrapper .testimonials-title { font-size: 32px; margin-bottom: 40px; }
 
+          /* Mobile gallery layout: grid with 2 columns */
+          #review-page-wrapper .review-gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            transform: none;
+            margin-top: 24px;
+            padding: 0 12px;
+          }
+          #review-page-wrapper .gallery-photo {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 3 / 4;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+          }
+          #review-page-wrapper .photo-5 { grid-column: 1 / -1; }
+
           /* Mobile: limit testimonial image height so it doesn't take full viewport */
           #review-page-wrapper .testimonial-card {
-            max-width: 520px;
-            margin: 0 auto 20px; /* center the single-column card */
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 22px; /* center the single-column card */
+          }
+
+          #review-page-wrapper .card-content {
+            padding-bottom: 12px; /* add breathing room under text */
           }
 
           #review-page-wrapper .client-photo-wrap {
-            /* reduce aspect ratio and cap height on mobile */
-            aspect-ratio: 4 / 5;
-            max-height: 360px;
+            /* make image area larger on mobile */
+            aspect-ratio: 3 / 4;
+            max-height: 440px;
             width: 100%;
             overflow: hidden;
             border-radius: 14px;
@@ -658,31 +681,90 @@ export default function Review() {
             object-fit: cover;
             object-position: center;
           }
+
+          /* Bigger review text on mobile */
+          #review-page-wrapper .client-review-text {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 16px 18px 12px;
+          }
+
+          #review-page-wrapper .client-signature {
+            font-size: 13px;
+            letter-spacing: 1.2px;
+            margin: auto 18px 18px;
+          }
         }
 
         /* 5. Small Mobile (600px and below) */
         @media (max-width: 600px) {
-          /* Revert gallery from scaling to grid/wrap layout */
-          #review-page-wrapper .reviews-title { font-size: 36px; }
-          #review-page-wrapper .reviews-subtitle { font-size: 18px; }
+          /* Fine-tune typography */
+          #review-page-wrapper .reviews-title { font-size: 28px; }
+          #review-page-wrapper .reviews-subtitle { font-size: 16px; }
+          /* Keep 2-column gallery for small devices */
+          #review-page-wrapper .review-gallery { gap: 12px; }
+
+          /* Make cards fill more width on smaller phones */
+          #review-page-wrapper .testimonial-card { width: 100%; max-width: 560px; }
+          #review-page-wrapper .client-photo-wrap { max-height: 460px; }
+          #review-page-wrapper .client-review-text { font-size: 16px; }
+        }
+
+        @media (max-width: 480px) {
+          /* Single column gallery for very small screens */
+          #review-page-wrapper .review-gallery { grid-template-columns: 1fr; }
+          #review-page-wrapper .photo-5 { grid-column: auto; }
+
+          /* Slightly reduce image area to avoid overflow on tiny screens */
+          #review-page-wrapper .client-photo-wrap { aspect-ratio: 3 / 4; max-height: 420px; }
+        }
+
+  /* 6. Phone Landscape: show 3 testimonial cards per row */
+  @media (orientation: landscape) and (max-height: 500px) {
+          /* Reduce top padding since header is fixed and height is limited */
+          #review-page-wrapper #reviews { 
+            padding-top: 110px; 
+            margin-top: -88px;
+          }
+
+          /* Tighter typography */
+          #review-page-wrapper .reviews-title { font-size: 34px; }
+          #review-page-wrapper .reviews-subtitle { font-size: 16px; }
+
+          /* Gallery as compact grid */
           #review-page-wrapper .review-gallery {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 0 16px;
+            margin-top: 20px;
             transform: none;
-            padding: 0 12px;
-            margin-top: 28px;
           }
-          #review-page-wrapper .gallery-photo {
+          #review-page-wrapper .gallery-photo { 
             width: 100%;
             height: auto;
-            aspect-ratio: 212 / 310;
+            aspect-ratio: 3 / 4; 
+            box-shadow: 0 3px 8px rgba(0,0,0,0.18);
           }
-          #review-page-wrapper .photo-5 {
-            grid-column: 1 / -1;
-            justify-self: center;
-            width: 50%;
-          }
+
+          /* Testimonials: 3 cards per row */
+          #review-page-wrapper #testimonials { padding: 40px 0; }
+          #review-page-wrapper .testimonials-title { font-size: 30px; margin-bottom: 26px; }
+          #review-page-wrapper .review-testimonials-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+          #review-page-wrapper .testimonial-card { width: 100%; max-width: none; margin: 0 auto 16px; }
+          /* Increase card image area for taller look in landscape */
+          #review-page-wrapper .client-photo-wrap { max-height: 52vh; aspect-ratio: 3 / 4; }
+          #review-page-wrapper .client-review-text { font-size: 15px; margin: 14px 16px 12px; }
+          #review-page-wrapper .client-signature { font-size: 12px; }
+        }
+
+        /* Ultra-short landscape (e.g., split screen or very small devices) */
+        @media (orientation: landscape) and (max-height: 380px) {
+          #review-page-wrapper #reviews { padding-top: 96px; }
+          #review-page-wrapper .reviews-title { font-size: 28px; }
+          #review-page-wrapper .review-gallery { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+          /* Keep taller than before but within very short height */
+          #review-page-wrapper .client-photo-wrap { max-height: 46vh; }
         }
       `}</style>
 
@@ -744,9 +826,9 @@ export default function Review() {
             {/* Modal */}
             {editing !== null && (
               <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
-                <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 760 }}>
+                <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 'min(760px, 95vw)' }}>
                   <h3 style={{ marginTop: 0 }}>{editing === 'new' ? 'Add Review' : 'Edit Review'}</h3>
-                  <div style={{ display: 'flex', gap: 16 }}>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                     <div style={{ flex: 1 }}>
                       <label>Name</label>
                       <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
@@ -835,9 +917,9 @@ export default function Review() {
             {/* Video Edit Modal (Admin only) */}
             {editingVideoIndex !== null && isAdmin && (
               <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90 }} onClick={() => setEditingVideoIndex(null)}>
-                <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 760 }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 'min(760px, 95vw)' }} onClick={(e) => e.stopPropagation()}>
                   <h3 style={{ marginTop: 0 }}>Edit Review Video</h3>
-                  <div style={{ display: 'flex', gap: 16 }}>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                     <div style={{ flex: 1 }}>
                       <label>Replace video</label>
                       <div style={{ marginBottom: 8 }}>
