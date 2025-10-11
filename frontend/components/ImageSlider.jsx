@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './ImageSlider.module.css';
 import { useRouter } from 'next/navigation';
+import { useRef } from 'react';
 
 // images are now fetched from the server (Featured Collection)
 import FeaturedImageCard from './FeaturedImageCard';
@@ -85,6 +86,38 @@ const ImageSlider = () => {
     { ...images[rightIndex], position: 'right' },
   ];
 
+  // Swipe handling
+  const pointer = useRef({ startX: 0, startY: 0, isDown: false, moved: false });
+  const swipeThreshold = 50; // pixels
+
+  const onPointerDown = (e) => {
+    pointer.current.isDown = true;
+    pointer.current.moved = false;
+  pointer.current.startX = (e.clientX ?? (e.touches && e.touches[0] && e.touches[0].clientX)) || 0;
+  pointer.current.startY = (e.clientY ?? (e.touches && e.touches[0] && e.touches[0].clientY)) || 0;
+  };
+
+  const onPointerMove = (e) => {
+    if (!pointer.current.isDown) return;
+  const clientX = (e.clientX ?? (e.touches && e.touches[0] && e.touches[0].clientX)) || 0;
+    const dx = clientX - pointer.current.startX;
+    if (Math.abs(dx) > 10) pointer.current.moved = true;
+  };
+
+  const onPointerUp = (e) => {
+    if (!pointer.current.isDown) return;
+    pointer.current.isDown = false;
+  const clientX = (e.clientX ?? (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientX)) || 0;
+    const dx = clientX - pointer.current.startX;
+    if (Math.abs(dx) >= swipeThreshold) {
+      if (dx < 0) {
+        goToNext();
+      } else {
+        goToPrevious();
+      }
+    }
+  };
+
   return (
     <>
     <div className={styles.carouselContainer}>
@@ -92,7 +125,15 @@ const ImageSlider = () => {
         &#10094;
       </button>
 
-      <div className={styles.imageWrapper}>
+      <div
+        className={styles.imageWrapper}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onTouchStart={onPointerDown}
+        onTouchMove={onPointerMove}
+        onTouchEnd={onPointerUp}
+      >
         <AnimatePresence>
           {visibleImages.map((image) => (
             <motion.div
