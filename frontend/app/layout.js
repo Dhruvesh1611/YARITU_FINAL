@@ -1,48 +1,18 @@
 // app/layout.js
 
 import { Poppins, Playfair_Display, Poiret_One, Cinzel, Source_Serif_4 } from 'next/font/google';
-import Header from '../components/Header';
+import Header from '../components/Header'; // <-- Dekhein, ab hum original Header.js use kar rahe hain
 import Footer from '../components/Footer';
-import { UIProvider } from '../contexts/UIProvider';
-import { SessionProvider } from 'next-auth/react';
+import Providers from '../components/Providers'; // <-- Naya Providers component import kiya
 import './globals.css';
 
-// --- Font Definitions ---
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '600'],
-  display: 'swap',
-  variable: '--font-poppins',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  display: 'swap',
-  variable: '--font-playfair',
-});
-
-const poiret = Poiret_One({
-  subsets: ['latin'],
-  weight: ['400'],
-  display: 'swap',
-  variable: '--font-poiret',
-});
-
-const cinzel = Cinzel({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  display: 'swap',
-  variable: '--font-cinzel',
-});
-
-const sourceSerif4 = Source_Serif_4({
-  subsets: ['latin'],
-  weight: ['400', '600'],
-  display: 'swap',
-  variable: '--font-source-serif-4',
-});
-// -----------------------
+// --- Font Definitions (Yeh code waisa hi rahega) ---
+const poppins = Poppins({ subsets: ['latin'], weight: ['400', '600'], display: 'swap', variable: '--font-poppins' });
+const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '600', '700'], display: 'swap', variable: '--font-playfair' });
+const poiret = Poiret_One({ subsets: ['latin'], weight: ['400'], display: 'swap', variable: '--font-poiret' });
+const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '700'], display: 'swap', variable: '--font-cinzel' });
+const sourceSerif4 = Source_Serif_4({ subsets: ['latin'], weight: ['400', '600'], display: 'swap', variable: '--font-source-serif-4' });
+// ----------------------------------------------------
 
 export const metadata = {
   title: 'YARITU - Where Dreams meet Elegance',
@@ -53,18 +23,18 @@ export const metadata = {
 export default function RootLayout({ children, session }) {
   return (
     <html lang="en" className={`${poppins.variable} ${playfair.variable} ${poiret.variable} ${cinzel.variable} ${sourceSerif4.variable}`}>
-      
       <body>
-        <SessionProvider session={session}>
-          <UIProvider>
-            <Header />
+        {/* Providers ab sirf {children} ko wrap kar rahe hain */}
+        <Providers session={session}>
+          <Header /> {/* <-- Header ab Providers ke bahar hai */}
+          <main>
             {children}
-            <Footer />
-            <a href="https://wa.me/" className="whatsapp-float" target="_blank" rel="noopener noreferrer">
-              <img src="/images/logos_whatsapp-icon.png" alt="WhatsApp" width="50" height="50" />
-            </a>
-          </UIProvider>
-        </SessionProvider>
+          </main>
+          <Footer /> {/* <-- Footer bhi bahar hai */}
+          <a href="https://wa.me/" className="whatsapp-float" target="_blank" rel="noopener noreferrer">
+            <img src="/images/logos_whatsapp-icon.png" alt="WhatsApp" width="50" height="50" />
+          </a>
+        </Providers>
       </body>
     </html>
   );
