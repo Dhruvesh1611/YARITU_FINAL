@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "image": "/images/shervani.png",
+    "discount": "25% OFF",
+    "heading": "Wedding Season Special",
+    "subheading": "On all bridal lehengas and sherwanis",
+    "validity": "Valid until March 31, 2025"
+  },
+  {
+    "id": 3,
+    "image": "/images/festival.png",
+    "discount": "25% OFF",
+    "heading": "Festival Collection",
+    "subheading": "On ethnic wear for all occasions",
+    "validity": "Ends February 28, 2025"
+  },
+  {
+    "id": 4,
+    "heading": "Newly",
+    "subheading": "wear for all occasions",
+    "discount": "2000/- bonus",
+    "validity": "ends 9th dec,2025",
+    "image": "/uploads/offers/offer-4-1760268983068.jpg"
+  }
+]

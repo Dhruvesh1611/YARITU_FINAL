@@ -5,6 +5,7 @@ import Header from '../components/Header'; // <-- Dekhein, ab hum original Heade
 import Footer from '../components/Footer';
 import Providers from '../components/Providers'; // <-- Naya Providers component import kiya
 import './globals.css';
+import WhatsAppChat from '../components/WhatsAppChat';
 
 // --- Font Definitions (Yeh code waisa hi rahega) ---
 const poppins = Poppins({ subsets: ['latin'], weight: ['400', '600'], display: 'swap', variable: '--font-poppins' });
@@ -31,9 +32,7 @@ export default function RootLayout({ children, session }) {
             {children}
           </main>
           <Footer /> {/* <-- Footer bhi bahar hai */}
-          <a href="https://wa.me/" className="whatsapp-float" target="_blank" rel="noopener noreferrer">
-            <img src="/images/logos_whatsapp-icon.png" alt="WhatsApp" width="50" height="50" />
-          </a>
+          <WhatsAppChat />
         </Providers>
       </body>
     </html>

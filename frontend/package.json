@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@heroicons/react": "^2.0.18",
     "@sanity/image-url": "^1.2.0",
     "@sanity/vision": "^4.10.2",
     "cloudinary": "^1.36.0",

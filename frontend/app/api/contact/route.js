@@ -1,173 +1,122 @@
-// app/api/contact/route.js
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import dbConnect from '../../../lib/dbConnect';
+import Contact from '../../../models/Contact';
 
+// --- GET function to fetch all contacts for the admin panel ---
+export async function GET() {
+  try {
+  await dbConnect();
+  const contacts = await Contact.find().sort({ createdAt: -1 }); // Get newest first
+    return NextResponse.json({ data: contacts }, { status: 200 });
+  } catch (error) {
+    console.error('Failed to fetch contacts:', error);
+    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+  }
+}
+
+// --- POST function to save a new contact and send an email ---
 export async function POST(request) {
   try {
-    console.log('Received contact form submission');
     const { fullName, email, phone, subject, message } = await request.json();
 
-    // Validate required fields
+    // 1. Validate required fields
     if (!fullName || !email || !message) {
-      console.log('Validation failed: Missing required fields');
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    console.log('Form data validated successfully');
-    console.log('Gmail App Password available:', !!process.env.GMAIL_APP_PASSWORD);
+    // 2. Save the submission to the database FIRST
+  await dbConnect();
+  await Contact.create({ fullName, email, phone, subject, message });
+  console.log('Contact submission saved to database successfully.');
 
-    // Create transporter using Gmail SMTP with explicit settings
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: 'dhruveshshyaraog@gmail.com',
-        pass: process.env.GMAIL_APP_PASSWORD
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
-
-    // Verify transporter configuration
+    // 3. Now, attempt to send the email notification
     try {
-      await transporter.verify();
-      console.log('SMTP connection verified successfully');
-    } catch (verifyError) {
-      console.error('SMTP verification failed:', verifyError);
-      
-      // If Gmail fails, let's try a fallback approach
-      console.log('Attempting alternative email method...');
-      
-      // Log the email content for manual processing
-      const emailContent = {
-        to: 'dhruveshshyaraog@gmail.com',
-        from: email,
-        name: fullName,
-        phone: phone,
-        subject: subject || 'Contact Form Submission from Yaritu Website',
-        message: message,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log('Email content to be sent:', JSON.stringify(emailContent, null, 2));
-      
-      // Return success with manual processing message
-      return NextResponse.json(
-        { 
-          message: 'Message received successfully. We will contact you soon!',
-          data: {
-            name: fullName,
-            email: email,
-            timestamp: new Date().toISOString(),
-            method: 'manual_processing'
-          }
-        },
-        { status: 200 }
-      );
-    }
+      let transporter;
+      const gmailUser = process.env.GMAIL_SMTP_USER || 'dhruveshshyaraog@gmail.com';
+      const gmailPass = process.env.GMAIL_APP_PASSWORD;
 
-    const mailOptions = {
-      from: `"${fullName}" <dhruveshshyaraog@gmail.com>`, // sender address
-      to: 'dhruveshshyaraog@gmail.com', // receiver address
-      replyTo: email, // reply to sender's email
-      subject: subject || 'Contact Form Submission from Yaritu Website',
-      html: `
-        <div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
-          <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="border-bottom: 3px solid #c5a46d; padding-bottom: 20px; margin-bottom: 20px;">
-              <h2 style="color: #25384d; margin: 0; font-size: 24px;">New Contact Form Submission</h2>
-              <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">From Yaritu Website</p>
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; width: 30%; font-weight: bold; color: #25384d;">Name:</td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; color: #333;">${fullName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #25384d;">Email:</td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; color: #333;">${email}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #25384d;">Phone:</td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; color: #333;">${phone || 'Not provided'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #25384d;">Subject:</td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #eee; color: #333;">${subject || 'No subject'}</td>
-                </tr>
-              </table>
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-              <h3 style="color: #25384d; margin-bottom: 10px;">Message:</h3>
-              <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; border-left: 4px solid #c5a46d;">
-                <p style="margin: 0; line-height: 1.6; color: #333; white-space: pre-wrap;">${message}</p>
+      // Attempt to use Gmail SMTP if configured
+      if (gmailPass) {
+        try {
+          transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false, // true for 465, false for other ports
+            auth: { user: gmailUser, pass: gmailPass },
+            tls: { rejectUnauthorized: false },
+          });
+          await transporter.verify(); // Verify connection and credentials
+          console.log('SMTP connection verified (Gmail). Ready to send emails.');
+        } catch (gmailError) {
+          console.error('Gmail SMTP verification failed:', gmailError.message);
+          console.warn('Falling back to Ethereal test account due to Gmail error.');
+          transporter = null; // Reset transporter
+        }
+      }
+
+      // If transporter is not set (either no password or Gmail failed), use Ethereal
+      if (!transporter) {
+        const testAccount = await nodemailer.createTestAccount();
+        transporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          auth: { user: testAccount.user, pass: testAccount.pass },
+        });
+        console.log('Using Ethereal test account for email preview.');
+      }
+
+      const mailOptions = {
+        from: `"${fullName}" <${process.env.GMAIL_SMTP_USER || 'dhruveshshyaraog@gmail.com'}>`,
+        to: process.env.NOTIFY_EMAIL || 'dhruveshshyaraog@gmail.com',
+        replyTo: email,
+        subject: subject || 'Contact Form Submission from Yaritu Website',
+        html: `
+            <div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 20px auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+              <h2 style="color: #25384d; border-bottom: 2px solid #c5a46d; padding-bottom: 10px;">New Contact Submission</h2>
+              <p><strong>Name:</strong> ${fullName}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+              <p><strong>Subject:</strong> ${subject || 'No subject'}</p>
+              <div style="background-color: #ffffff; padding: 15px; border-left: 4px solid #c5a46d; margin-top: 15px;">
+                <p style="margin: 0; white-space: pre-wrap;">${message}</p>
               </div>
-            </div>
-            
-            <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
-              <p style="color: #666; font-size: 12px; margin: 0;">
-                This message was sent from the Yaritu website contact form on ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+              <p style="font-size: 12px; color: #888; text-align: center; margin-top: 20px;">
+                Sent from the Yaritu website on ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
               </p>
             </div>
-          </div>
-        </div>
-      `,
-      text: `
-Contact Form Submission from Yaritu Website
+          `,
+      };
 
-Name: ${fullName}
-Email: ${email}
-Phone: ${phone || 'Not provided'}
-Subject: ${subject || 'No subject'}
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email notification sent. MessageId:', info.messageId);
 
-Message:
-${message}
+      // If using Ethereal, log preview URL
+      if (nodemailer.getTestMessageUrl && info) {
+        const preview = nodemailer.getTestMessageUrl(info);
+        if (preview) console.log('Ethereal preview URL:', preview);
+      }
 
-Sent on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-      `
-    };
-
-    // Send email
-    console.log('Attempting to send email...');
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.messageId);
-
-    // Return success response
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError && emailError.message ? emailError.message : emailError);
+      // Primary function (saving data) succeeded; email is secondary.
+    }
+    
+    // Return a success response because the data was saved.
     return NextResponse.json(
-      { 
-        message: 'Email sent successfully',
-        data: {
-          name: fullName,
-          email: email,
-          timestamp: new Date().toISOString(),
-          messageId: info.messageId
-        }
-      },
-      { status: 200 }
-    );
+        { message: 'Submission received successfully!' },
+        { status: 201 }
+      );
 
   } catch (error) {
-    console.error('Email sending error details:', {
-      message: error.message,
-      code: error.code,
-      command: error.command
-    });
-    
+    console.error('Error processing contact form:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to send email',
-        details: error.message,
-        code: error.code || 'UNKNOWN_ERROR'
-      },
+      { error: 'An internal error occurred.' },
       { status: 500 }
     );
   }
 }
+

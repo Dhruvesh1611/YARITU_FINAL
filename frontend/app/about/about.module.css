@@ -270,7 +270,7 @@
 .storeImageInner {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 400px;
 }
 /* Next/Image generates an inner span/img when using fill — ensure it covers */
 .storeImageInner span, .storeImageInner img, .storeImage img {

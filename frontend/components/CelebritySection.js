@@ -9,11 +9,13 @@ const CelebritySection = () => {
   const [currentVideo, setCurrentVideo] = useState(0);
   const [videos, setVideos] = useState([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const videoRef = useRef(null);
   const { data: session } = useSession();
   const isAdmin = !!session;
   const fileInputRef = useRef(null);
   const [replacing, setReplacing] = useState(false);
+
+  // === NEW: Scrollable container ke liye ek Ref banaya hai ===
+  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -28,29 +30,69 @@ const CelebritySection = () => {
     fetchVideos();
   }, []);
 
-  const handleVideoEnd = () => {
-    setCurrentVideo(prev => (prev + 1) % Math.max(1, videos.length));
-  };
+  // === NEW: Jab user swipe/scroll kare, toh state ko update karne ke liye ===
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            // Jo video screen par dikh raha hai, uska index state me set karo
+            const index = parseInt(entry.target.getAttribute('data-index'), 10);
+            if (!isNaN(index)) {
+              setCurrentVideo(index);
+            }
+          }
+        });
+      },
+      {
+        root: container,
+        threshold: 0.5, // Video 50% dikhne par active maano
+      }
+    );
+
+    const slides = Array.from(container.children);
+    slides.forEach(slide => {
+      if (slide.classList.contains('video-slide')) {
+        observer.observe(slide);
+      }
+    });
+
+    return () => {
+      slides.forEach(slide => {
+        if (slide.classList.contains('video-slide')) {
+          observer.unobserve(slide);
+        }
+      });
+    };
+  }, [videos]); // Yeh effect tab chalega jab videos load honge
+
+  // === UPDATED: Arrows/dots click karne par programmatically scroll karwane ke liye ===
   const goToVideo = (index) => {
-    setCurrentVideo(index);
+    const container = scrollContainerRef.current;
+    if (container && videos.length > 0) {
+      const targetIndex = (index + videos.length) % videos.length;
+      const scrollLeft = container.offsetWidth * targetIndex;
+      container.scrollTo({
+        left: scrollLeft,
+        behavior: 'smooth'
+      });
+    }
   };
 
   const goToPrevious = () => {
-    setCurrentVideo(prev => prev === 0 ? Math.max(0, videos.length - 1) : prev - 1);
+    const newIndex = currentVideo === 0 ? videos.length - 1 : currentVideo - 1;
+    goToVideo(newIndex);
   };
 
   const goToNext = () => {
-    setCurrentVideo(prev => (prev + 1) % Math.max(1, videos.length));
+    const newIndex = (currentVideo + 1) % videos.length;
+    goToVideo(newIndex);
   };
 
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.load();
-      videoRef.current.play().catch(error => { console.log("Video play was prevented:", error.name); });
-    }
-  }, [currentVideo, videos]);
-
+  // Baaki ke functions (handleFileChange, handleDelete) waise hi rahenge
   const handleFileChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -101,7 +143,7 @@ const CelebritySection = () => {
       const deleted = (await res.json()).data;
       if (deleted) {
         setVideos((prev) => prev.filter((x) => x._id !== deleted._id));
-        setCurrentVideo(0);
+        goToVideo(0); // Go to the first video after deletion
       }
     } catch (err) {
       console.error(err);
@@ -125,20 +167,25 @@ const CelebritySection = () => {
         <div className="video-carousel-container">
           <button className="video-nav-arrow prev" onClick={goToPrevious} aria-label="Previous video">&#8249;</button>
           
-          <div className="video-container">
+          {/* === CHANGED: Ab yeh container scroll hoga aur isme saare videos honge === */}
+          <div className="video-container" ref={scrollContainerRef}>
             {videos.length > 0 ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                onEnded={handleVideoEnd}
-                key={videos[currentVideo]?._id || 'empty'}
-                className="main-video"
-              >
-                <source src={videos[currentVideo]?.videoUrl || ''} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              videos.map((video, index) => (
+                <div className="video-slide" key={video._id} data-index={index}>
+                  <video
+                    src={video.videoUrl}
+                    muted
+                    playsInline
+                    loop
+                    // Sirf current video hi autoplay hoga
+                    autoPlay={index === currentVideo}
+                    className="main-video"
+                  >
+                    <source src={video.videoUrl} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              ))
             ) : (
               <div className="no-videos-placeholder">No videos yet</div>
             )}
@@ -174,7 +221,7 @@ const CelebritySection = () => {
         </div>
 
         <div className="video-dots">
-          {Array.from({ length: Math.max(1, videos.length) }).map((_, index) => (
+          {videos.map((_, index) => (
             <button
               key={index}
               className={`dot ${index === currentVideo ? 'active' : ''}`}
@@ -247,7 +294,19 @@ const CelebritySection = () => {
             position: relative;
             background-color: #f0f0f0;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            
+            /* === NEW: Saare videos ko side-by-side rakhega === */
+            display: flex;
         }
+
+        /* === NEW: Har video slide ke liye style === */
+        .video-slide {
+            width: 100%;
+            height: 100%;
+            flex: 0 0 100%; /* Zaroori: Har slide poori width lega */
+            position: relative;
+        }
+
         .main-video {
             width: 100%;
             height: 100%;
@@ -261,6 +320,8 @@ const CelebritySection = () => {
             justify-content: center;
             color: #888;
             font-size: 18px;
+            /* === NEW: Yeh zaroori hai taaki placeholder scroll na ho === */
+            flex: 0 0 100%;
         }
         .replacing-overlay {
             position: absolute;
@@ -296,6 +357,7 @@ const CelebritySection = () => {
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 20; /* Ensure arrows are on top */
         }
         .video-nav-arrow:hover {
             background: white;
@@ -383,8 +445,36 @@ const CelebritySection = () => {
             text-align: center;
         }
         
+        /* === NEW & UPDATED: Mobile-specific scroll snap styles === */
         @media (max-width: 768px) {
-            .video-nav-arrow { display: none; }
+            .video-nav-arrow { 
+                display: none; /* Mobile par arrows hide karo */
+            }
+
+            .video-container {
+                /* 1. Horizontal scroll on karo */
+                overflow-x: scroll;
+                
+                /* 2. Scroll Snap activate karo */
+                scroll-snap-type: x mandatory;
+
+                /* 3. Mobile par design theek karo */
+                border-radius: 0;
+                box-shadow: none;
+
+                /* 4. Scrollbar ko chupa do */
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .video-container::-webkit-scrollbar {
+                display: none; /* Chrome, Safari ke liye */
+            }
+
+            .video-slide {
+                /* 5. Snap point set karo */
+                scroll-snap-align: start;
+            }
         }
       `}</style>
     </>

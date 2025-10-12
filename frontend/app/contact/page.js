@@ -40,6 +40,17 @@ export default function Contact() {
         body: JSON.stringify(formData),
       });
 
+        // Also post to admin storage so submissions are saved for admins to view
+        try {
+          fetch('/api/admin/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          }).catch(err => console.warn('Admin save failed', err));
+        } catch (e) {
+          console.warn('Admin save error', e);
+        }
+
       const result = await response.json();
 
       if (response.ok) {

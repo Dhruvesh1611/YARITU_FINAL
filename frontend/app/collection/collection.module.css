@@ -102,7 +102,10 @@
 @media (min-width: 769px) {
   /* When hovering the category buttons container, or when JS adds .dropdown-open,
      move collection content down by the dropdown height + gap. */
-  .category-buttons:hover + .collection-content,
+  /* Only push content down when a specific category button (or its container) is hovered.
+     Uses :has() so hovering empty space between buttons won't trigger the dropdown effect.
+     Fallback: .dropdown-open class (added by JS) still works for broader support. */
+  .category-buttons:has(.category-button-container:hover) + .collection-content,
   .category-buttons.dropdown-open + .collection-content {
     transform: translateY(120px);
   }
@@ -201,7 +204,7 @@
 .pageTitle {
   font-family: var(--font-heading);
   font-weight: 600;
-  font-size: 50px;
+  font-size: 50px ;
   color: #000000;
   margin-bottom: 16px;
   text-align: center; /* Yeh title ko center mein kar dega */
@@ -310,13 +313,13 @@
     display: none;
   }
   .pageTitle {
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 44px;
-  color: #000000;
-  margin-bottom: 16px;
-  text-align: center; /* Yeh title ko center mein kar dega */
-}
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 50px; /* Keep desktop/title at 50px */
+    color: #000000;
+    margin-bottom: 16px;
+    text-align: center; /* Yeh title ko center mein kar dega */
+  }
 }
 
 /* Product Grid Layouts */
@@ -587,6 +590,16 @@
     height: auto;
     aspect-ratio: 3/4;
   }
+
+  /* Mobile-specific title size */
+  .pageTitle {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 38px; /* Mobile heading size */
+    color: #000000;
+    margin-bottom: 16px;
+    text-align: center;
+  }
 }
 
 .whatsapp-fab {
@@ -598,11 +611,3 @@
   z-index: 100;
 }
 
-.pageTitle {
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 38px;
-  color: #000000;
-  margin-bottom: 16px;
-  text-align: center; /* Yeh title ko center mein kar dega */
-}

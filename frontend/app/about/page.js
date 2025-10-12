@@ -23,7 +23,13 @@ export default function About() {
             <p>Our master craftsmen combine traditional techniques with contemporary design, ensuring each piece is a work of art that tells your unique love story.</p>
             <Link href="/collection" className={styles.ctaButton}>
               Explore Our Work
-              <Image src="/images/right.png" alt="Arrow icon" width={12} height={10} />
+              <span className={styles.ctaIcon} aria-hidden="true" style={{ display: 'inline-block', marginLeft: 10 }}>
+                {/* Inline right arrow SVG */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                  <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
             </Link>
           </div>
             <div className={styles.aboutUsImageWrapper} style={{ position: 'relative', width: '100%', maxWidth: 548, aspectRatio: '548/600' }}>

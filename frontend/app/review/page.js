@@ -523,77 +523,112 @@ export default function Review() {
         }
         #review-page-wrapper .highlight { color: #c5a46d; }
         
+        /* --- START OF UPDATED CSS --- */
         #review-page-wrapper .review-testimonials-grid {
           display: grid;
+          /* On desktop, we want 4 columns */
           grid-template-columns: repeat(4, 1fr);
-          gap: 29px 20px;
-          justify-items: center; /* center cards within each grid cell */
+          gap: 20px;
         }
 
         #review-page-wrapper .testimonial-card {
-          border: none;
-          border-radius: 20px;
-          padding: 0;
-          background: transparent;
-          transition: transform 0.35s ease, box-shadow 0.35s ease;
-          overflow: visible;
-        }
-        #review-page-wrapper .testimonial-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.16);
-        }
-        #review-page-wrapper .testimonial-card:hover .client-photo { 
-            transform: scale(1.04); 
-            transition: transform 0.55s ease; 
-        }
-        #review-page-wrapper .card-content {
-          background-color: #fffdf9;
-          border: 1px solid #213346;
-          border-radius: 18px;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-          min-height: 100%;
+          /* This is the main card container */
+          background-color: #fdfbf8; /* The light beige background from your image */
+          border: 1px solid #E0E0E0; /* A light gray border */
+          border-radius: 12px;
+          padding: 16px;
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: flex-start;
-          padding: 0;
-          box-sizing: border-box;
-          overflow: hidden;
+          flex-direction: column; /* Stacks items vertically */
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Optional: a very subtle shadow */
+          transition: all 0.2s ease-in-out;
         }
-        #review-page-wrapper .client-photo-wrap {
+
+        #review-page-wrapper .testimonial-card:hover {
+            /* Optional: subtle hover effect */
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        }
+
+        #review-page-wrapper .card-media-placeholder {
+          /* This will hold the image or video */
           width: 100%;
-          overflow: hidden;
-          position: relative;
-          aspect-ratio: 7 / 10;
-          background: #f2f0ed;
+          height: 400px; /* A fixed height for the media area */
+          background-color: #F5F5F5;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Poppins', sans-serif;
+          color: #888;
+          font-size: 18px;
+          margin-bottom: 16px;
+          overflow: hidden; /* Ensures image corners are rounded */
         }
-        #review-page-wrapper .client-photo {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          transition: transform 0.4s ease;
+        
+        #review-page-wrapper .card-media-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
-        #review-page-wrapper .client-review-text {
+
+        #review-page-wrapper .client-name {
+          font-family: 'Poppins', sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          color: #333;
+          margin: 0;
+        }
+
+        #review-page-wrapper .client-quote {
           font-family: 'Poppins', sans-serif;
           font-size: 14px;
-          line-height: 1.55;
-          color: #222;
-          margin: 14px 18px 10px;
-          letter-spacing: 0.2px;
+          color: #666;
+          margin: 4px 0 0 0;
         }
-        #review-page-wrapper .client-signature {
-          font-family: 'Poppins', sans-serif;
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 1.4px;
-          color: #25384d;
-          margin: auto 18px 18px;
-          text-transform: uppercase;
+
+        #review-page-wrapper .admin-actions {
+          /* This container pushes the buttons to the bottom */
+          margin-top: auto; /* This is the key to bottom-aligning */
+          padding-top: 16px; /* Space above the buttons */
+          display: flex;
+          gap: 8px;
         }
+
+        #review-page-wrapper .admin-actions button {
+          /* Common styles for both buttons */
+          flex-grow: 1; /* Makes both buttons take equal width */
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          border: 1px solid transparent;
+        }
+
+        #review-page-wrapper .admin-actions .edit-btn {
+          background-color: #E7E7E7;
+          border-color: #D0D0D0;
+          color: #333;
+        }
+
+        #review-page-wrapper .admin-actions .delete-btn {
+          background-color: #E57373; /* A softer red from your image */
+          color: #fff;
+        }
+
+        /* Responsive adjustments for the new card style */
+        @media (max-width: 1024px) {
+          #review-page-wrapper .review-testimonials-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 768px) {
+          #review-page-wrapper .review-testimonials-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        /* --- END OF UPDATED CSS --- */
 
         /* 2. Tablet Optimizations (1200px and below) */
         @media (max-width: 1200px) {
@@ -617,7 +652,7 @@ export default function Review() {
              margin-top: -88px; /* Remove conflicting margin */
           }
           /* Switch testimonials to 2 columns */
-          #review-page-wrapper .review-testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+          /* #review-page-wrapper .review-testimonials-grid { grid-template-columns: repeat(2, 1fr); } -- MOVED TO NEW CSS BLOCK */
           #review-page-wrapper .testimonials-title { font-size: 40px; margin-bottom: 60px; }
         }
 
@@ -632,7 +667,7 @@ export default function Review() {
           /* Switch testimonials to 1 column */
           #review-page-wrapper .reviews-title { font-size: 32px; }
           #review-page-wrapper .reviews-subtitle { font-size: 18px; }
-          #review-page-wrapper .review-testimonials-grid { grid-template-columns: 1fr; }
+          /* #review-page-wrapper .review-testimonials-grid { grid-template-columns: 1fr; } -- MOVED TO NEW CSS BLOCK */
           #review-page-wrapper .testimonials-title { font-size: 32px; margin-bottom: 40px; }
 
           /* Mobile gallery layout: grid with 2 columns */
@@ -651,49 +686,6 @@ export default function Review() {
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
           }
           #review-page-wrapper .photo-5 { grid-column: 1 / -1; }
-
-          /* Mobile: limit testimonial image height so it doesn't take full viewport */
-          #review-page-wrapper .testimonial-card {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto 22px; /* center the single-column card */
-          }
-
-          #review-page-wrapper .card-content {
-            padding-bottom: 12px; /* add breathing room under text */
-          }
-
-          #review-page-wrapper .client-photo-wrap {
-            /* make image area larger on mobile */
-            aspect-ratio: 3 / 4;
-            max-height: 440px;
-            width: 100%;
-            overflow: hidden;
-            border-radius: 14px;
-          }
-
-          #review-page-wrapper .client-photo {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-          }
-
-          /* Bigger review text on mobile */
-          #review-page-wrapper .client-review-text {
-            font-size: 16px;
-            line-height: 1.6;
-            margin: 16px 18px 12px;
-          }
-
-          #review-page-wrapper .client-signature {
-            font-size: 13px;
-            letter-spacing: 1.2px;
-            margin: auto 18px 18px;
-          }
         }
 
         /* 5. Small Mobile (600px and below) */
@@ -703,24 +695,16 @@ export default function Review() {
           #review-page-wrapper .reviews-subtitle { font-size: 16px; }
           /* Keep 2-column gallery for small devices */
           #review-page-wrapper .review-gallery { gap: 12px; }
-
-          /* Make cards fill more width on smaller phones */
-          #review-page-wrapper .testimonial-card { width: 100%; max-width: 560px; }
-          #review-page-wrapper .client-photo-wrap { max-height: 460px; }
-          #review-page-wrapper .client-review-text { font-size: 16px; }
         }
 
         @media (max-width: 480px) {
           /* Single column gallery for very small screens */
           #review-page-wrapper .review-gallery { grid-template-columns: 1fr; }
           #review-page-wrapper .photo-5 { grid-column: auto; }
-
-          /* Slightly reduce image area to avoid overflow on tiny screens */
-          #review-page-wrapper .client-photo-wrap { aspect-ratio: 3 / 4; max-height: 420px; }
         }
 
-  /* 6. Phone Landscape: show 3 testimonial cards per row */
-  @media (orientation: landscape) and (max-height: 500px) {
+        /* 6. Phone Landscape: show 3 testimonial cards per row */
+        @media (orientation: landscape) and (max-height: 500px) {
           /* Reduce top padding since header is fixed and height is limited */
           #review-page-wrapper #reviews { 
             padding-top: 110px; 
@@ -751,11 +735,6 @@ export default function Review() {
           #review-page-wrapper #testimonials { padding: 40px 0; }
           #review-page-wrapper .testimonials-title { font-size: 30px; margin-bottom: 26px; }
           #review-page-wrapper .review-testimonials-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-          #review-page-wrapper .testimonial-card { width: 100%; max-width: none; margin: 0 auto 16px; }
-          /* Increase card image area for taller look in landscape */
-          #review-page-wrapper .client-photo-wrap { max-height: 52vh; aspect-ratio: 3 / 4; }
-          #review-page-wrapper .client-review-text { font-size: 15px; margin: 14px 16px 12px; }
-          #review-page-wrapper .client-signature { font-size: 12px; }
         }
 
         /* Ultra-short landscape (e.g., split screen or very small devices) */
@@ -763,8 +742,6 @@ export default function Review() {
           #review-page-wrapper #reviews { padding-top: 96px; }
           #review-page-wrapper .reviews-title { font-size: 28px; }
           #review-page-wrapper .review-gallery { grid-template-columns: repeat(4, 1fr); gap: 10px; }
-          /* Keep taller than before but within very short height */
-          #review-page-wrapper .client-photo-wrap { max-height: 46vh; }
         }
       `}</style>
 
@@ -796,28 +773,39 @@ export default function Review() {
       <section id="testimonials">
         <div className="testimonials-container">
           <h2 className="testimonials-title">What Our <span className="highlight">Clients Say</span></h2>
+          
+          {/* --- START OF UPDATED JSX --- */}
           <div className="review-testimonials-grid">
-              {/* Render server-backed testimonials on client only */}
-              {isClient && (
-                loadingTestimonials ? <p>Loading...</p> : testimonials.map((t) => (
-                  <div className="testimonial-card" key={t._id}>
-                    <div className="card-content">
-                      <div className="client-photo-wrap">
-                        <img src={t.avatarUrl || 'https://placehold.co/400x560/EAD9C8/4E3629?text=Client'} alt={t.name} className="client-photo" />
-                      </div>
-                      <p className="client-review-text">{t.quote}</p>
-                      <p className="client-signature">~ {t.name}</p>
-                      {isAdmin && (
-                        <div style={{ display: 'flex', gap: 8, padding: 12 }}>
-                          <button onClick={() => openEdit(t)} style={{ padding: '6px 10px' }}>Edit</button>
-                          <button onClick={() => handleDelete(t._id)} style={{ padding: '6px 10px', background: '#b43' }}>Delete</button>
-                        </div>
-                      )}
-                    </div>
+            {/* Render server-backed testimonials on client only */}
+            {isClient && (
+              loadingTestimonials ? <p>Loading...</p> : testimonials.map((t) => (
+                <div className="testimonial-card" key={t._id}>
+                  {/* Media Area */}
+                  <div className="card-media-placeholder">
+                    {t.avatarUrl ? (
+                      <img src={t.avatarUrl} alt={t.name} />
+                    ) : (
+                      <span>Client</span>
+                    )}
                   </div>
-                ))
-              )}
-            </div>
+
+                  {/* Text Content */}
+                  <p className="client-name">{t.name}</p>
+                  <p className="client-quote">{t.quote}</p>
+
+                  {/* Admin Buttons (pushed to the bottom) */}
+                  {isAdmin && (
+                    <div className="admin-actions">
+                      <button className="edit-btn" onClick={() => openEdit(t)}>Edit</button>
+                      <button className="delete-btn" onClick={() => handleDelete(t._id)}>Delete</button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+          {/* --- END OF UPDATED JSX --- */}
+
             {isAdmin && (
               <div style={{ textAlign: 'center', marginTop: 18 }}>
                 <button onClick={openNew} style={{ padding: '8px 12px' }}>Add Review</button>

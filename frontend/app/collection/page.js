@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from './collection.module.css';
 import Pagination from '../../components/Pagination';
 import ProductModal from '../../components/ProductModal';
@@ -43,19 +44,75 @@ export default function Collection() {
 
   const collectionTitleRef = useRef(null);
   const collectionContentRef = useRef(null);
+  const searchParams = useSearchParams();
+
+  // On mount, check for ?category=...&type=... or ?occasion=... and apply filters
+  useEffect(() => {
+    try {
+      // First, prefer sessionStorage fallback if available (set by ProductCard on click)
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = sessionStorage.getItem('targetCollection');
+          if (raw) {
+            const obj = JSON.parse(raw);
+            if (obj?.category) {
+              setActiveCategory(obj.category.toString().toUpperCase());
+            }
+            if (obj?.type) setActiveType(obj.type.toString().toUpperCase());
+            if (obj?.occasion) setActiveOccasion(obj.occasion.toString().toUpperCase());
+            sessionStorage.removeItem('targetCollection');
+            setTimeout(() => {
+              if (collectionTitleRef.current) {
+                const y = collectionTitleRef.current.getBoundingClientRect().top + window.pageYOffset - 24;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+              }
+            }, 160);
+            return; // already handled
+          }
+        } catch (e) { /* ignore parse errors */ }
+      }
+
+      // Otherwise read search params from the URL
+      const cat = searchParams.get('category');
+      const type = searchParams.get('type') || searchParams.get('collectionType');
+      const occ = searchParams.get('occasion');
+      if (cat) {
+        const upperCat = cat.toString().toUpperCase();
+        setActiveCategory(upperCat);
+        if (type) {
+          setActiveType(type.toString().toUpperCase());
+        } else if (occ) {
+          setActiveOccasion(occ.toString().toUpperCase());
+        }
+        // small delay so filtered products compute and DOM is ready
+        setTimeout(() => {
+          if (collectionTitleRef.current) {
+            const y = collectionTitleRef.current.getBoundingClientRect().top + window.pageYOffset - 24;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          }
+        }, 120);
+      }
+    } catch (e) {
+      // ignore if navigation API unavailable
+      console.warn('No search params available', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const source = (collections && collections.length) ? collections : allProducts;
-    let products = source.filter(p => (p.category || '').toUpperCase() === activeCategory);
+    // Normalize helper
+    const normalize = (v) => (v || '').toString().trim().toUpperCase();
+    let products = source.filter(p => normalize(p.category) === normalize(activeCategory));
     if (activeSubcategory) {
-      const sub = activeSubcategory.toUpperCase();
-      products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase() === sub) || ((p.description||'').toUpperCase().includes(sub)));
+      const sub = normalize(activeSubcategory);
+      products = products.filter(p => (normalize(p.collectionType) === sub) || (normalize(p.type) === sub) || (normalize(p.description).includes(sub)));
     }
     if (activeType) {
-      const t = activeType.toUpperCase();
-      products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase() === t) || ((p.description||'').toUpperCase().includes(t)) || ((p.title||p.name||'').toUpperCase().includes(t)));
+      const t = normalize(activeType);
+      products = products.filter(p => (normalize(p.collectionType) === t) || (normalize(p.type) === t) || (normalize(p.description).includes(t)) || (normalize(p.title).includes(t)) || (normalize(p.name).includes(t)));
     } else if (activeOccasion) {
-      products = products.filter(p => (p.occasion || '').toUpperCase() === activeOccasion.toUpperCase());
+      products = products.filter(p => normalize(p.occasion) === normalize(activeOccasion));
     }
     setFilteredProducts(products);
     setCurrentPage(1);

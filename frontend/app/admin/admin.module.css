@@ -1,0 +1,19 @@
+.adminPage { max-width: 1100px; margin: 40px auto; padding: 20px; }
+.header { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.header h1 { margin:0; font-size:28px; }
+.tabs button { margin-left:8px; padding:8px 12px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; }
+.tabs .active { background:#25384d; color:#fff; border-color:#25384d }
+.headerButtonsWrapper { display:flex; align-items:center; gap:16px; }
+.headerButtons { display:flex; gap:8px; }
+.quickBtn { background: #25384d; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight:600; }
+.quickBtn:hover { opacity: 0.95; }
+.content { margin-top:20px; }
+.item { display:flex; justify-content:space-between; gap:20px; padding:12px; border:1px solid #eee; border-radius:8px; margin-bottom:10px; }
+.itemMain { flex:1; }
+.itemActions { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+.itemActions button { background:#ff6b6b; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer }
+
+.adminDrawerOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.25); display:flex; }
+.adminDrawer { width:240px; background:#fff; padding:20px; box-shadow: 2px 0 12px rgba(0,0,0,0.12); }
+.drawerBtn { display:block; width:100%; padding:10px 12px; margin-bottom:8px; border-radius:8px; border:1px solid #ddd; background:#f7f7f7; cursor:pointer; text-align:left; }
+.drawerBtn:hover { background:#eee }

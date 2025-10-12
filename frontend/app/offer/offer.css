@@ -76,7 +76,7 @@
     .offer-page .reviews-title { font-size: 36px; }
     .offer-page .reviews-subtitle { font-size: 15px; }
     .offer-page .offers-grid { gap: 18px; grid-template-columns: repeat(2, 1fr); }
-    .offer-page .offer-card-image { height: 160px; }
+    .offer-page .offer-card-image { height: 220px; }
     .offer-page .offer-card-content { padding: 20px; }
     .offer-page .offer-card { border-radius: 14px; }
     .offer-page .newsletter-content { padding: 12px 8px; }
@@ -89,7 +89,7 @@
     .offer-page .store-selector-image { height: 200px; max-width: 46%; }
     .offer-page .selected-store-info { padding: 12px; }
     .offer-page .offers-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-    .offer-page .offer-card-image { height: 140px; }
+    .offer-page .offer-card-image { height: 180px; }
     .offer-page .reviews-title { font-size: 32px; }
 }
     .offer-page .offer-hero-title {
@@ -122,7 +122,7 @@
 }
 .offer-page .store-selector-image img {
     width: 100%;
-    height: auto;
+    height: 400px;
     border-radius: 20px;
     box-shadow: 5px 5px 5px 0px rgba(0, 0, 0, 0.25);
 }
@@ -345,7 +345,54 @@
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 32px;
     justify-content: center;
-    align-items: stretch;
+    /* align items to the top so cards line up horizontally */
+    align-items: start;
+}
+
+/* Admin Add Offer button full-row wrapper and smaller button */
+/* --- Container for the Button --- */
+.offer-page .admin-add-offer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  margin-block: 2rem; /* Modern way to set top/bottom margin for better spacing */
+}
+
+/* --- The New Professional Button Style --- */
+.admin-add-offer-btn {
+  /* Layout & Spacing */
+  display: inline-flex; /* Aligns icon and text properly */
+  align-items: center;
+  gap: 8px; /* Space between icon and text */
+  padding: 12px 24px; /* More generous padding for a premium feel */
+  
+  /* Typography */
+  font-size: 1rem; /* Slightly larger, more readable font */
+  font-weight: 500; /* Medium weight looks more professional */
+  color: #5c5547; /* A sophisticated, dark beige for text */
+  
+  /* Appearance */
+  background-color: #fdfdfd; /* A very soft off-white */
+  border: 1px solid #d0c6b0; /* The elegant muted gold border from your design */
+  border-radius: 8px;
+  cursor: pointer;
+  
+  /* Effects */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.06);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* --- Hover State --- */
+.admin-add-offer-btn:hover {
+  transform: translateY(-3px);
+  border-color: #a99d81; /* Darker gold on hover */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.08);
+}
+
+/* --- Active/Click State --- */
+.admin-add-offer-btn:active {
+  transform: translateY(0);
+  transition: transform 0.1s;
 }
 .offer-page .offer-card {
     background-color: var(--color-white);
@@ -355,15 +402,30 @@
     display: flex;
     flex-direction: column;
 }
+
+/* Slight upward shift for the middle/second card to align visually */
+.offer-page .offer-card.offset-up {
+    /* neutralize visual offset so all cards align in a row
+       kept as a class for backward compatibility but no translate */
+    transform: none;
+}
+
+@media (max-width: 992px) {
+    .offer-page .offer-card.offset-up { transform: none; }
+}
+
 .offer-page .offer-card-image {
     position: relative;
-    height: 200px;
+    /* increased container height so images show more content */
+    height: 260px;
     overflow: hidden;
 }
 .offer-page .offer-card-image img {
     width: 100%;
     height: 100%;
+    /* fill the image area so visuals are consistent across cards */
     object-fit: cover;
+    object-position: top;
 }
 .offer-page .discount-tag {
     position: absolute;
@@ -377,6 +439,9 @@
     font-size: 17px;
     font-weight: 700;
 }
+
+/* Hide discount tag when it's empty (server may return empty string or null) */
+.offer-page .discount-tag:empty { display: none; }
 .offer-page .offer-card-content {
     padding: 32px;
     display: flex;

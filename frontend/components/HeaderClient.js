@@ -38,6 +38,9 @@ export default function HeaderClient() {
           <nav className={styles.mainNav}>
               <div className={styles.navCenter}>
                   <div className={styles.navGroup}>
+                      {session && session.user && session.user.role === 'admin' && (
+                        <Link href="/admin" className={styles.navLink} style={{ marginRight: 12 }}>Admin</Link>
+                      )}
                       <Link href="/" className={navLinkClass('/')}>Home</Link>
                       <Link href="/collection" className={navLinkClass('/collection')}>Collections</Link>
                   </div>
@@ -57,8 +60,9 @@ export default function HeaderClient() {
                       <Link href="/about" className={navLinkClass('/about')}>About</Link>
                       <Link href="/contact" className={navLinkClass('/contact')}>Contact</Link>
                       <Link href="/review" className={navLinkClass('/review')}>Reviews</Link>
+                      {/* admin quick links removed from right-side navbar - single Admin button moved to left */}
                       {session && (
-                        <button onClick={() => signOut()} className={`${styles.navLink} ${styles.logoutButton}`}>
+                        <button onClick={() => signOut({ callbackUrl: '/' })} className={`${styles.navLink} ${styles.logoutButton}`}>
                           Logout
                         </button>
                       )}
@@ -89,8 +93,11 @@ export default function HeaderClient() {
           <Link href="/contact" className={styles.mobileNavLink} onClick={closeMenu}>Contact</Link>
           <Link href="/review" className={styles.mobileNavLink} onClick={closeMenu}>Reviews</Link>
           <Link href="/offer" className={styles.mobileNavLink} onClick={closeMenu}>Offers</Link>
+          {session && session.user && session.user.role === 'admin' && (
+            <Link href="/admin" className={styles.mobileNavLink} onClick={closeMenu}>Admin</Link>
+          )}
           {session && (
-            <button onClick={() => { signOut(); closeMenu(); }} className={`${styles.mobileNavLink} ${styles.mobileLogoutButton}`}>
+            <button onClick={() => { signOut({ callbackUrl: '/' }); closeMenu(); }} className={`${styles.mobileNavLink} ${styles.mobileLogoutButton}`}>
               Logout
             </button>
           )}

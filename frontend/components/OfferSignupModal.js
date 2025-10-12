@@ -5,7 +5,8 @@ import Image from 'next/image';
 
 export default function OfferSignupModal({ openAfter = 5000 }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', city: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
   const timerRef = useRef(null);
   const firstInputRef = useRef(null);
 
@@ -34,10 +35,21 @@ export default function OfferSignupModal({ openAfter = 5000 }) {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // UI only: store can be sent to backend later. For now just close and log.
-    console.log('Sign-up data (UI only):', form);
-    // show a thank-you state or close
-    setOpen(false);
+    // Send signup to the new offers endpoint
+    fetch('/api/offers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    }).then(res => {
+      if (!res.ok) throw new Error('Network response was not ok');
+      return res.json();
+    }).then(json => {
+      console.log('Saved offer signup', json);
+      setSubmitted(true); // Show success message
+    }).catch(err => {
+      console.warn('Offer signup save failed', err);
+      // You could add an error message to the user here
+    });
   };
 
   if (!open) return null;
@@ -63,23 +75,33 @@ export default function OfferSignupModal({ openAfter = 5000 }) {
             />
           </div>
         </div>
-  <div className="offer-modal-right" style={{ paddingRight: '6px' }}>
+  <div className="offer-modal-right" style={{ paddingRight: '36px' }}>
           <div className="offer-modal-logo-mobile">
             <Image src="/images/yaritu_logo_white.png" alt="Yaritu logo" width={140} height={60} style={{ objectFit: 'contain', height: 'auto' }} />
           </div>
-          <h3 className="offer-modal-title">Unlock Your Exclusive Offers</h3>
-          <p className="offer-modal-sub">Fill in your details to receive personalised deals</p>
-          <form className="offer-modal-form" onSubmit={onSubmit}>
-            <input ref={firstInputRef} name="name" value={form.name} onChange={onChange} placeholder="your name" required />
-            <div className="offer-modal-phone-wrapper">
-              <span className="phone-prefix">🇮🇳</span>
-              <input name="phone" value={form.phone} onChange={onChange} placeholder="Mobile Number" inputMode="tel" required className="phone-input" />
-              <span className="phone-code">+91</span>
+          {submitted ? (
+            <div className="offer-modal-success">
+              <h3>Thank You!</h3>
+              <p>Aapko jald hi special deal milegi.</p>
+              <button onClick={close} className="offer-modal-submit">Close</button>
             </div>
-            <input name="city" value={form.city} onChange={onChange} placeholder="City/Area" required />
-            <button type="submit" className="offer-modal-submit">GET SPECIAL DEALS</button>
-          </form>
-          <small className="offer-modal-note">By submitting to agree our Privacy policy</small>
+          ) : (
+            <>
+              <h3 className="offer-modal-title">Unlock Your Exclusive Offers</h3>
+              <p className="offer-modal-sub">Fill in your details to receive personalised deals</p>
+              <form className="offer-modal-form" onSubmit={onSubmit}>
+                <input ref={firstInputRef} name="name" value={form.name} onChange={onChange} placeholder="Your Name" required />
+                <input name="email" value={form.email} onChange={onChange} placeholder="Your Email" type="email" required />
+                <div className="offer-modal-phone-wrapper">
+                  <span className="phone-prefix">🇮🇳</span>
+                  <input name="phone" value={form.phone} onChange={onChange} placeholder="Mobile Number" inputMode="tel" className="phone-input" />
+                  <span className="phone-code">+91</span>
+                </div>
+                <button type="submit" className="offer-modal-submit">GET SPECIAL DEALS</button>
+              </form>
+              <small className="offer-modal-note">By submitting you agree to our Privacy Policy</small>
+            </>
+          )}
         </div>
       </div>
     </div>

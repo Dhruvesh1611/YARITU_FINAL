@@ -372,21 +372,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
               </div>
               {errors.mainImage && <span className="error-text">{errors.mainImage}</span>}
             </div>
-            <div className="form-group">
-              <label>Main Image 2</label>
-              <div className="image-uploader" onClick={() => fileInputRef2.current?.click()}>
-                <input type="file" accept="image/*" ref={fileInputRef2} onChange={handleMainImage2Change} style={{ display: 'none' }} />
-                {mainImage2Preview ? (
-                  <img src={mainImage2Preview} alt="main 2 preview" />
-                ) : (
-                  <div className="upload-placeholder">
-                    <span>Click to Upload</span>
-                    <small>PNG, JPG, WEBP up to 5MB</small>
-                  </div>
-                )}
-              </div>
-              {errors.mainImage2 && <span className="error-text">{errors.mainImage2}</span>}
-            </div>
+            
             <div className="form-group">
                 <label>Other Images (up to 5)</label>
                 <div className="other-images-container">

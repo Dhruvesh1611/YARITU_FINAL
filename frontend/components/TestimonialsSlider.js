@@ -109,34 +109,24 @@ function ClickableTrack({ isPaused, items, onCardClick }) {
         if (!track || items.length === 0) return;
 
         const recalc = () => {
-            const firstHalfWidth = track.scrollWidth / 2;
-            track.style.setProperty('--scroll-width', `${firstHalfWidth}px`);
-            const pxPerSec = 40;
-            const duration = Math.max(20, firstHalfWidth / pxPerSec);
+            // The track contains two sets of items. The scroll width should be half of the total.
+            const scrollWidth = track.scrollWidth / 2;
+            track.style.setProperty('--scroll-width', `${scrollWidth}px`);
+            
+            // Adjust speed based on width
+            const pxPerSec = 120; // Speed of the scroll
+            const duration = scrollWidth / pxPerSec;
             track.style.setProperty('--scroll-duration', `${duration}s`);
         };
 
-        // Recalc after images have loaded to get correct width
-        let imagesLoaded = 0;
-        const images = track.querySelectorAll('img');
-        if (images.length === 0) {
-            recalc();
-        } else {
-            images.forEach(img => {
-                if (img.complete) {
-                    imagesLoaded++;
-                } else {
-                    img.onload = () => {
-                        imagesLoaded++;
-                        if (imagesLoaded === images.length) recalc();
-                    };
-                }
-            });
-            if (imagesLoaded === images.length) recalc();
-        }
+        // Use a timeout to ensure all content is rendered before calculating width
+        const timer = setTimeout(recalc, 100);
 
         window.addEventListener('resize', recalc);
-        return () => window.removeEventListener('resize', recalc);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', recalc);
+        };
     }, [items]);
 
     const trackClass = `${styles.testimonialsTrack} ${isPaused ? styles.paused : ''}`;

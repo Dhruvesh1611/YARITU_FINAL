@@ -1,8 +1,11 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './offer.css';
 import OfferSignupModal from '../../components/OfferSignupModal';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
+import EditStoreModal from '../../components/EditStoreModal';
+import OfferEditorModal from '../../components/OfferEditorModal';
 
 export default function Offer() {
   const stores = [
@@ -104,6 +107,39 @@ export default function Offer() {
     },
   ];
   const [selectedIdx, setSelectedIdx] = useState(9); // Default to Gota, Ahmedabad
+  const { data: session } = useSession();
+  const [storesData, setStoresData] = useState(stores);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editIdx, setEditIdx] = useState(null);
+  const [offersContent, setOffersContent] = useState(null);
+  const [offerEditorOpen, setOfferEditorOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/admin/stores');
+        if (res.ok) {
+          const j = await res.json();
+          if (j.success && Array.isArray(j.data)) setStoresData(j.data);
+        }
+      } catch (e) { /* ignore */ }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const loadOffers = async () => {
+      try {
+        const res = await fetch('/api/admin/offers-content');
+        if (res.ok) {
+          const j = await res.json();
+          if (j.success && Array.isArray(j.data)) setOffersContent(j.data);
+        }
+      } catch (e) { /* ignore */ }
+    };
+    loadOffers();
+  }, []);
 
   return (
     <>
@@ -123,22 +159,25 @@ export default function Offer() {
                 onChange={e => setSelectedIdx(Number(e.target.value))}
                 className="store-dropdown"
               >
-                {stores.map((store, idx) => (
+                {storesData.map((store, idx) => (
                   <option value={idx} key={store.name}>{store.name}</option>
                 ))}
               </select>
 
               {/* Display selected store details */}
               <div className="selected-store-info">
-                <h3>{stores[selectedIdx].name}</h3>
-                <p className="store-address">{stores[selectedIdx].address}</p>
-                <p className="store-phone">📞 {stores[selectedIdx].phone}</p>
+                <h3>{storesData[selectedIdx]?.name}</h3>
+                <p className="store-address">{storesData[selectedIdx]?.address}</p>
+                <p className="store-phone">📞 {storesData[selectedIdx]?.phone}</p>
+                {session && session.user && session.user.role === 'admin' && (
+                  <button onClick={() => { setEditIdx(selectedIdx); setEditOpen(true); }} style={{ marginTop: 8 }}>Edit Store</button>
+                )}
               </div>
             </div>
             <div className="store-selector-image">
               <Image
-                src={stores[selectedIdx].image}
-                alt={`${stores[selectedIdx].name} store interior`}
+                src={storesData[selectedIdx]?.image || stores[selectedIdx].image}
+                alt={`${storesData[selectedIdx]?.name || stores[selectedIdx].name} store interior`}
                 width={690}
                 height={400}
                 className="store-photo"
@@ -146,6 +185,15 @@ export default function Offer() {
             </div>
           </div>
         </section>
+        {editOpen && (
+          <EditStoreModal
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            store={storesData[editIdx]}
+            idx={editIdx}
+            onSaved={(updated) => setStoresData((p) => p.map((x, i) => i === editIdx ? updated : x))}
+          />
+        )}
         <section id="offers" className="offers-section section-padding">
           <div className="page-container">
             <div className="offers-header">
@@ -153,66 +201,120 @@ export default function Offer() {
               <h2>{stores[selectedIdx].name}</h2>
             </div>
             <div className="offers-grid">
-              <div className="offer-card">
-                <div className="offer-card-image">
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                    <Image
-                      src="/images/shervani.png"
-                      alt="Wedding Season Special"
-                      fill
-                      sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
-                      style={{ objectFit: 'contain' }}
-                    />
+              {session && session.user && session.user.role === 'admin' && (
+                <div className="admin-add-offer">
+                  <button className="admin-add-offer-btn" onClick={() => { setEditingOffer(null); setOfferEditorOpen(true); }}>Add Offer</button>
+                </div>
+              )}
+              {/* If offersContent loaded, show its items; otherwise fall back to static three cards */}
+              {Array.isArray(offersContent) ? (
+                offersContent.map((off, i) => (
+                  <div key={off.id} className={`offer-card ${i === 1 ? 'offset-up' : ''}`}>
+                    <div className="offer-card-image">
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
+                        <Image src={off.image} alt={off.heading} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'contain' }} />
+                      </div>
+                      {off.discount ? <div className="discount-tag">{off.discount}</div> : null}
+                    </div>
+                    <div className="offer-card-content">
+                      <h3>{off.heading}</h3>
+                      <p>{off.subheading}</p>
+                      <span className="validity-date">{off.validity}</span>
+                      <a href="#" className="claim-button">Claim Offer</a>
+                      {session && session.user && session.user.role === 'admin' && (
+                        <div style={{ marginTop: 8 }}>
+                          <button onClick={() => { setEditingOffer(off); setOfferEditorOpen(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Edit</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="discount-tag">25% OFF</div>
-                </div>
-                <div className="offer-card-content">
-                  <h3>Wedding Season Special</h3>
-                  <p>On all bridal lehengas and sherwanis</p>
-                  <span className="validity-date">Valid until March 31, 2025</span>
-                  <a href="#" className="claim-button">Claim Offer</a>
-                </div>
-              </div>
-              <div className="offer-card">
-                <div className="offer-card-image">
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                    <Image
-                      src="/images/image.png"
-                      alt="couple combo deal"
-                      fill
-                      sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
-                      style={{ objectFit: 'contain' }}
-                    />
+                ))
+              ) : (
+                <>
+                  <div className={`offer-card ${0 === 1 ? 'offset-up' : ''}`}>
+                    <div className="offer-card-image">
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
+                        <Image
+                          src="/images/shervani.png"
+                          alt="Wedding Season Special"
+                          fill
+                          sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
+                          style={{ objectFit: 'contain' }}
+                        />
+                      </div>
+                      <div className="discount-tag">25% OFF</div>
+                    </div>
+                    <div className="offer-card-content">
+                      <h3>Wedding Season Special</h3>
+                      <p>On all bridal lehengas and sherwanis</p>
+                      <span className="validity-date">Valid until March 31, 2025</span>
+                      <a href="#" className="claim-button">Claim Offer</a>
+                    </div>
                   </div>
-                  <div className="discount-tag">₹2,000/- OFF</div>
-                </div>
-                <div className="offer-card-content">
-                  <h3>Couple Combo Deal</h3>
-                  <p>When you buy both bride & groom outfits</p>
-                  <span className="validity-date">Limited time offer</span>
-                  <a href="#" className="claim-button">Claim Offer</a>
-                </div>
-              </div>
-              <div className="offer-card">
-                <div className="offer-card-image">
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                    <Image
-                      src="/images/festival.png"
-                      alt="festival Collection"
-                      fill
-                      sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
-                      style={{ objectFit: 'contain' }}
-                    />
+
+                  <div className={`offer-card ${1 === 1 ? 'offset-up' : ''}`}>
+                    <div className="offer-card-image">
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
+                        <Image
+                          src="/images/image.png"
+                          alt="couple combo deal"
+                          fill
+                          sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
+                          style={{ objectFit: 'contain' }}
+                        />
+                      </div>
+                      <div className="discount-tag">₹2,000/- OFF</div>
+                    </div>
+                    <div className="offer-card-content">
+                      <h3>Couple Combo Deal</h3>
+                      <p>When you buy both bride & groom outfits</p>
+                      <span className="validity-date">Limited time offer</span>
+                      <a href="#" className="claim-button">Claim Offer</a>
+                    </div>
                   </div>
-                  <div className="discount-tag">25% OFF</div>
-                </div>
-                <div className="offer-card-content">
-                  <h3>Festival Collection</h3>
-                  <p>On ethnic wear for all occasions</p>
-                  <span className="validity-date">Ends February 28, 2025</span>
-                  <a href="#" className="claim-button">Claim Offer</a>
-                </div>
-              </div>
+
+                  <div className="offer-card">
+                    <div className="offer-card-image">
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
+                        <Image
+                          src="/images/festival.png"
+                          alt="festival Collection"
+                          fill
+                          sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
+                          style={{ objectFit: 'contain' }}
+                        />
+                      </div>
+                      <div className="discount-tag">25% OFF</div>
+                    </div>
+                    <div className="offer-card-content">
+                      <h3>Festival Collection</h3>
+                      <p>On ethnic wear for all occasions</p>
+                      <span className="validity-date">Ends February 28, 2025</span>
+                      <a href="#" className="claim-button">Claim Offer</a>
+                    </div>
+                  </div>
+                </>
+              )}
+              {offerEditorOpen && (
+                <OfferEditorModal
+                  open={offerEditorOpen}
+                  item={editingOffer}
+                  onClose={() => setOfferEditorOpen(false)}
+                  onSaved={(saved) => {
+                    // update local state
+                    setOffersContent((prev) => {
+                      if (!Array.isArray(prev)) return [saved];
+                      const idx = prev.findIndex(p => p.id === saved.id);
+                      if (idx === -1) return [saved, ...prev];
+                      const copy = [...prev]; copy[idx] = saved; return copy;
+                    });
+                    setOfferEditorOpen(false);
+                  }}
+                  onDeleted={(deletedId) => {
+                    setOffersContent((prev) => Array.isArray(prev) ? prev.filter(x => x.id !== deletedId) : prev);
+                  }}
+                />
+              )}
             </div>
           </div>
           {/* Global WhatsApp button is provided in app/layout.js */}
@@ -235,3 +337,4 @@ export default function Offer() {
     </>
   );
 }
+
