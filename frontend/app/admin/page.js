@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { auth } from '../api/auth/[...nextauth]/route';
 import AdminClient from './AdminClient';
 import Link from 'next/link';

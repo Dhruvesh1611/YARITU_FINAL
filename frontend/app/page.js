@@ -6,7 +6,7 @@ import HomePageClient from './HomePageClient';
 async function getHomepageData() {
   try {
     // Apne server ka poora URL yahan daalein
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://https://your-vercel-domain.vercel.app:3000';
     
     const [heroRes, storesRes, trendingRes] = await Promise.all([
       fetch(`${baseUrl}/api/hero`, { cache: 'no-store' }),
