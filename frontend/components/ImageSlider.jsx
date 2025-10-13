@@ -168,7 +168,7 @@ const ImageSlider = () => {
         &#10095;
       </button>
       {session && (
-        <div style={{ position: 'absolute', right: 12, top: 12 }}>
+        <div style={{ position: 'absolute', right: 132, top: -40 }}>
           <button onClick={() => setIsAddOpen(true)}>Add Featured</button>
         </div>
       )}

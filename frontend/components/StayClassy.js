@@ -68,9 +68,10 @@ const StayClassy = () => {
   function openEdit(index) {
     const meta = metadata[index] || {};
     setEditingIndex(index);
-    setCategory(meta.category || 'men');
-    setCollectionName(meta.collectionName || 'Koti');
-    setOtherCollection(meta.otherCollection || '');
+  // keep category and collection values as-is; editing modal will only change the image
+  setCategory(meta.category || 'men');
+  setCollectionName(meta.collectionName || 'Koti');
+  setOtherCollection(meta.otherCollection || '');
     
     // NEW: Reset all file and upload states when opening modal
     setFilePreview(meta.imageUrl || null); // Show existing new image if available
@@ -116,16 +117,13 @@ const StayClassy = () => {
       setUploading(false);
     }
 
-    // Step 2: Save the metadata
-    const coll = collectionName === 'other' ? (otherCollection || 'other') : collectionName;
+    // Step 2: Save only the image URL. Keep existing category/collection data intact.
+    const existing = metadata[editingIndex] || {};
     const next = {
       ...metadata,
       [editingIndex]: {
-        ...metadata[editingIndex],
-        category,
-        collectionName: coll,
-        otherCollection: collectionName === 'other' ? otherCollection : '',
-        imageUrl: newImageUrl, // Save the new Cloudinary URL
+        ...existing,
+        imageUrl: newImageUrl, // Save the new Cloudinary URL only
       },
     };
     setMetadata(next);
@@ -186,17 +184,13 @@ const StayClassy = () => {
                 <div className="flip-card-front"></div>
                 <div className="flip-card-back">
                   <Image
-                    src={displayImage} // UPDATED to show new image
+                    src={displayImage}
                     alt={`Collection item ${index + 1}`}
                     fill
                     sizes="(max-width: 768px) 20vw, 10vw"
                     style={{ objectFit: 'cover' }}
                   />
-                   {meta.category && (
-                    <div className="meta-badge" style={{ position: 'absolute', left: 8, bottom: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '4px 8px', borderRadius: 6, fontSize: 12, textTransform: 'capitalize' }}>
-                      {meta.category} / {meta.collectionName}
-                    </div>
-                  )}
+                  {/* meta-badge removed: category and collection info intentionally hidden */}
                 </div>
               </div>
               {isAdmin && (
@@ -211,7 +205,7 @@ const StayClassy = () => {
       </button>
 
       {/* Redesigned Edit Modal with Upload Progress */}
-      {editingIndex !== null && (
+      {editingIndex !== null ? (
         <div className="modalBackdrop" onClick={closeEdit}>
           <div className="modalContent" onClick={(e) => e.stopPropagation()}>
             <h3 className="modalTitle">Edit Stay Classy Item</h3>
@@ -220,68 +214,38 @@ const StayClassy = () => {
                 <div className="imagePreview">
                   <img src={filePreview || collectionImages[editingIndex]} alt="preview" />
                 </div>
-                 <label htmlFor="image-upload" className={`uploadButton ${uploading ? 'disabled' : ''}`}>
-                    Choose File
-                  </label>
-                  <input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hiddenFileInput"
-                    onChange={handleFileSelect} // UPDATED
-                    disabled={uploading}
-                  />
-                  {/* NEW: Progress Bar and Error Message */}
-                  {uploading && (
-                     <div className="progressContainer">
-                        <div className="progressBar" style={{ width: `${uploadProgress}%` }}>
-                           {uploadProgress > 10 && `${uploadProgress}%`}
-                        </div>
-                     </div>
-                  )}
-                  {uploadError && <div className="errorMessage">{uploadError}</div>}
-              </div>
-
-              <div className="formColumn">
-                <div className="formGroup">
-                  <label htmlFor="category">Category</label>
-                  <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
-                    <option value="men">Men</option>
-                    <option value="women">Women</option>
-                    <option value="children">Children</option>
-                  </select>
-                </div>
-                <div className="formGroup">
-                  <label htmlFor="collectionName">Collection Name</label>
-                  <select id="collectionName" value={collectionName} onChange={(e) => setCollectionName(e.target.value)}>
-                    <option value="Koti">Koti</option>
-                    <option value="Suit">Suit</option>
-                    <option value="Blazer">Blazer</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                {collectionName === 'other' && (
-                  <div className="formGroup">
-                    <label htmlFor="otherCollection">Other Collection Name</label>
-                    <input
-                      id="otherCollection"
-                      value={otherCollection}
-                      onChange={(e) => setOtherCollection(e.target.value)}
-                      placeholder="Enter collection name"
-                    />
+                <label htmlFor="image-upload" className={`uploadButton ${uploading ? 'disabled' : ''}`}>
+                  Choose File
+                </label>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hiddenFileInput"
+                  onChange={handleFileSelect}
+                  disabled={uploading}
+                />
+                {/* NEW: Progress Bar and Error Message */}
+                {uploading ? (
+                  <div className="progressContainer">
+                    <div className="progressBar" style={{ width: `${uploadProgress}%` }}>
+                      {uploadProgress > 10 && `${uploadProgress}%`}
+                    </div>
                   </div>
-                )}
-                <div className="actionButtons">
-                  <button onClick={closeEdit} className="btnCancel" disabled={uploading}>Cancel</button>
-                  <button onClick={saveEdit} className="btnSave" disabled={uploading}>
-                    {uploading ? 'Uploading...' : 'Save'}
-                  </button>
+                ) : null}
+                {uploadError ? <div className="errorMessage">{uploadError}</div> : null}
+
+                <div style={{ marginTop: 12 }}>
+                  <div className="actionButtons" style={{ justifyContent: 'space-between' }}>
+                    <button onClick={closeEdit} className="btnCancel" disabled={uploading}>Cancel</button>
+                    <button onClick={saveEdit} className="btnSave" disabled={uploading}>{uploading ? 'Uploading...' : 'Save'}</button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       <style jsx>{`
         /* Modal Styles */
@@ -292,7 +256,7 @@ const StayClassy = () => {
         }
         .modalContent {
             background: #ffffff; padding: 24px; border-radius: 12px;
-            width: 760px; max-width: 95%; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: auto; max-width: 95%; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
         .modalTitle {
             margin: 0 0 20px 0; text-align: center; font-size: 24px; font-weight: 600; color: #333;

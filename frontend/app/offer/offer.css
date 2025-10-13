@@ -226,7 +226,28 @@
 .offer-page .store-photo:hover {
     transform: scale(1.02);
 }
+ @media (max-width: 360px) {
+        .offer-page .subscribe-form {
+            flex-direction: column;
+            /* gap: 10px; */
+            align-items: stretch;
+            max-width: 360px;
+            /* padding: 0 8px; */
+        }
 
+        .offer-page .subscribe-form input {
+            border-radius: 0px !important;
+            /* padding: 12px 14px; */
+        }
+
+        .offer-page .subscribe-form button {
+            border-radius: 0px !important;
+            width: 100%;
+            min-width: 0;
+        }
+    }
+
+/* Landscape phone adjustments */
 @media (max-width: 1024px) {
     .offer-page .store-selector-container {
         flex-direction: column;
@@ -424,7 +445,7 @@
     width: 100%;
     height: 100%;
     /* fill the image area so visuals are consistent across cards */
-    object-fit: cover;
+    object-fit: fill;
     object-position: top;
 }
 .offer-page .discount-tag {

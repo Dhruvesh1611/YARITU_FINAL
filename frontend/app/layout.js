@@ -32,7 +32,12 @@ export default function RootLayout({ children, session }) {
             {children}
           </main>
           <Footer /> {/* <-- Footer bhi bahar hai */}
-          <WhatsAppChat />
+          <WhatsAppChat
+            phoneNumber="919624797625"
+            headerTitle="Welcome to YARITU"
+            headerCaption="We'll reply shortly!"
+            placeholder="Type your message..."
+          />
         </Providers>
       </body>
     </html>

@@ -4,6 +4,7 @@ import { Jaipur } from "../../components/Jaipur";
 import { Jamnagar } from "../../components/Jamnagar";
 import { Surat } from "../../components/Surat";
 
+
 export const Home = () => {
   return (
     <div

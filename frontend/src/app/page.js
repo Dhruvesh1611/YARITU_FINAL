@@ -1,6 +1,6 @@
 import Image from "next/image";
 import styles from "./page.module.css";
-
+import WhatsAppChat from '../../components/WhatsAppChat'; 
 export default function Home() {
   return (
     <div className={styles.page}>
