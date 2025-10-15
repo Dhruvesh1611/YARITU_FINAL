@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '../../../../lib/dbConnect'; // Adjust path if necessary
-import Offer from '../../../../models/Offer'; // Adjust path if necessary
+import dbConnect from '../../../lib/dbConnect';
+import Offer from '../../../models/Offer';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary with your credentials

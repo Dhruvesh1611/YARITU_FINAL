@@ -580,7 +580,12 @@ return (
 
 	{jewelleryMode && (
 		<>
-			<select value={selectedStoreFilter} onChange={(e) => setSelectedStoreFilter(e.target.value)} style={{ marginRight: 8 }}>
+			<select
+				value={selectedStoreFilter}
+				onChange={(e) => setSelectedStoreFilter(e.target.value)}
+				className={styles.storeFilterSelect}
+				style={{ marginRight: 8 }}
+			>
 				<option value="">All Stores</option>
 				{storesList.map(s => <option key={s._id || s.name} value={s.name}>{s.name}</option>)}
 			</select>
