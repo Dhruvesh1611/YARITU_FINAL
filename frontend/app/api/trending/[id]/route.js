@@ -9,8 +9,8 @@ export async function PUT(request, { params }) {
 
 	try {
 		await dbConnect();
-		const body = await request.json();
-		const { id } = params;
+	const body = await request.json();
+	const { id } = await params;
 		const updated = await TrendingVideo.findByIdAndUpdate(id, body, { new: true });
 		if (!updated) return NextResponse.json({ success: false, message: 'Not found' }, { status: 404 });
 		return NextResponse.json({ success: true, data: updated });
@@ -24,8 +24,8 @@ export async function DELETE(request, { params }) {
 	if (!session) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
 
 	try {
-		await dbConnect();
-		const { id } = params;
+	await dbConnect();
+	const { id } = await params;
 		const deleted = await TrendingVideo.findByIdAndDelete(id);
 		if (!deleted) return NextResponse.json({ success: false, message: 'Not found' }, { status: 404 });
 		return NextResponse.json({ success: true, data: { id } });

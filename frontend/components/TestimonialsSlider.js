@@ -6,7 +6,7 @@ import AddTestimonialModal from './AddTestimonialModal';
 import EditTestimonialModal from './EditTestimonialModal';
 import { useSession } from 'next-auth/react';
 
-const TestimonialsSlider = () => {
+const TestimonialsSlider = ({ location = 'home' }) => {
     const [isPaused, setIsPaused] = useState(false);
     const [items, setItems] = useState([]);
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -16,7 +16,7 @@ const TestimonialsSlider = () => {
 
     const fetchItems = async () => {
         try {
-            const res = await fetch('/api/testimonials');
+            const res = await fetch(`/api/testimonials?location=${encodeURIComponent(location)}`);
             const json = await res.json().catch(() => null);
             if (res.ok && json?.success) {
                 setItems([...json.data, ...json.data]); // Duplicate for infinite scroll
@@ -31,9 +31,24 @@ const TestimonialsSlider = () => {
 
     useEffect(() => {
         fetchItems();
-    }, []);
+    }, [location]);
 
-    const handleAdded = (newItem) => fetchItems();
+    const handleAdded = (newItem) => {
+        console.debug('TestimonialsSlider.handleAdded called with', newItem);
+        // If caller provides the newly created item, update state optimistically
+        if (newItem) {
+            try {
+                const unique = items.slice(0, items.length / 2);
+                const newUnique = [newItem, ...unique];
+                setItems([...newUnique, ...newUnique]);
+                console.debug('TestimonialsSlider updated items optimistically');
+                return;
+            } catch (e) {
+                // fallback to full refetch
+            }
+        }
+        fetchItems();
+    };
     const handleUpdated = (updated) => fetchItems();
     const handleDeleted = (deleted) => fetchItems();
 
@@ -64,8 +79,8 @@ const TestimonialsSlider = () => {
                 />
             </div>
 
-            {isAddOpen && <AddTestimonialModal onClose={() => setIsAddOpen(false)} onAdded={handleAdded} />}
-            {editing && <EditTestimonialModal item={editing} onClose={() => setEditing(null)} onUpdated={handleUpdated} onDeleted={handleDeleted} />}
+                {isAddOpen && <AddTestimonialModal location={location} onClose={() => setIsAddOpen(false)} onAdded={handleAdded} />}
+            {editing && <EditTestimonialModal location={location} item={editing} onClose={() => setEditing(null)} onUpdated={handleUpdated} onDeleted={handleDeleted} />}
 
             {/* Admin Management Grid - Redesigned */}
             {isAdmin && uniqueItems.length > 0 && (
@@ -81,7 +96,7 @@ const TestimonialsSlider = () => {
                         {uniqueItems.map((item) => (
                             <div key={item._id || item.id} className={styles.adminRow}>
                                 <div className={styles.cellUser}>
-                                    <img src={item.avatar || '/images/Rectangle 4.png'} alt={item.name} className={styles.adminAvatar} />
+                                    <img src={item.avatarUrl  || '/images/Rectangle 4.png'} alt={item.name} className={styles.adminAvatar} />
                                     <span>{item.name || '—'}</span>
                                 </div>
                                 <div className={styles.cellReview}>
@@ -149,7 +164,7 @@ function ClickableTrack({ isPaused, items, onCardClick }) {
                     <div className={styles.cardInner}>
                         <div className={styles.cardTop}>
                             <div className={styles.cardAvatar}>
-                                <Image src={item.avatar || '/images/Rectangle 4.png'} alt={`${item.name} avatar`} width={72} height={72} />
+                                <Image src={item.avatarUrl || '/images/Rectangle 4.png'} alt={`${item.name} avatar`} width={72} height={72} loading="lazy" />
                             </div>
                             <div className={styles.cardMeta}>
                                 <div className={styles.cardName}>{item.name}</div>

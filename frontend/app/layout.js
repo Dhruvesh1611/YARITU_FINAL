@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import Providers from '../components/Providers'; // <-- Naya Providers component import kiya
 import './globals.css';
 import WhatsAppChat from '../components/WhatsAppChat';
+import { WHATSAPP_NUMBER } from '../lib/siteConfig';
 
 // --- Font Definitions (Yeh code waisa hi rahega) ---
 const poppins = Poppins({ subsets: ['latin'], weight: ['400', '600'], display: 'swap', variable: '--font-poppins' });
@@ -33,7 +34,7 @@ export default function RootLayout({ children, session }) {
           </main>
           <Footer /> {/* <-- Footer bhi bahar hai */}
           <WhatsAppChat
-            phoneNumber="919624797625"
+            phoneNumber={WHATSAPP_NUMBER}
             headerTitle="Welcome to YARITU"
             headerCaption="We'll reply shortly!"
             placeholder="Type your message..."

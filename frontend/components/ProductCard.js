@@ -40,7 +40,7 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
                         width={300}
                         height={349}
                         unoptimized={true}
-                        priority
+                        loading="lazy"
                         onClick={() => onProductClick({ ...product, image: imageUrl, name: title, images: allImages })}
                     />
                 ) : (

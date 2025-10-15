@@ -80,6 +80,7 @@ export default function About() {
           <p>To become the global leader in luxury wedding fashion, setting new standards of excellence in design, craftsmanship, and customer experience. We envision a world where every celebration is adorned with the finest artistry and timeless beauty.</p>
         </div>
       </section>
+      
       <section id="about-stores" className={`${styles.storesSection} ${styles.aboutStores}`}>
         <AboutStoresClient />
       </section>

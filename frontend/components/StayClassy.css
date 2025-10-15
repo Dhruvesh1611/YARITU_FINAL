@@ -36,8 +36,8 @@
   width: 80vw;
   height: 80vw;
   max-width: 1000px;
-  max-height: 900px;
-  gap: 5px;
+  max-height: 800px;
+  gap: 2px;
 }
 
 .flip-card {
@@ -65,7 +65,7 @@
   height: 100%;
   -webkit-backface-visibility: hidden; /* Safari */
   backface-visibility: hidden;
-  border-radius: 10px;
+  border-radius: 5px;
 }
 
 .flip-card-front {
@@ -115,7 +115,7 @@
     height: 92vw;
     max-width: 420px;
     max-height: 420px;
-    gap: 6px;
+    gap: 2px;
   }
 
   /* Hide the last row (tiles 17-25 in 5x5) so only the central 4x4 area shows */

@@ -332,7 +332,7 @@
     }
     .offer-page .reviews-title {
     font-family: var(--font-heading);
-    font-size: 40px;
+    font-size: 36px;
     font-weight: 600;
     line-height: 1.2;
     color: var(--color-dark-gray);
@@ -445,8 +445,8 @@
     width: 100%;
     height: 100%;
     /* fill the image area so visuals are consistent across cards */
-    object-fit: fill;
-    object-position: top;
+    object-fit: cover;
+    object-position: center;
 }
 .offer-page .discount-tag {
     position: absolute;
@@ -487,9 +487,10 @@
         position: relative;
         background: radial-gradient(ellipse at center, #244562 0%, #1a3548 40%, #0f2433 100%);
         color: #fff;
-        width: 900px;
-        max-width: 92vw;
-        max-height: 85vh;
+    width: 940px; /* slightly narrower */
+    max-width: 96vw;
+    height: 560px; /* further reduced fixed height */
+    max-height: 86vh;
         border-radius: 16px;
         padding: 0;
         box-shadow: 0 40px 80px rgba(9,18,30,0.7);
@@ -504,21 +505,19 @@
 
 /* Two-column modal layout */
 .offer-modal-two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: auto;
-  max-height: 85vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+            min-height: 560px; /* ensure both columns match modal height */
+    max-height: 92vh;
 }
 .offer-modal-left {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 20px;
-  background: linear-gradient(180deg, rgba(61, 120, 168, 0.08) 0%, rgba(3, 16, 29, 0.12) 100%);
-  overflow: hidden;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: block;
+    padding: 0;
+    background: transparent; /* image fills the space */
+    overflow: hidden;
 }
 .offer-modal-logo {
   width: 100%;
@@ -541,21 +540,18 @@
   height: auto;
 }
 .offer-modal-brand-img {
-  flex: 1;
-  display: flex;
-  border: 2px solid rgb(127, 123, 123);
-  border-radius: 10px;
-  align-items: center;
-  justify-content: center;
-  max-height: 400px;
-  overflow: hidden;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
-.offer-modal-brand-img img {
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  object-fit: cover;
+.offer-modal-brand-img img,
+.offer-modal-brand-img span {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .offer-modal-right {
   text-align: center;
@@ -964,3 +960,65 @@
         background: rgba(255,255,255,0.06);
     }
 }
+
+/* Claim toast styles */
+.claim-toast-container {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: -80px; /* hidden by default above viewport */
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 9999;
+    transition: top 360ms cubic-bezier(.2,.9,.2,1), opacity 300ms ease;
+    opacity: 0;
+}
+.claim-toast-container.visible {
+    top: 12px; /* slide down into view */
+    opacity: 1;
+}
+.claim-toast {
+    background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); /* vibrant green */
+    color: #ffffff;
+    padding: 14px 20px;
+    border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(46, 204, 113, 0.18);
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 320px;
+    max-width: 880px;
+    border: 1px solid rgba(18, 115, 55, 0.25);
+    transform-origin: center top;
+    animation: toast-pop 480ms cubic-bezier(.2,.9,.2,1);
+}
+.claim-toast-text {
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: #fff;
+    font-weight: 700;
+}
+
+@keyframes toast-pop {
+    0% { transform: scale(0.95) translateY(-6px); opacity: 0; }
+    60% { transform: scale(1.02) translateY(0); opacity: 1; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Small celebratory sparks using pseudo element on the container */
+.claim-toast::before {
+    content: "\2728"; /* sparkle emoji fallback */
+    margin-left: -6px;
+    opacity: 0.95;
+    font-size: 20px;
+    color: rgba(255,255,255,0.95);
+}
+
+/* Responsive: smaller on mobile */
+@media (max-width: 480px) {
+    .claim-toast { padding: 12px 14px; min-width: 260px; border-radius: 10px; }
+    .claim-toast-text { font-size: 14px; }
+}
+

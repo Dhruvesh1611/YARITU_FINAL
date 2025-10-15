@@ -18,6 +18,14 @@ const animationStyles = `
 `;
 
 export default function EditStoreModal({ open, onClose, store, idx, onSaved }) {
+  // Defensive: ensure idx is a valid number to avoid sending bad payloads to API
+  const numericIdx = typeof idx === 'number' ? idx : (typeof idx === 'string' && idx.trim() !== '' ? Number(idx) : NaN);
+  useEffect(() => {
+    if (open && (Number.isNaN(numericIdx) || !Number.isFinite(numericIdx))) {
+      alert('Cannot open Edit Store modal: invalid store index. Please try again.');
+      onClose && onClose();
+    }
+  }, [open, numericIdx, onClose]);
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [file, setFile] = useState(null);
@@ -86,7 +94,7 @@ export default function EditStoreModal({ open, onClose, store, idx, onSaved }) {
         reader.readAsDataURL(file);
         imageBase64 = await promise;
       }
-      const payload = { idx, address, phone, imageBase64, imageName };
+  const payload = { idx: numericIdx, address, phone, imageBase64, imageName };
       const res = await fetch('/api/admin/stores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

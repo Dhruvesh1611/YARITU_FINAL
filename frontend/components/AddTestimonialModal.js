@@ -1,62 +1,124 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-export default function EditTestimonialModal({ item, onClose, onUpdated, onDeleted }) {
+export default function AddTestimonialModal({ location = 'home', item = null, onClose, onAdded, onUpdated, onDeleted }) {
     const [name, setName] = useState(item?.name || '');
     const [quote, setQuote] = useState(item?.quote || '');
     const [rating, setRating] = useState(item?.rating || 5);
-    const [avatar, setAvatar] = useState(item?.avatar || '');
+    // selected file and preview
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewAvatar, setPreviewAvatar] = useState(item?.avatarUrl || item?.avatar || '');
     const [loading, setLoading] = useState(false);
-    const [previewAvatar, setPreviewAvatar] = useState(item?.avatar || '');
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+    // Helper: unsigned Cloudinary upload (images) with XHR to report progress
+    const uploadToCloudinaryUnsigned = (cloudName, uploadPreset, file, onProgress) => {
+        return new Promise((resolve, reject) => {
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', uploadPreset);
+            fd.append('folder', 'YARITU');
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && typeof onProgress === 'function') {
+                    const pct = Math.round((event.loaded * 100) / event.total);
+                    onProgress(pct);
+                }
+            };
+            xhr.onload = () => {
+                try {
+                    const parsed = JSON.parse(xhr.responseText);
+                    if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
+                    else reject(new Error(parsed?.error?.message || `Upload failed: ${xhr.status}`));
+                } catch (err) {
+                    reject(new Error('Failed to parse upload response'));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during upload'));
+            xhr.send(fd);
+        });
+    };
 
     useEffect(() => {
         setName(item?.name || '');
         setQuote(item?.quote || '');
         setRating(item?.rating || 5);
-        setAvatar(item?.avatar || '');
-        setPreviewAvatar(item?.avatar || ''); // Set initial preview
+        setSelectedFile(null);
+        setPreviewAvatar(item?.avatarUrl || item?.avatar || ''); // Set initial preview
     }, [item]);
 
     // Handle image upload and create a temporary URL for preview
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Note: In a real app, you would upload this file to a service (like Cloudinary)
-            // and get a URL back. For now, we use a local blob URL for preview.
             const url = URL.createObjectURL(file);
             setPreviewAvatar(url);
-            // You would also set the file object in state to be uploaded
-            // setAvatar(file); 
+            setSelectedFile(file);
         }
     };
 
     const handleUpdate = async () => {
         setLoading(true);
         try {
-            // In a real implementation, you would first upload the new avatar file
-            // if it has changed, get the new URL, and then send that URL in the PUT request.
-            const res = await fetch(`/api/testimonials/${item._id || item.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, quote, rating, avatar: previewAvatar }), // Sending the preview URL for now
-            });
-            const json = await res.json().catch(() => null);
-            if (res.ok && json && (json.success || json.data)) {
-                onUpdated && onUpdated(json.data || json);
-                onClose && onClose();
+            // If a new file was selected, upload it directly to Cloudinary unsigned so client shows progress
+            let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
+            if (selectedFile) {
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
+                if (!cloudName || !uploadPreset) throw new Error('Cloudinary unsigned config missing');
+                setUploadProgress(0);
+                const cloudResp = await uploadToCloudinaryUnsigned(cloudName, uploadPreset, selectedFile, (pct) => setUploadProgress(pct));
+                avatarUrlToSend = cloudResp?.secure_url || cloudResp?.secureUrl || cloudResp?.url || avatarUrlToSend;
+                // update preview to the final URL when available
+                setPreviewAvatar(avatarUrlToSend);
+            }
+            // If item exists -> update (PUT), else create new (POST)
+            if (item && (item._id || item.id)) {
+                const res = await fetch(`/api/testimonials/${item._id || item.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend, location }),
+                });
+                const json = await res.json().catch(() => null);
+                if (res.ok && json && (json.success || json.data)) {
+                    onUpdated && onUpdated(json.data || json);
+                    onClose && onClose();
+                } else {
+                    console.error('Update failed', json);
+                    alert('Failed to update testimonial');
+                }
             } else {
-                console.error('Update failed', json);
-                alert('Failed to update testimonial');
+                console.debug('Creating testimonial payload', { name, quote, rating, avatarUrl: avatarUrlToSend, location });
+                const res = await fetch('/api/testimonials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend, location }),
+                });
+                const json = await res.json().catch(() => null);
+                console.debug('Create response', res.status, json);
+                if (res.ok && json && json.success) {
+                    const created = json.data || json;
+                    onAdded && onAdded(created);
+                    onClose && onClose();
+                } else {
+                    console.error('Create failed', json);
+                    alert('Failed to create testimonial');
+                }
             }
         } catch (err) {
             console.error(err);
-            alert('Failed to update testimonial');
+            alert('Failed to update testimonial: ' + (err?.message || ''));
         } finally {
             setLoading(false);
+            setUploadProgress(0);
         }
     };
 
     const handleDelete = async () => {
+        if (!item || !(item._id || item.id)) return;
         if (!confirm('Are you sure you want to delete this testimonial?')) return;
         setLoading(true);
         try {
@@ -79,7 +141,7 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
         <>
             <div className="modal-backdrop" onClick={onClose}>
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <h3 className="modal-title">Edit Review</h3>
+                    <h3 className="modal-title">{item ? 'Edit Review' : 'Add Review'}</h3>
                     <div className="modal-body">
                         {/* Left Side: Form Fields */}
                         <div className="form-fields">

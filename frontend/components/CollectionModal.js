@@ -2,22 +2,28 @@
 import React, { useState, useRef, useEffect, useReducer } from 'react';
 import './CollectionModal.css'; // <-- Import the new CSS file
 
-// --- Constants for select options (better organization) ---
-const CATEGORIES = ['Men', 'Women', 'Children'];
+// --- Constants for select options (stored/displayed in UPPERCASE) ---
+const CATEGORIES = ['MEN', 'WOMEN', 'CHILDREN'];
 
 const OPTIONS_BY_CATEGORY = {
-  Men: {
-    occasions: ['Wedding', 'Haldi', 'Reception'],
-    collectionTypes: ['Sherwani', 'Suit', 'Indo-Western', 'Blazer'],
+  MEN: {
+    occasions: ['WEDDING', 'HALDI', 'RECEPTION'],
+    collectionTypes: ['SHERWANI', 'SUIT', 'INDO-WESTERN', 'BLAZER'],
   },
-  Women: {
-    occasions: ['Wedding', 'Haldi', 'Sangeet'],
-    collectionTypes: ['Sari', 'Lehenga', 'Gown'],
+  WOMEN: {
+    occasions: ['WEDDING', 'HALDI', 'SANGEET'],
+    collectionTypes: ['SARI', 'LEHENGA', 'GOWN'],
   },
-  Children: {
-    occasions: ['Birthday', 'Festival', 'Wedding'],
-    collectionTypes: ['Kurta', 'Frock', 'Lehenga'],
+  CHILDREN: {
+    occasions: ['BIRTHDAY', 'FESTIVAL', 'WEDDING'],
+    collectionTypes: ['KURTA', 'FROCK', 'LEHENGA'],
   }
+};
+
+// Children-specific grouping (BOYS / GIRLS) and their types (UPPERCASE)
+const CHILDREN_GROUPS = {
+  BOYS: ['SUIT', 'KOTI', 'SHIRT-PENT', 'DHOTI'],
+  GIRLS: ['FROCK', 'LEHENGA', 'GOWN', 'ANARKALI SUITS'],
 };
 
 // --- Reducer for complex form state management ---
@@ -26,7 +32,7 @@ function formReducer(state, action) {
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
     case 'RESET_DEPENDENT_FIELDS':
-      return { ...state, occasion: '', collectionType: '', otherOccasion: '', otherCollectionType: '' };
+      return { ...state, occasion: '', collectionType: '', otherOccasion: '', otherCollectionType: '', collectionGroup: '' };
     case 'LOAD_INITIAL':
       return { ...action.payload };
     default:
@@ -35,7 +41,7 @@ function formReducer(state, action) {
 }
 
 // --- Main Component ---
-export default function CollectionModal({ initial = null, onClose, onSaved }) {
+export default function CollectionModal({ initial = null, onClose, onSaved, metaOptions = {}, collections = [] }) {
   // Determine if we are in "edit" mode
   const isEditMode = Boolean(initial?._id);
 
@@ -43,24 +49,31 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
   const initialState = {
     title: initial?.title || '',
     description: initial?.description || '',
-    category: initial?.category || 'Men',
-    occasion: initial?.occasion || '',
-    collectionType: initial?.collectionType || '',
+    productId: initial?.productId || '',
+    category: (initial?.category || 'MEN').toString().toUpperCase(),
+    occasion: (initial?.occasion || '').toString().toUpperCase(),
+  collectionGroup: (initial?.collectionGroup || '').toString().toUpperCase(),
+    collectionType: (initial?.collectionType || '').toString().toUpperCase(),
     price: initial?.price || '',
     discountedPrice: initial?.discountedPrice || '',
     status: initial?.status || 'Available',
     isFeatured: !!initial?.isFeatured,
     tags: (initial?.tags || []).join(', '),
-    otherOccasion: (initial?.occasion && !OPTIONS_BY_CATEGORY.Men.occasions.includes(initial.occasion) && !OPTIONS_BY_CATEGORY.Women.occasions.includes(initial.occasion) && !OPTIONS_BY_CATEGORY.Children.occasions.includes(initial.occasion)) ? initial.occasion : '',
-    otherCollectionType: (initial?.collectionType && !OPTIONS_BY_CATEGORY.Men.collectionTypes.includes(initial.collectionType) && !OPTIONS_BY_CATEGORY.Women.collectionTypes.includes(initial.collectionType) && !OPTIONS_BY_CATEGORY.Children.collectionTypes.includes(initial.collectionType)) ? initial.collectionType : ''
+  otherOccasion: (initial?.occasion && !OPTIONS_BY_CATEGORY.MEN?.occasions?.includes(initial.occasion.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.WOMEN?.occasions?.includes(initial.occasion.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.CHILDREN?.occasions?.includes(initial.occasion.toString().toUpperCase())) ? initial.occasion.toString().toUpperCase() : '',
+  otherCollectionType: (initial?.collectionType && !OPTIONS_BY_CATEGORY.MEN?.collectionTypes?.includes(initial.collectionType.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.WOMEN?.collectionTypes?.includes(initial.collectionType.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.CHILDREN?.collectionTypes?.includes(initial.collectionType.toString().toUpperCase())) ? initial.collectionType.toString().toUpperCase() : ''
   };
 
   const [state, dispatch] = useReducer(formReducer, initialState);
-  const [mainImagePreview, setMainImagePreview] = useState(initial?.imageUrl || '');
+  // Accept multiple possible image key names from the collection document
+  const existingMainImage = initial?.mainImage || initial?.imageUrl || initial?.image || '';
+  const existingMainImage2 = initial?.mainImage2 || initial?.mainImage2Url || initial?.mainImage2Url || '';
+  const existingOtherImages = initial?.otherImages || initial?.otherImageUrls || initial?.otherImageUrls || [];
+
+  const [mainImagePreview, setMainImagePreview] = useState(existingMainImage || '');
   const [mainImageFile, setMainImageFile] = useState(null);
-  const [mainImage2Preview, setMainImage2Preview] = useState(initial?.mainImage2 || '');
+  const [mainImage2Preview, setMainImage2Preview] = useState(existingMainImage2 || '');
   const [mainImage2File, setMainImage2File] = useState(null);
-  const [otherImagesPreview, setOtherImagesPreview] = useState(initial?.otherImages || []);
+  const [otherImagesPreview, setOtherImagesPreview] = useState(Array.isArray(existingOtherImages) ? existingOtherImages : []);
   const [otherImagesFiles, setOtherImagesFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -118,11 +131,11 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
   // --- Handlers ---
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    dispatch({
-      type: 'SET_FIELD',
-      field: name,
-      value: type === 'checkbox' ? checked : value,
-    });
+    // Normalize certain fields to uppercase for consistency
+    const normalizedValue = (name === 'category' || name === 'occasion' || name === 'collectionType' || name === 'collectionGroup')
+      ? (type === 'checkbox' ? checked : value.toString().toUpperCase())
+      : (type === 'checkbox' ? checked : value);
+    dispatch({ type: 'SET_FIELD', field: name, value: normalizedValue });
      // Clear error for the field when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
@@ -187,9 +200,77 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
 
   const validateForm = () => {
     const newErrors = {};
+    const missing = [];
+
     if (!state.title.trim()) newErrors.title = 'Title is required.';
     if (!mainImagePreview && !mainImageFile) newErrors.mainImage = 'A main image is required.';
+
+    // Product ID required
+    if (!state.productId || !state.productId.toString().trim()) {
+      missing.push('Product ID');
+      newErrors.productId = 'Product ID is required and must be unique.';
+    }
+
+    // Category required
+    if (!state.category || !state.category.toString().trim()) {
+      missing.push('Category');
+      newErrors.category = 'Category is required.';
+    }
+
+    // For CHILDREN require collectionGroup (BOYS/GIRLS), otherwise require occasion
+    if (state.category === 'CHILDREN') {
+      if (!state.collectionGroup || !state.collectionGroup.toString().trim()) {
+        missing.push('Collection');
+        newErrors.collectionGroup = 'Please select a collection (BOYS or GIRLS).';
+      }
+    } else {
+      if (!state.occasion || !state.occasion.toString().trim()) {
+        missing.push('Occasion');
+        newErrors.occasion = 'Occasion is required.';
+      }
+    }
+
+    // Collection Type required
+    if (!state.collectionType || !state.collectionType.toString().trim()) {
+      missing.push('Collection Type');
+      newErrors.collectionType = 'Collection Type is required.';
+    }
+
+    // If user provided an 'other' value, ensure it doesn't already exist in metaOptions or in current collections for this category
+    const catKey = state.category ? state.category.toString().toLowerCase() : 'men';
+    const occKey = `occasion_${catKey}`;
+    const typeKey = `collectionType_${catKey}`;
+
+    const existingOccasions = new Set();
+    (metaOptions[occKey] || []).forEach(x => { if (x) existingOccasions.add(x.toString().toLowerCase()); });
+    (collections || []).forEach(c => { if (c.occasion) existingOccasions.add(c.occasion.toString().toLowerCase()); });
+
+    const existingTypes = new Set();
+    (metaOptions[typeKey] || []).forEach(x => { if (x) existingTypes.add(x.toString().toLowerCase()); });
+    (collections || []).forEach(c => { if (c.collectionType) existingTypes.add(c.collectionType.toString().toLowerCase()); });
+
+    if (state.occasion === 'OTHER' && state.otherOccasion && state.otherOccasion.trim()) {
+      if (existingOccasions.has(state.otherOccasion.trim().toLowerCase())) {
+        newErrors.otherOccasion = 'This occasion already exists.';
+      }
+    }
+
+    if (state.collectionType === 'OTHER' && state.otherCollectionType && state.otherCollectionType.trim()) {
+      if (existingTypes.has(state.otherCollectionType.trim().toLowerCase())) {
+        newErrors.otherCollectionType = 'This type already exists.';
+      }
+    }
+
     setErrors(newErrors);
+
+    if (missing.length > 0) {
+      setErrors(prev => ({ ...prev, form: `Please fill the required fields: ${missing.join(', ')}.` }));
+      return false;
+    }
+
+    // If we have other-field duplicate errors, consider form invalid
+    if (newErrors.otherOccasion || newErrors.otherCollectionType) return false;
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -207,37 +288,50 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
         }
     });
 
-    // Handle "Other" logic
-    const finalOccasion = state.occasion === 'Other' ? state.otherOccasion : state.occasion;
+    // Handle "Other" logic (normalize other values to UPPERCASE)
+    const finalOccasion = (state.occasion && state.occasion.toString().toUpperCase() === 'OTHER')
+      ? (state.otherOccasion || '').toString().toUpperCase().trim()
+      : (state.occasion || '').toString().toUpperCase();
     formData.set('occasion', finalOccasion);
-    
-    const finalCollectionType = state.collectionType === 'Other' ? state.otherCollectionType : state.collectionType;
+
+    const finalCollectionType = (state.collectionType && state.collectionType.toString().toUpperCase() === 'OTHER')
+      ? (state.otherCollectionType || '').toString().toUpperCase().trim()
+      : (state.collectionType || '').toString().toUpperCase();
     formData.set('collectionType', finalCollectionType);
 
     // Append image file if it's new
     if (mainImageFile) {
       formData.append('mainImage', mainImageFile);
-    } else if (initial?.imageUrl) {
-      formData.append('imageUrl', initial.imageUrl); // Keep old image
+    } else if (existingMainImage) {
+      // Keep old image URL so the server can reuse it
+      formData.append('imageUrl', existingMainImage);
     }
 
     if (mainImage2File) {
       formData.append('mainImage2', mainImage2File);
-    } else if (initial?.mainImage2) {
-      formData.append('mainImage2Url', initial.mainImage2);
+    } else if (existingMainImage2) {
+      formData.append('mainImage2Url', existingMainImage2);
     }
 
     if (otherImagesFiles.length > 0) {
         otherImagesFiles.forEach(file => {
             formData.append('otherImages', file);
         });
-    } else if (initial?.otherImages) {
-        initial.otherImages.forEach(imgUrl => {
+    } else if (Array.isArray(existingOtherImages) && existingOtherImages.length) {
+        existingOtherImages.forEach(imgUrl => {
             formData.append('otherImagesUrls[]', imgUrl);
         })
     }
     
     try {
+      // Include any newly entered 'other' options so the server can create MetaOption docs
+      if (state.otherOccasion && state.otherOccasion.toString().trim()) {
+        formData.append('newOptions[occasion_' + state.category.toLowerCase() + ']', state.otherOccasion.toString().toUpperCase().trim());
+      }
+      if (state.otherCollectionType && state.otherCollectionType.toString().trim()) {
+        formData.append('newOptions[collectionType_' + state.category.toLowerCase() + ']', state.otherCollectionType.toString().toUpperCase().trim());
+      }
+
       const url = isEditMode ? `/api/collections/${initial._id}` : '/api/collections';
       const method = isEditMode ? 'PUT' : 'POST';
 
@@ -245,10 +339,30 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
       const result = await res.json();
 
       if (res.ok && result.success) {
-        onSaved?.(result.data);
+        // After saving, re-fetch meta-options so parent UI can refresh filter lists immediately
+        try {
+          const metaRes = await fetch('/api/meta-options');
+          const metaJson = await metaRes.json();
+          if (metaRes.ok && metaJson.success) {
+            // Provide updated meta-options to parent via onSaved (if parent expects it)
+            onSaved?.(result.data, metaJson.data);
+          } else {
+            onSaved?.(result.data);
+          }
+        } catch (metaErr) {
+          // If meta-options fetch fails, still call onSaved with the saved doc
+          onSaved?.(result.data);
+        }
+
         onClose?.();
       } else {
-        setErrors({ form: result.error || 'Failed to save the collection. Please try again.' });
+        // Map common server messages to friendlier errors
+        const friendly = (result.error || '').toString();
+        if (friendly.includes('Product ID must be unique') || friendly.includes('duplicate')) {
+          setErrors({ form: 'Product ID already exists. Please choose another.' });
+        } else {
+          setErrors({ form: result.error || 'Failed to save the collection. Please try again.' });
+        }
       }
     } catch (err) {
       console.error(err);
@@ -258,12 +372,49 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
     }
   };
 
-  const categoryOptions = OPTIONS_BY_CATEGORY[state.category] || { occasions: [], collectionTypes: [] };
+  // Derive category options from metaOptions (server-populated) if available, otherwise fall back to static constants
+  const catKeyLower = state.category ? state.category.toString().toLowerCase() : 'men';
+  const derivedOccKey = `occasion_${catKeyLower}`;
+  const derivedTypeKey = `collectionType_${catKeyLower}`;
+  const derivedOccasions = (metaOptions[derivedOccKey] || []).filter(v => v && v.toString().toUpperCase() !== 'OTHER');
+  const derivedTypes = (metaOptions[derivedTypeKey] || []).filter(v => v && v.toString().toUpperCase() !== 'OTHER');
+  const categoryOptions = {
+    occasions: derivedOccasions.length ? derivedOccasions : (OPTIONS_BY_CATEGORY[state.category]?.occasions || []),
+    collectionTypes: derivedTypes.length ? derivedTypes : (OPTIONS_BY_CATEGORY[state.category]?.collectionTypes || []),
+  };
+  // Determine collection type options: for Children use selected group (Boys/Girls), otherwise use category mapping
+  let collectionTypeOptions = [];
+  if (state.category === 'CHILDREN') {
+    // derive types for the selected child group from existing collections (so new saved types appear)
+    const group = state.collectionGroup ? state.collectionGroup.toString().toUpperCase() : '';
+    const derived = [];
+    (collections || []).forEach(c => {
+      try {
+        if ((c.category || '').toString().toUpperCase() === 'CHILDREN') {
+          const g = (c.childCategory || c.collectionGroup || '').toString().toUpperCase();
+          const t = (c.collectionType || '').toString().toUpperCase();
+          if (g && t) {
+            if (!derived.includes(t)) derived.push(t);
+          }
+        }
+      } catch (e) { /* ignore malformed */ }
+    });
+    // if derived list is empty fall back to constants
+    const fallback = state.collectionGroup === 'BOYS' ? CHILDREN_GROUPS.BOYS : (state.collectionGroup === 'GIRLS' ? CHILDREN_GROUPS.GIRLS : []);
+    collectionTypeOptions = derived.length ? derived.filter(t => {
+      // only include types that belong to selected group when group selected
+      if (!group) return true;
+      // we don't have authoritative mapping of type->group; include all derived types when group equals their saved group
+      return (collections || []).some(c => ((c.collectionType||'').toString().toUpperCase() === t) && ((c.childCategory||c.collectionGroup||'').toString().toUpperCase() === group));
+    }) : fallback;
+  } else {
+    collectionTypeOptions = (categoryOptions.collectionTypes || []);
+  }
 
   // --- JSX ---
   return (
-    <div className="modal-overlay">
-      <div className="modal-container">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{isEditMode ? 'Edit Collection' : 'Add New Collection'}</h3>
           <button onClick={onClose} className="close-button">&times;</button>
@@ -278,6 +429,13 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
               {errors.title && <span className="error-text">{errors.title}</span>}
             </div>
 
+            {/* Product ID */}
+            <div className="form-group">
+              <label htmlFor="productId">Product ID <span style={{fontSize:12,fontWeight:400,color:'#666'}}>(required, must be unique)</span></label>
+              <input type="text" id="productId" name="productId" value={state.productId} onChange={handleChange} />
+              {errors.productId && <span className="error-text">{errors.productId}</span>}
+            </div>
+
             {/* Description */}
             <div className="form-group">
               <label htmlFor="description">Description</label>
@@ -287,39 +445,62 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
             {/* Category */}
             <div className="form-group">
                 <label htmlFor="category">Category</label>
-                <select id="category" name="category" value={state.category} onChange={handleChange}>
-                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
+        <select id="category" name="category" value={state.category} onChange={handleChange}>
+          {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+        </select>
             </div>
             
-            {/* Occasion */}
-            <div className="form-group">
-                <label htmlFor="occasion">Occasion</label>
-                <select id="occasion" name="occasion" value={state.occasion} onChange={handleChange}>
-                    <option value="">Select Occasion</option>
-                    {categoryOptions.occasions.map(occ => <option key={occ} value={occ}>{occ}</option>)}
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            {state.occasion === 'Other' && (
-                <div className="form-group indented">
-                    <input type="text" name="otherOccasion" placeholder="Specify other occasion" value={state.otherOccasion} onChange={handleChange} />
+            {/* Occasion (or Collection group for Children) */}
+            {state.category !== 'CHILDREN' ? (
+              <>
+                <div className="form-group">
+                    <label htmlFor="occasion">Occasion</label>
+                    <select id="occasion" name="occasion" value={state.occasion} onChange={handleChange}>
+                      <option value="">SELECT OCCASION</option>
+                      {/* If the current value isn't in the known list, show it so editors see the saved value */}
+                      {state.occasion && state.occasion !== '' && !categoryOptions.occasions.includes(state.occasion) && state.occasion !== 'OTHER' && (
+                        <option key={state.occasion} value={state.occasion}>{state.occasion}</option>
+                      )}
+                      {categoryOptions.occasions.map(occ => <option key={occ} value={occ}>{occ}</option>)}
+                      <option value="OTHER">OTHER</option>
+                    </select>
                 </div>
+                {state.occasion === 'OTHER' && (
+                    <div className="form-group indented">
+            <input type="text" name="otherOccasion" placeholder="Specify other occasion" value={state.otherOccasion} onChange={handleChange} />
+            {errors.otherOccasion && <span className="error-text">{errors.otherOccasion}</span>}
+                    </div>
+                )}
+              </>
+            ) : (
+              <div className="form-group">
+                <label htmlFor="collectionGroup">Collection</label>
+                <select id="collectionGroup" name="collectionGroup" value={state.collectionGroup} onChange={handleChange}>
+                  <option value="">SELECT COLLECTION</option>
+                  <option value="BOYS">BOYS COLLECTION</option>
+                  <option value="GIRLS">GIRLS COLLECTION</option>
+                </select>
+              </div>
             )}
             
             {/* Collection Type */}
             <div className="form-group">
                 <label htmlFor="collectionType">Collection Type</label>
-                <select id="collectionType" name="collectionType" value={state.collectionType} onChange={handleChange}>
-                    <option value="">Select Type</option>
-                    {categoryOptions.collectionTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                    <option value="Other">Other</option>
-                </select>
+            <select id="collectionType" name="collectionType" value={state.collectionType} onChange={handleChange}>
+              <option value="">SELECT TYPE</option>
+              {/* Show saved value if it's not present in the current options */}
+              {state.collectionType && state.collectionType !== '' && !collectionTypeOptions.includes(state.collectionType) && state.collectionType !== 'OTHER' && (
+                <option key={state.collectionType} value={state.collectionType}>{state.collectionType}</option>
+              )}
+              {collectionTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
+              <option value="OTHER">OTHER</option>
+            </select>
             </div>
-            {state.collectionType === 'Other' && (
-                <div className="form-group indented">
-                    <input type="text" name="otherCollectionType" placeholder="Specify other type" value={state.otherCollectionType} onChange={handleChange} />
-                </div>
+            {state.collectionType === 'OTHER' && (
+        <div className="form-group indented">
+          <input type="text" name="otherCollectionType" placeholder="Specify other type" value={state.otherCollectionType} onChange={handleChange} />
+          {errors.otherCollectionType && <span className="error-text">{errors.otherCollectionType}</span>}
+        </div>
             )}
 
             {/* Price Fields */}
@@ -343,17 +524,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved }) {
               </select>
             </div>
 
-            {/* Tags */}
-            <div className="form-group">
-              <label htmlFor="tags">Tags (comma separated)</label>
-              <input type="text" id="tags" name="tags" value={state.tags} onChange={handleChange} />
-            </div>
-
-             {/* Featured Checkbox */}
-             <div className="form-group-checkbox">
-                <input type="checkbox" id="isFeatured" name="isFeatured" checked={state.isFeatured} onChange={handleChange} />
-                <label htmlFor="isFeatured">Mark as Featured Collection</label>
-            </div>
+            {/* Tags and Featured options removed per requirements */}
           </div>
           {/* Right Side - Image & Actions */}
           <div className="form-sidebar">

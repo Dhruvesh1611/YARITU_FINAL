@@ -19,7 +19,7 @@ const animationStyles = `
   }
 `;
 
-export default function OfferEditorModal({ open, item, onClose, onSaved, onDeleted }) {
+export default function OfferEditorModal({ open, item, onClose, onSaved, onDeleted, storeName }) {
   const [heading, setHeading] = useState('');
   const [subheading, setSubheading] = useState('');
   const [discount, setDiscount] = useState('');
@@ -86,6 +86,13 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
     setSaving(true);
     try {
       let payload = { id: item?.id ?? null, heading, subheading, discount, validity };
+      
+      // *** YAHAN BADLAV KIYA GAYA HAI ***
+      // Agar yeh naya offer hai (item null hai), to storeName ko payload mein jodo
+      if (!item && storeName) {
+        payload.store = storeName;
+      }
+
       if (selectedFile) {
         payload.imageBase64 = await toDataURL(selectedFile);
         payload.imageName = selectedFile.name;

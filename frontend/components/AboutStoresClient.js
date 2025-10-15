@@ -13,6 +13,7 @@ export default function AboutStoresClient() {
   const [error, setError] = useState('');
   const [editingStore, setEditingStore] = useState(null);
 
+
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
@@ -50,6 +51,7 @@ export default function AboutStoresClient() {
         <h2>Visit Our <span className="highlight">Stores</span></h2>
         <p>Experience our collections firsthand at our premium boutiques</p>
       </div>
+     
       <div className={styles.storesGrid}>
         {stores.map((store, index) => {
           const name = store.name || store.city || 'Store';
@@ -66,11 +68,7 @@ export default function AboutStoresClient() {
                 {address ? <p className={styles.address}>{address}</p> : null}
                 {phone ? <p className={styles.phone}>{phone}</p> : null}
                 <a href={mapHref} target="_blank" rel="noopener noreferrer" className={styles.storeButton}>Get Directions</a>
-                {isAdmin && (
-                  <button className={styles.storeButton} style={{ marginLeft: 8, background: '#111' }} onClick={() => setEditingStore(store)}>
-                    Edit Images
-                  </button>
-                )}
+                
               </div>
               <a href={mapHref} target="_blank" rel="noopener noreferrer" className={styles.storeImage}>
                 <div className={styles.storeImageInner}>

@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { WHATSAPP_NUMBER } from '../lib/siteConfig';
 import './ProductModal.css'; // CSS file ko link rehne dein
 
 const ProductModal = ({ product, onClose }) => {
@@ -91,7 +92,7 @@ const ProductModal = ({ product, onClose }) => {
                     className={`thumbnail-item ${imgUrl === activeImage ? 'active' : ''}`}
                     onClick={() => setActiveImage(imgUrl)}
                   >
-                    <Image src={imgUrl} alt={`Thumbnail ${index + 1}`} width={100} height={100} unoptimized />
+                    <Image src={imgUrl} alt={`Thumbnail ${index + 1}`} width={100} height={100} unoptimized loading="lazy" />
                   </div>
                 ))}
               </div>
@@ -114,11 +115,30 @@ const ProductModal = ({ product, onClose }) => {
                   <span className="original-price">₹{product.price.toLocaleString()}</span>
                 </>
               ) : (
-                <span className="current-price">₹{(product.price || 0).toLocaleString()}</span>
+                // Only show the price when a positive price value exists. If price is undefined, null or 0, render nothing.
+                product.price && Number(product.price) > 0 ? (
+                  <span className="current-price">₹{Number(product.price).toLocaleString()}</span>
+                ) : null
               )}
             </div>
-            <button className="rent-now-button">Rent Now</button>
-            <button className="enquire-button">Enquire on WhatsApp</button>
+            <button className="rent-now-button" onClick={() => {
+              const msg = `Hi, I'm interested in renting "${product.title || product.name}"` +
+                `${product.collectionType ? ' - Type: ' + product.collectionType : ''}` +
+                `${product.category ? ' - Category: ' + product.category : ''}` +
+                `${product._id ? ' - Product ID: ' + product._id : ''}`;
+              const encoded = encodeURIComponent(msg);
+              const target = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}` : `https://web.whatsapp.com/send?text=${encoded}`;
+              window.open(target, '_blank', 'noopener,noreferrer');
+            }}>Rent Now</button>
+            <button className="enquire-button" onClick={() => {
+              const msg = `Hello, I have a question about "${product.title || product.name}"` +
+                `${product.collectionType ? ' - Type: ' + product.collectionType : ''}` +
+                `${product.category ? ' - Category: ' + product.category : ''}` +
+                `${product._id ? ' - Product ID: ' + product._id : ''}`;
+              const encoded = encodeURIComponent(msg);
+              const target = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}` : `https://web.whatsapp.com/send?text=${encoded}`;
+              window.open(target, '_blank', 'noopener,noreferrer');
+            }}>Enquire on WhatsApp</button>
           </div>
         </div>
       </div>

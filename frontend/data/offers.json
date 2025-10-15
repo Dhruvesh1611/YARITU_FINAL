@@ -1,26 +1,200 @@
 [
   {
-    "id": 1,
+    "id": 101,
+    "store": "AMRELI",
     "image": "/images/shervani.png",
     "discount": "25% OFF",
-    "heading": "Wedding Season Special",
-    "subheading": "On all bridal lehengas and sherwanis",
-    "validity": "Valid until March 31, 2025"
+    "heading": "Amreli Wedding Special",
+    "subheading": "Exclusive bridal lehenga offers at Amreli",
+    "validity": "Valid until March 31, 2026"
   },
   {
-    "id": 3,
+    "id": 102,
+    "store": "AMRELI",
     "image": "/images/festival.png",
-    "discount": "25% OFF",
-    "heading": "Festival Collection",
-    "subheading": "On ethnic wear for all occasions",
-    "validity": "Ends February 28, 2025"
+    "discount": "30% Discount",
+    "heading": "Amreli Festival Collection",
+    "subheading": "Festive outfits — limited stock",
+    "validity": "Ends December 15, 2025"
   },
   {
-    "id": 4,
-    "heading": "Newly",
-    "subheading": "wear for all occasions",
-    "discount": "2000/- bonus",
-    "validity": "ends 9th dec,2025",
-    "image": "/uploads/offers/offer-4-1760307237518.png"
+    "id": 201,
+    "store": "GOTA",
+    "image": "/uploads/offers/offer-201-1760398111428.png",
+    "discount": "20% OFF",
+    "heading": "Gota Ready-to-Wear",
+    "subheading": "New arrivals at Gota store",
+    "validity": "Until Nov 30, 2025"
+  },
+  {
+    "id": 202,
+    "store": "GOTA",
+    "image": "/uploads/offers/offer-202-1760398098812.png",
+    "discount": "10% OFF",
+    "heading": "Gota Clearance Sale",
+    "subheading": "Selected items clearance",
+    "validity": "While stocks last"
+  },
+  {
+    "id": 203,
+    "store": "GOTA",
+    "image": "/uploads/offers/offer-203-1760398121643.png",
+    "discount": "Special Price",
+    "heading": "Gota Festive Combo",
+    "subheading": "Combo offers for festive season",
+    "validity": "Ends Dec 31, 2025"
+  },
+  {
+    "id": 204,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "",
+    "validity": "",
+    "image": "/images/placeholder.png"
+  },
+  {
+    "id": 205,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "qwed",
+    "validity": "wqd",
+    "image": "/uploads/offers/offer-205-1760396280144.png"
+  },
+  {
+    "id": 206,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/images/placeholder.png"
+  },
+  {
+    "id": 207,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-207-1760396410854.png"
+  },
+  {
+    "id": 208,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-208-1760397073113.png"
+  },
+  {
+    "id": 209,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-209-1760398067901.png"
+  },
+  {
+    "id": 210,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-210-1760398137724.png"
+  },
+  {
+    "id": 211,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-211-1760439431849.png"
+  },
+  {
+    "id": 212,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-212-1760440935580.png"
+  },
+  {
+    "id": 213,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-213-1760441150598.png"
+  },
+  {
+    "id": 214,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-214-1760441424650.png"
+  },
+  {
+    "id": 215,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-215-1760441580188.png"
+  },
+  {
+    "id": 216,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-216-1760441991774.png"
+  },
+  {
+    "id": 217,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-217-1760442138090.png"
+  },
+  {
+    "id": 218,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-218-1760442186635.png"
+  },
+  {
+    "id": 219,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "until 30th aug",
+    "image": "/uploads/offers/offer-219-1760461506935.png"
+  },
+  {
+    "id": 220,
+    "heading": "a",
+    "subheading": "a",
+    "discount": "a",
+    "validity": "a",
+    "image": "/uploads/offers/offer-220-1760462209477.png",
+    "store": "BOPAL"
+  },
+  {
+    "id": 221,
+    "heading": "Amreli Festival Collection",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "Ends December 15, 2025",
+    "image": "/uploads/offers/offer-221-1760508764931.png"
+  },
+  {
+    "id": 222,
+    "heading": "best offer ",
+    "subheading": "noice",
+    "discount": "20% off",
+    "validity": "Ends December 15, 2025",
+    "image": "/uploads/offers/offer-222-1760508986583.png"
   }
 ]

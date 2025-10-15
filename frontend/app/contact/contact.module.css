@@ -236,28 +236,34 @@
 
 .contactSocialLinks {
   display: flex;
-  gap: 16px;
+  gap: 0px;
 }
 
+/* Lightweight social icons: transparent background, larger visible icon */
 .contactSocialLinks a {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #213346;
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
   align-items: center;
-  transition: transform 0.2s;
+  justify-content: center;
+  width: 64px; /* clickable area */
+  height: 64px;
+  border-radius: 50%;
+  background: transparent; /* remove gray/dark circle */
+  box-shadow: none;
+  transition: transform 0.14s ease;
 }
 
 .contactSocialLinks a:hover {
-    transform: scale(1.1);
+  transform: translateY(-4px);
 }
 
 .contactSocialLinks a img {
-  width: 26px;
-  height: 26px;
+  width: 44px; /* visible icon size */
+  height: 44px;
+  object-fit: contain;
 }
+
+/* Prefer crisp rendering for small UI icons */
+
 
 .socialCaption {
   font-size: 14px;
@@ -306,8 +312,8 @@
   .formField label { left: 10px; font-size: 12px; }
   .infoText p { font-size: 14px; }
   .contactSocialLinks { gap: 12px; }
-  .contactSocialLinks a { width: 36px; height: 36px; }
-  .contactSocialLinks a img { width: 14px; height: 14px; }
+  .contactSocialLinks a { width: 52px; height: 52px; }
+  .contactSocialLinks a img { width: 36px; height: 36px; }
   .submitBtn { font-size: 15px; }
 }
 

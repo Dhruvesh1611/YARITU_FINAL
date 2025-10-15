@@ -60,25 +60,20 @@ export default function OfferSignupModal({ openAfter = 5000 }) {
       <div className="offer-modal offer-modal-two-col">
         <button className="offer-modal-close" onClick={close} aria-label="Close">✕</button>
         <div className="offer-modal-left">
-          <div className="offer-modal-logo">
-            <Image src="/images/yaritu_logo_white.png" alt="Yaritu logo" width={180} height={80} style={{ objectFit: 'contain', height: 'auto' }} />
-          </div>
-          {/* Left brand image - replace with your Yaritu branding image */}
+          {/* Left brand image fills the whole left panel */}
           <div className="offer-modal-brand-img">
             <Image
               src="/images/hero3.png"
               alt="Yaritu brand"
-              width={380}
-              height={520}
-              style={{ objectFit: 'cover', borderRadius: 10 }}
+              fill
+              sizes="(max-width: 880px) 100vw, 50vw"
+              style={{ objectFit: 'cover' }}
               priority
             />
           </div>
         </div>
   <div className="offer-modal-right" style={{ paddingRight: '36px' }}>
-          <div className="offer-modal-logo-mobile">
-            <Image src="/images/yaritu_logo_white.png" alt="Yaritu logo" width={140} height={60} style={{ objectFit: 'contain', height: 'auto' }} />
-          </div>
+          {/* logo removed from mobile to keep the right column focused on the form */}
           {submitted ? (
             <div className="offer-modal-success">
               <h3>Thank You!</h3>

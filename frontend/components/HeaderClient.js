@@ -47,13 +47,12 @@ export default function HeaderClient() {
 
                   <Link href="/" className={styles.navLogo}>
                     <Image
-                      src="/images/yaritu_logo_black.png"
-                      alt="Yaritu Logo"
-                      fill
-                      priority
-                      sizes="(max-width: 480px) 100px, 160px"
-                      style={{ objectFit: 'contain' }}
-                    />
+                        src="/images/yaritu_logo_black.png"
+                        alt="Yaritu Logo"
+                        fill
+                        sizes="(max-width: 480px) 100px, 160px"
+                        style={{ objectFit: 'contain' }}
+                      />
                   </Link>
 
                   <div className={styles.navGroup}>

@@ -184,7 +184,7 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
           </button>
         )}
         <div className="store-image">
-          <Image src={store.imageUrl || "/images/store_1.png"} alt={store.name} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: 'cover' }} />
+          <Image src={store.imageUrl || "/images/store_1.png"} alt={store.name} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: 'cover' }} loading="lazy" />
         </div>
         <div className="store-name-overlay">
           <span>{store.name}</span>

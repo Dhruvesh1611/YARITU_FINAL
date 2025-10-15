@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useState, useEffect } from 'react';
+import TestimonialsSlider from '../../components/TestimonialsSlider';
 import { useSession } from 'next-auth/react';
 
 // Custom video component for review gallery
@@ -8,7 +9,7 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
   const overlayRef = useRef(null);
   const observerRef = useRef(null);
   const DEBUG_VIDEO = false;
-  
+
   const getMimeFromUrl = (u) => {
     if (!u || typeof u !== 'string') return undefined;
     const lower = u.split('?')[0].toLowerCase();
@@ -25,7 +26,7 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
       try {
         v.pause();
         if (v.currentTime > 0.05) v.currentTime = 0;
-      } catch (e) {}
+      } catch (e) { }
       if (overlayRef.current) overlayRef.current.style.display = 'flex';
     }
   }, [isPlaying]);
@@ -33,7 +34,7 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
   useEffect(() => {
     // Ensure video is not muted
     if (videoRef.current) {
-      try { videoRef.current.muted = false; } catch(e) { /* ignore in SSR */ }
+      try { videoRef.current.muted = false; } catch (e) { /* ignore in SSR */ }
     }
 
     // IntersectionObserver to stop playback when video is mostly out of view
@@ -43,14 +44,14 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.intersectionRatio < 0.5 && isPlaying) {
-            try {
-              if (videoRef.current) {
-                videoRef.current.pause();
-                videoRef.current.currentTime = 0;
-              }
-              if (overlayRef.current) overlayRef.current.style.display = 'flex';
-              if (typeof onStop === 'function') onStop();
-            } catch (err) {}
+          try {
+            if (videoRef.current) {
+              videoRef.current.pause();
+              videoRef.current.currentTime = 0;
+            }
+            if (overlayRef.current) overlayRef.current.style.display = 'flex';
+            if (typeof onStop === 'function') onStop();
+          } catch (err) { }
         }
       });
     }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
@@ -58,7 +59,7 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
     observerRef.current.observe(node);
 
     return () => {
-      try { observerRef.current && observerRef.current.disconnect(); } catch (e) {}
+      try { observerRef.current && observerRef.current.disconnect(); } catch (e) { }
     };
   }, [isPlaying]);
 
@@ -68,7 +69,7 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
     if (!v) return;
     if (!src) return;
     // If the source changed, ensure the media element reloads it
-    try { v.load(); } catch (e) {}
+    try { v.load(); } catch (e) { }
     if (isPlaying) {
       if (overlayRef.current) overlayRef.current.style.display = 'none';
       const p = v.play();
@@ -96,12 +97,12 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
     const v = videoRef.current;
     if (!v) return;
     const handleEnded = () => {
-      try { v.pause(); v.currentTime = 0; } catch (e) {}
+      try { v.pause(); v.currentTime = 0; } catch (e) { }
       if (overlayRef.current) overlayRef.current.style.display = 'flex';
       if (typeof onStop === 'function') onStop();
     };
     const handleError = () => {
-      try { v.pause(); } catch (e) {}
+      try { v.pause(); } catch (e) { }
       if (overlayRef.current) overlayRef.current.style.display = 'flex';
       if (typeof onStop === 'function') onStop();
     };
@@ -197,10 +198,10 @@ export default function Review() {
   const [isClient, setIsClient] = useState(false);
 
   // CHANGE #2: Use useEffect to set the state to true once the component mounts in the browser
- useEffect(() => {
-  console.log("REVIEW PAGE MOUNTED ON CLIENT");
-  setIsClient(true);
-}, []);
+  useEffect(() => {
+    console.log("REVIEW PAGE MOUNTED ON CLIENT");
+    setIsClient(true);
+  }, []);
 
   const { data: session } = useSession();
   // devAdmin is a temporary localStorage toggle to help debugging if your session doesn't expose admin flag yet
@@ -208,7 +209,7 @@ export default function Review() {
   useEffect(() => {
     try {
       setDevAdmin(localStorage.getItem('devAdmin') === '1');
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   useEffect(() => {
@@ -224,9 +225,9 @@ export default function Review() {
 
   useEffect(() => {
     if (!isClient) return;
-    (async function fetchTestimonials(){
+    (async function fetchTestimonials() {
       try {
-        const res = await fetch('/api/testimonials');
+        const res = await fetch('/api/testimonials?location=reviews');
         const json = await res.json();
         if (json.success) setTestimonials(json.data);
       } catch (err) {
@@ -303,7 +304,7 @@ export default function Review() {
 
   function openNew() {
     // clear any previous preview/url state
-    try { if (prevPreviewRef.current) { URL.revokeObjectURL(prevPreviewRef.current); prevPreviewRef.current = null; } } catch (e) {}
+    try { if (prevPreviewRef.current) { URL.revokeObjectURL(prevPreviewRef.current); prevPreviewRef.current = null; } } catch (e) { }
     setEditing('new');
     setForm({ name: '', quote: '', rating: 5, avatarUrl: '' });
     setFilePreview(null);
@@ -312,7 +313,7 @@ export default function Review() {
 
   function openEdit(item) {
     // when editing existing, show the stored avatar but clear file upload buffer
-    try { if (prevPreviewRef.current) { URL.revokeObjectURL(prevPreviewRef.current); prevPreviewRef.current = null; } } catch (e) {}
+    try { if (prevPreviewRef.current) { URL.revokeObjectURL(prevPreviewRef.current); prevPreviewRef.current = null; } } catch (e) { }
     setEditing(item._id);
     setForm({ name: item.name, quote: item.quote, rating: item.rating || 5, avatarUrl: item.avatarUrl || '' });
     setFilePreview(item.avatarUrl || null);
@@ -320,60 +321,47 @@ export default function Review() {
   }
 
   async function handleSave() {
-    try {
-      let avatarUrl = form.avatarUrl;
-      // upload the actual File object (if present) not the preview URL string
-      if (fileForUpload) {
-        setUploadProgress(0);
-        setUploadStatusMessage('Starting upload...');
-        try {
-          // use XHR-enabled upload to show progress
-          avatarUrl = await uploadWithProgress(fileForUpload, (p) => {
-            setUploadProgress(p);
-            setUploadStatusMessage(`Uploading: ${p}%`);
-          });
-          setUploadStatusMessage('Upload complete');
-        } catch (err) {
-          console.error('Upload failed', err);
-          setUploadStatusMessage('Upload failed: ' + (err.message || ''));
-          throw err;
-        } finally {
-          try { if (prevPreviewRef.current) { URL.revokeObjectURL(prevPreviewRef.current); prevPreviewRef.current = null; } } catch (e) {}
-          setFilePreview(null);
-          setFileForUpload(null);
-        }
-      }
-      // client-side validation to avoid server 400 for missing fields
-      if (!form.name || !form.quote) {
-        alert('Please provide both a name and a review before saving.');
+  try {
+    // --- START OF FIX ---
+    // Sahi URL chunein: Pehle naya upload hua URL (avatarUploadedUrl),
+    // warna purana URL (form.avatarUrl)
+    let avatarUrlToSave = avatarUploadedUrl || form.avatarUrl;
+
+    // client-side validation...
+    if (!form.name || !form.quote) {
+      alert('Please provide both a name and a review before saving.');
+      return;
+    }
+
+    // Ab payload mein sahi URL bhejenge
+    const payload = { name: form.name, quote: form.quote, rating: form.rating, avatarUrl: avatarUrlToSave, location: 'reviews' };
+    // --- END OF FIX ---
+
+    console.debug('saving testimonial payload:', payload);
+
+    if (editing === 'new') {
+      const res = await fetch('/api/testimonials', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const j = await res.json();
+      if (!res.ok) {
+        console.error('Failed POST /api/testimonials', res.status, j);
+        alert(j?.message || j?.error || 'Failed to create testimonial');
         return;
       }
-
-      const payload = { name: form.name, quote: form.quote, rating: form.rating, avatarUrl };
-      console.debug('saving testimonial payload:', payload);
-
-      if (editing === 'new') {
-        const res = await fetch('/api/testimonials', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const j = await res.json();
-        if (!res.ok) {
-          console.error('Failed POST /api/testimonials', res.status, j);
-          alert(j?.message || j?.error || 'Failed to create testimonial');
-          return;
-        }
-        if (j.success) setTestimonials(prev => [j.data, ...prev]);
-      } else {
-        const res = await fetch(`/api/testimonials/${editing}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const j = await res.json();
-        if (!res.ok) {
-          console.error('Failed PUT /api/testimonials/' + editing, res.status, j);
-          alert(j?.message || j?.error || 'Failed to update testimonial');
-          return;
-        }
-        if (j.success) setTestimonials(prev => prev.map(p => p._id === j.data._id ? j.data : p));
+      if (j.success) setTestimonials(prev => [j.data, ...prev]);
+    } else {
+      const res = await fetch(`/api/testimonials/${editing}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const j = await res.json();
+      if (!res.ok) {
+        console.error('Failed PUT /api/testimonials/' + editing, res.status, j);
+        alert(j?.message || j?.error || 'Failed to update testimonial');
+        return;
       }
-      setEditing(null);
-    } catch (err) { console.error(err); alert(err.message || 'Save failed'); }
-  }
+      if (j.success) setTestimonials(prev => prev.map(p => p._id === j.data._id ? j.data : p));
+    }
+    setEditing(null);
+    setAvatarUploadedUrl(''); // Kaam hone ke baad state ko reset karein
+  } catch (err) { console.error(err); alert(err.message || 'Save failed'); }
+}
 
   async function handleDelete(id) {
     if (!confirm('Delete this review?')) return;
@@ -385,12 +373,12 @@ export default function Review() {
   }
 
   function handleCancel() {
-    try { if (prevPreviewRef.current) { URL.revokeObjectURL(prevPreviewRef.current); prevPreviewRef.current = null; } } catch (e) {}
+    try { if (prevPreviewRef.current) { URL.revokeObjectURL(prevPreviewRef.current); prevPreviewRef.current = null; } } catch (e) { }
     setFilePreview(null);
     setFileForUpload(null);
     setEditing(null);
   }
-  
+
   const clientReviews = [
     { id: 1, image: 'https://placehold.co/400x560/EAD9C8/4E3629?text=Client+1', alt: 'Client wearing bridal outfit', text: "The craftsmanship and fabric quality exceeded my expectations. The outfit made my pre-wedding shoot truly memorable!", name: 'Aditi Salvi' },
     { id: 2, image: 'https://placehold.co/400x560/D4E2D4/4E3629?text=Client+2', alt: 'Client couple ethnic', text: "We were new to ethnic styling but the staff guided us patiently. Fit was perfect and styling premium.", name: 'David Santucci' },
@@ -405,7 +393,7 @@ export default function Review() {
     '/images/reel4.png',
     '/images/reel5.png',
   ];
-  
+
   // Make the review gallery videos editable in-memory (admin-only). No Add option — only Edit.
   const [videos, setVideos] = useState([
     { src: '', thumbnail: '/images/Featured1.png' },
@@ -441,10 +429,10 @@ export default function Review() {
   const [thumbUploading, setThumbUploading] = useState(false);
   const [thumbUploadProgress, setThumbUploadProgress] = useState(0);
   const [thumbUploadedUrl, setThumbUploadedUrl] = useState('');
-  
+
   return (
     <div id="review-page-wrapper" onClick={() => setPlayingIdx(null)}>
-  <style>{`
+      <style>{`
         /* Global Variables (using CSS variables inside the scoped block) */
         #review-page-wrapper :root {
           --font-heading: 'Garamond', serif;
@@ -694,7 +682,7 @@ export default function Review() {
           #review-page-wrapper .reviews-title { font-size: 28px; }
           #review-page-wrapper .reviews-subtitle { font-size: 16px; }
           /* Keep 2-column gallery for small devices */
-          #review-page-wrapper .review-gallery { gap: 12px; }
+          #review-page-wrapper .review-gallery { gap: 22px; }
         }
 
         @media (max-width: 480px) {
@@ -749,31 +737,31 @@ export default function Review() {
         <div className="reviews-content">
           <h2 className="reviews-title">Customer <span className="highlight">Reviews</span></h2>
           <p className="reviews-subtitle">Real experiences from our satisfied customers</p>
-          
-              <div className="review-gallery">
-                {videos.map((v, idx) => (
-                  <div key={idx} style={{ position: 'relative' }}>
-                    <VideoReview
-                      src={v.src}
-                      className={`gallery-photo photo-${idx + 1}`}
-                      isPlaying={playingIdx === idx}
-                      onPlay={() => setPlayingIdx(prev => (prev === idx ? null : idx))}
-                      onStop={() => setPlayingIdx(null)}
-                      thumbnail={v.thumbnail}
-                    />
-                    {isAdmin && (
-                      <button onClick={(e) => { e.stopPropagation(); setEditingVideoIndex(idx); setVideoFilePreview(null); setVideoFileForUpload(null); setThumbFilePreview(v.thumbnail || null); setThumbFileForUpload(null); }} style={{ position: 'absolute', top: 8, right: 8, zIndex: 30, padding: '6px 8px' }}>Edit</button>
-                    )}
-                  </div>
-                ))}
+
+          <div className="review-gallery">
+            {videos.map((v, idx) => (
+              <div key={idx} style={{ position: 'relative' }}>
+                <VideoReview
+                  src={v.src}
+                  className={`gallery-photo photo-${idx + 1}`}
+                  isPlaying={playingIdx === idx}
+                  onPlay={() => setPlayingIdx(prev => (prev === idx ? null : idx))}
+                  onStop={() => setPlayingIdx(null)}
+                  thumbnail={v.thumbnail}
+                />
+                {isAdmin && (
+                  <button onClick={(e) => { e.stopPropagation(); setEditingVideoIndex(idx); setVideoFilePreview(null); setVideoFileForUpload(null); setThumbFilePreview(v.thumbnail || null); setThumbFileForUpload(null); }} style={{ position: 'absolute', top: 8, right: 8, zIndex: 30, padding: '6px 8px' }}>Edit</button>
+                )}
               </div>
+            ))}
+          </div>
         </div>
       </section>
-      
+
       <section id="testimonials">
         <div className="testimonials-container">
           <h2 className="testimonials-title">What Our <span className="highlight">Clients Say</span></h2>
-          
+
           {/* --- START OF UPDATED JSX --- */}
           <div className="review-testimonials-grid">
             {/* Render server-backed testimonials on client only */}
@@ -806,270 +794,270 @@ export default function Review() {
           </div>
           {/* --- END OF UPDATED JSX --- */}
 
-            {isAdmin && (
-              <div style={{ textAlign: 'center', marginTop: 18 }}>
-                <button onClick={openNew} style={{ padding: '8px 12px' }}>Add Review</button>
-              </div>
-            )}
-            {/* Modal */}
-            {editing !== null && (
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
-                <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 'min(760px, 95vw)' }}>
-                  <h3 style={{ marginTop: 0 }}>{editing === 'new' ? 'Add Review' : 'Edit Review'}</h3>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1 }}>
-                      <label>Name</label>
-                      <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
-                      <label>Review</label>
-                      <textarea value={form.quote} onChange={(e) => setForm({ ...form, quote: e.target.value })} style={{ width: '100%', padding: 8, height: 100, marginBottom: 8 }} />
-                      <label>Rating</label>
-                      <select value={form.rating} onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })} style={{ padding: 8 }}>
-                        {[5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ width: 220 }}>
-                      <div style={{ width: 160, height: 160, borderRadius: '50%', background: '#eee', marginBottom: 8, overflow: 'hidden' }}>
-                        <img src={avatarUploadedUrl || filePreview || form.avatarUrl || '/images/Rectangle 4.png'} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const f = e.target.files?.[0];
-                          console.debug('avatar input changed, file:', f);
-                          if (!f) return;
-
-                          // immediate visible feedback
-                          setUploadStatusMessage('Preparing upload...');
-
-                          // ensure Cloudinary env configured
-                          if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET) {
-                            console.warn('Cloudinary environment variables not set');
-                            setUploadStatusMessage('Cloudinary not configured. Set NEXT_PUBLIC_CLOUDINARY_* env vars.');
-                            return;
-                          }
-
-                          try {
-                            // create local preview
-                            if (prevPreviewRef.current) { try { URL.revokeObjectURL(prevPreviewRef.current); } catch (err) {} prevPreviewRef.current = null; }
-                            const url = URL.createObjectURL(f);
-                            prevPreviewRef.current = url;
-                            setFilePreview(url);
-                            setFileForUpload(null); // we will upload immediately
-
-                            // start immediate upload
-                            setAvatarUploading(true);
-                            setAvatarUploadProgress(0);
-                            setUploadStatusMessage('Uploading avatar...');
-                            try {
-                              const uploaded = await uploadWithProgress(f, (p) => { setAvatarUploadProgress(p); setUploadStatusMessage(`Uploading avatar: ${p}%`); });
-                              setAvatarUploadedUrl(uploaded);
-                              setUploadStatusMessage('Avatar uploaded');
-                            } catch (err) {
-                              console.error('Avatar upload failed', err);
-                              setUploadStatusMessage('Avatar upload failed: ' + (err.message || ''));
-                              setAvatarUploadedUrl('');
-                            } finally {
-                              setAvatarUploading(false);
-                              setFilePreview(null);
-                            }
-                          } catch (err) { console.error(err); }
-                        }}
-                      />
-
-                      {avatarUploading && (
-                        <div style={{ marginTop: 8 }}>
-                          <div style={{ height: 8, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
-                            <div style={{ width: `${avatarUploadProgress}%`, height: '100%', background: '#213346' }} />
-                          </div>
-                          <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>{uploadStatusMessage}</div>
-                        </div>
-                      )}
-                    </div>
+          {isAdmin && (
+            <div style={{ textAlign: 'center', marginTop: 18 }}>
+              <button onClick={openNew} style={{ padding: '8px 12px' }}>Add Review</button>
+            </div>
+          )}
+          {/* Modal */}
+          {editing !== null && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
+              <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 'min(760px, 95vw)' }}>
+                <h3 style={{ marginTop: 0 }}>{editing === 'new' ? 'Add Review' : 'Edit Review'}</h3>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Name</label>
+                    <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
+                    <label>Review</label>
+                    <textarea value={form.quote} onChange={(e) => setForm({ ...form, quote: e.target.value })} style={{ width: '100%', padding: 8, height: 100, marginBottom: 8 }} />
+                    <label>Rating</label>
+                    <select value={form.rating} onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })} style={{ padding: 8 }}>
+                      {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
                   </div>
-                  <div style={{ marginTop: 12 }}>
-                    {uploadStatusMessage && <div style={{ marginBottom: 8 }}>{uploadStatusMessage}</div>}
-                    {uploadProgress > 0 && uploadProgress < 100 && (
-                      <div style={{ height: 10, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
-                        <div style={{ width: `${uploadProgress}%`, height: '100%', background: '#213346' }} />
+                  <div style={{ width: 220 }}>
+                    <div style={{ width: 160, height: 160, borderRadius: '50%', background: '#eee', marginBottom: 8, overflow: 'hidden' }}>
+                      <img src={avatarUploadedUrl || filePreview || form.avatarUrl || '/images/Rectangle 4.png'} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        console.debug('avatar input changed, file:', f);
+                        if (!f) return;
+
+                        // immediate visible feedback
+                        setUploadStatusMessage('Preparing upload...');
+
+                        // ensure Cloudinary env configured
+                        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET) {
+                          console.warn('Cloudinary environment variables not set');
+                          setUploadStatusMessage('Cloudinary not configured. Set NEXT_PUBLIC_CLOUDINARY_* env vars.');
+                          return;
+                        }
+
+                        try {
+                          // create local preview
+                          if (prevPreviewRef.current) { try { URL.revokeObjectURL(prevPreviewRef.current); } catch (err) { } prevPreviewRef.current = null; }
+                          const url = URL.createObjectURL(f);
+                          prevPreviewRef.current = url;
+                          setFilePreview(url);
+                          setFileForUpload(null); // we will upload immediately
+
+                          // start immediate upload
+                          setAvatarUploading(true);
+                          setAvatarUploadProgress(0);
+                          setUploadStatusMessage('Uploading avatar...');
+                          try {
+                            const uploaded = await uploadWithProgress(f, (p) => { setAvatarUploadProgress(p); setUploadStatusMessage(`Uploading avatar: ${p}%`); });
+                            setAvatarUploadedUrl(uploaded);
+                            setUploadStatusMessage('Avatar uploaded');
+                          } catch (err) {
+                            console.error('Avatar upload failed', err);
+                            setUploadStatusMessage('Avatar upload failed: ' + (err.message || ''));
+                            setAvatarUploadedUrl('');
+                          } finally {
+                            setAvatarUploading(false);
+                            setFilePreview(null);
+                          }
+                        } catch (err) { console.error(err); }
+                      }}
+                    />
+
+                    {avatarUploading && (
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ height: 8, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
+                          <div style={{ width: `${avatarUploadProgress}%`, height: '100%', background: '#213346' }} />
+                        </div>
+                        <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>{uploadStatusMessage}</div>
                       </div>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                      <button onClick={handleCancel} style={{ padding: '8px 12px' }}>Cancel</button>
-                      <button onClick={handleSave} style={{ padding: '8px 12px', background: '#111', color: '#fff', border: 'none' }}>{editing === 'new' ? 'Add Review' : 'Save'}</button>
+                  </div>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  {uploadStatusMessage && <div style={{ marginBottom: 8 }}>{uploadStatusMessage}</div>}
+                  {uploadProgress > 0 && uploadProgress < 100 && (
+                    <div style={{ height: 10, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
+                      <div style={{ width: `${uploadProgress}%`, height: '100%', background: '#213346' }} />
                     </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <button onClick={handleCancel} style={{ padding: '8px 12px' }}>Cancel</button>
+                    <button onClick={handleSave} style={{ padding: '8px 12px', background: '#111', color: '#fff', border: 'none' }}>{editing === 'new' ? 'Add Review' : 'Save'}</button>
                   </div>
                 </div>
               </div>
-            )}
-            {/* Video Edit Modal (Admin only) */}
-            {editingVideoIndex !== null && isAdmin && (
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90 }} onClick={() => setEditingVideoIndex(null)}>
-                <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 'min(760px, 95vw)' }} onClick={(e) => e.stopPropagation()}>
-                  <h3 style={{ marginTop: 0 }}>Edit Review Video</h3>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1 }}>
-                      <label>Replace video</label>
-                      <div style={{ marginBottom: 8 }}>
-                        <div style={{ width: '100%', height: 220, background: '#f2f2f2', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {videoFilePreview ? (
-                            <video src={videoFilePreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
-                          ) : (
-                            <p style={{ color: '#666' }}>No new video selected</p>
-                          )}
-                        </div>
-                        <input type="file" accept="video/*" onChange={async (e) => {
-                          const f = e.target.files?.[0];
-                          if (!f) return;
-                          try {
-                            const url = URL.createObjectURL(f);
-                            setVideoFilePreview(url);
-                            setVideoFileForUpload(null); // we'll upload immediately
-                            setVideoUploading(true);
-                            setVideoUploadProgress(0);
-                            setUploadStatusMessage('Uploading video...');
-                            try {
-                              const uploaded = await uploadWithProgress(f, (p) => { setVideoUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); });
-                              setVideoUploadedUrl(uploaded);
-                              setUploadStatusMessage('Video uploaded');
-                            } catch (err) {
-                              console.error('Video upload failed', err);
-                              setUploadStatusMessage('Video upload failed: ' + (err.message || ''));
-                              setVideoUploadedUrl('');
-                            } finally {
-                              setVideoUploading(false);
-                              setVideoFileForUpload(null);
-                            }
-                          } catch (err) { console.error(err); }
-                        }} />
+            </div>
+          )}
+          {/* Video Edit Modal (Admin only) */}
+          {editingVideoIndex !== null && isAdmin && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90 }} onClick={() => setEditingVideoIndex(null)}>
+              <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 'min(760px, 95vw)' }} onClick={(e) => e.stopPropagation()}>
+                <h3 style={{ marginTop: 0 }}>Edit Review Video</h3>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Replace video</label>
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ width: '100%', height: 220, background: '#f2f2f2', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {videoFilePreview ? (
+                          <video src={videoFilePreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
+                        ) : (
+                          <p style={{ color: '#666' }}>No new video selected</p>
+                        )}
                       </div>
-                      <label>Replace thumbnail</label>
-                      <div style={{ marginBottom: 8 }}>
-                        {/* small helper preview for selection area (not the main preview panel) */}
-                        <div style={{ width: 160, height: 160, borderRadius: '8px', background: '#eee', overflow: 'hidden' }}>
-                          <img src={thumbFilePreview || thumbUploadedUrl || videos[editingVideoIndex]?.thumbnail || '/images/Rectangle 4.png'} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      </div>
-                      <input type="file" accept="image/*" onChange={async (e) => {
+                      <input type="file" accept="video/*" onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
                         try {
                           const url = URL.createObjectURL(f);
-                          setThumbFilePreview(url);
-                          setThumbFileForUpload(null);
-                          setThumbUploading(true);
-                          setThumbUploadProgress(0);
-                          setUploadStatusMessage('Uploading thumbnail...');
+                          setVideoFilePreview(url);
+                          setVideoFileForUpload(null); // we'll upload immediately
+                          setVideoUploading(true);
+                          setVideoUploadProgress(0);
+                          setUploadStatusMessage('Uploading video...');
                           try {
-                            const uploaded = await uploadWithProgress(f, (p) => { setThumbUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); });
-                            setThumbUploadedUrl(uploaded);
-                            setUploadStatusMessage('Thumbnail uploaded');
+                            const uploaded = await uploadWithProgress(f, (p) => { setVideoUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); });
+                            setVideoUploadedUrl(uploaded);
+                            setUploadStatusMessage('Video uploaded');
                           } catch (err) {
-                            console.error('Thumbnail upload failed', err);
-                            setUploadStatusMessage('Thumbnail upload failed: ' + (err.message || ''));
-                            setThumbUploadedUrl('');
+                            console.error('Video upload failed', err);
+                            setUploadStatusMessage('Video upload failed: ' + (err.message || ''));
+                            setVideoUploadedUrl('');
                           } finally {
-                            setThumbUploading(false);
-                            setThumbFileForUpload(null);
+                            setVideoUploading(false);
+                            setVideoFileForUpload(null);
                           }
                         } catch (err) { console.error(err); }
                       }} />
                     </div>
-                    <div style={{ width: 260, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <p style={{ fontWeight: 600 }}>Preview</p>
-                      {/* Main preview: show either the video OR the thumbnail (not both) depending on what admin selected.
-                          Default behaviour: show the video element with poster set to the thumbnail so it resembles the on-page card.
-                          If the admin has selected/changed a new video -> show video. Else if admin selected/changed only thumbnail -> show the thumbnail image only. */}
-                      {(() => {
-                        const hasNewVideo = Boolean(videoUploadedUrl || videoFilePreview);
-                        const hasNewThumb = Boolean(thumbUploadedUrl || thumbFilePreview);
-                        const displayMode = hasNewVideo ? 'video' : (hasNewThumb ? 'thumb' : 'video');
-                        const videoSrc = videoUploadedUrl || videoFilePreview || videos[editingVideoIndex]?.src;
-                        const posterSrc = thumbUploadedUrl || thumbFilePreview || videos[editingVideoIndex]?.thumbnail;
-
-                        return (
-                          <div style={{ width: '100%', height: 220, background: '#fafafa', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {displayMode === 'video' ? (
-                              <video
-                                src={videoSrc}
-                                poster={posterSrc}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                controls
-                                muted
-                              />
-                            ) : (
-                              <img src={posterSrc || '/images/Rectangle 4.png'} alt="thumbnail preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      <div style={{ marginTop: 6 }}>
-                        <div style={{ marginBottom: 8 }}>{uploadStatusMessage}</div>
-                        {(videoUploadProgress > 0 && videoUploadProgress < 100) || (thumbUploadProgress > 0 && thumbUploadProgress < 100) ? (
-                          <div>
-                            {videoUploadProgress > 0 && videoUploadProgress < 100 && (
-                              <div style={{ marginBottom: 6 }}>
-                                <div style={{ fontSize: 12 }}>Video: {videoUploadProgress}%</div>
-                                <div style={{ height: 8, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
-                                  <div style={{ width: `${videoUploadProgress}%`, height: '100%', background: '#213346' }} />
-                                </div>
-                              </div>
-                            )}
-                            {thumbUploadProgress > 0 && thumbUploadProgress < 100 && (
-                              <div>
-                                <div style={{ fontSize: 12 }}>Thumbnail: {thumbUploadProgress}%</div>
-                                <div style={{ height: 8, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
-                                  <div style={{ width: `${thumbUploadProgress}%`, height: '100%', background: '#213346' }} />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
+                    <label>Replace thumbnail</label>
+                    <div style={{ marginBottom: 8 }}>
+                      {/* small helper preview for selection area (not the main preview panel) */}
+                      <div style={{ width: 160, height: 160, borderRadius: '8px', background: '#eee', overflow: 'hidden' }}>
+                        <img src={thumbFilePreview || thumbUploadedUrl || videos[editingVideoIndex]?.thumbnail || '/images/Rectangle 4.png'} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-                    <button onClick={() => { setEditingVideoIndex(null); }} style={{ padding: '8px 12px' }}>Cancel</button>
-                    <button onClick={async () => {
-                      // perform uploads (video then thumb) using uploadWithProgress and update local videos array
+                    <input type="file" accept="image/*" onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
                       try {
-                        let newSrc = videos[editingVideoIndex].src;
-                        let newThumb = videos[editingVideoIndex].thumbnail;
-                        // if we uploaded already on selection, use those URLs
-                        if (videoUploadedUrl) newSrc = videoUploadedUrl;
-                        else if (videoFileForUpload) {
-                          setUploadProgress(0); setUploadStatusMessage('Uploading video...');
-                          newSrc = await uploadWithProgress(videoFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); });
-                        }
-                        if (thumbUploadedUrl) newThumb = thumbUploadedUrl;
-                        else if (thumbFileForUpload) {
-                          setUploadProgress(0); setUploadStatusMessage('Uploading thumbnail...');
-                          newThumb = await uploadWithProgress(thumbFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); });
-                        }
-                        // update in-memory videos array
-                        const updated = videos.map((it, i) => i === editingVideoIndex ? { ...it, src: normalizeVideoUrl(newSrc), thumbnail: newThumb } : it);
-                        setVideos(updated);
-                        // make the freshly saved video the active one so it plays immediately
-                        setPlayingIdx(editingVideoIndex);
-                        // persist to backend so it survives reload
+                        const url = URL.createObjectURL(f);
+                        setThumbFilePreview(url);
+                        setThumbFileForUpload(null);
+                        setThumbUploading(true);
+                        setThumbUploadProgress(0);
+                        setUploadStatusMessage('Uploading thumbnail...');
                         try {
-                          const r = await fetch('/api/review-videos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
-                          const jr = await r.json();
-                          if (!r.ok || !jr.success) console.warn('Failed to persist review videos', jr);
-                        } catch (err) { console.warn('Persist error', err); }
-                        setUploadStatusMessage('Upload complete');
-                        setTimeout(() => { setUploadStatusMessage(''); setUploadProgress(0); }, 1200);
-                        setEditingVideoIndex(null);
-                      } catch (err) {
-                        console.error('Video edit upload failed', err);
-                        setUploadStatusMessage('Upload failed: ' + (err.message || ''));
-                      }
-                    }} disabled={videoUploading || thumbUploading} style={{ padding: '8px 12px', background: (videoUploading || thumbUploading) ? '#999' : '#111', color: '#fff', cursor: (videoUploading || thumbUploading) ? 'not-allowed' : 'pointer' }}>Save</button>
+                          const uploaded = await uploadWithProgress(f, (p) => { setThumbUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); });
+                          setThumbUploadedUrl(uploaded);
+                          setUploadStatusMessage('Thumbnail uploaded');
+                        } catch (err) {
+                          console.error('Thumbnail upload failed', err);
+                          setUploadStatusMessage('Thumbnail upload failed: ' + (err.message || ''));
+                          setThumbUploadedUrl('');
+                        } finally {
+                          setThumbUploading(false);
+                          setThumbFileForUpload(null);
+                        }
+                      } catch (err) { console.error(err); }
+                    }} />
+                  </div>
+                  <div style={{ width: 260, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <p style={{ fontWeight: 600 }}>Preview</p>
+                    {/* Main preview: show either the video OR the thumbnail (not both) depending on what admin selected.
+                          Default behaviour: show the video element with poster set to the thumbnail so it resembles the on-page card.
+                          If the admin has selected/changed a new video -> show video. Else if admin selected/changed only thumbnail -> show the thumbnail image only. */}
+                    {(() => {
+                      const hasNewVideo = Boolean(videoUploadedUrl || videoFilePreview);
+                      const hasNewThumb = Boolean(thumbUploadedUrl || thumbFilePreview);
+                      const displayMode = hasNewVideo ? 'video' : (hasNewThumb ? 'thumb' : 'video');
+                      const videoSrc = videoUploadedUrl || videoFilePreview || videos[editingVideoIndex]?.src;
+                      const posterSrc = thumbUploadedUrl || thumbFilePreview || videos[editingVideoIndex]?.thumbnail;
+
+                      return (
+                        <div style={{ width: '100%', height: 220, background: '#fafafa', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {displayMode === 'video' ? (
+                            <video
+                              src={videoSrc}
+                              poster={posterSrc}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              controls
+                              muted
+                            />
+                          ) : (
+                            <img src={posterSrc || '/images/Rectangle 4.png'} alt="thumbnail preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ marginBottom: 8 }}>{uploadStatusMessage}</div>
+                      {(videoUploadProgress > 0 && videoUploadProgress < 100) || (thumbUploadProgress > 0 && thumbUploadProgress < 100) ? (
+                        <div>
+                          {videoUploadProgress > 0 && videoUploadProgress < 100 && (
+                            <div style={{ marginBottom: 6 }}>
+                              <div style={{ fontSize: 12 }}>Video: {videoUploadProgress}%</div>
+                              <div style={{ height: 8, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
+                                <div style={{ width: `${videoUploadProgress}%`, height: '100%', background: '#213346' }} />
+                              </div>
+                            </div>
+                          )}
+                          {thumbUploadProgress > 0 && thumbUploadProgress < 100 && (
+                            <div>
+                              <div style={{ fontSize: 12 }}>Thumbnail: {thumbUploadProgress}%</div>
+                              <div style={{ height: 8, width: '100%', background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
+                                <div style={{ width: `${thumbUploadProgress}%`, height: '100%', background: '#213346' }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+                  <button onClick={() => { setEditingVideoIndex(null); }} style={{ padding: '8px 12px' }}>Cancel</button>
+                  <button onClick={async () => {
+                    // perform uploads (video then thumb) using uploadWithProgress and update local videos array
+                    try {
+                      let newSrc = videos[editingVideoIndex].src;
+                      let newThumb = videos[editingVideoIndex].thumbnail;
+                      // if we uploaded already on selection, use those URLs
+                      if (videoUploadedUrl) newSrc = videoUploadedUrl;
+                      else if (videoFileForUpload) {
+                        setUploadProgress(0); setUploadStatusMessage('Uploading video...');
+                        newSrc = await uploadWithProgress(videoFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); });
+                      }
+                      if (thumbUploadedUrl) newThumb = thumbUploadedUrl;
+                      else if (thumbFileForUpload) {
+                        setUploadProgress(0); setUploadStatusMessage('Uploading thumbnail...');
+                        newThumb = await uploadWithProgress(thumbFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); });
+                      }
+                      // update in-memory videos array
+                      const updated = videos.map((it, i) => i === editingVideoIndex ? { ...it, src: normalizeVideoUrl(newSrc), thumbnail: newThumb } : it);
+                      setVideos(updated);
+                      // make the freshly saved video the active one so it plays immediately
+                      setPlayingIdx(editingVideoIndex);
+                      // persist to backend so it survives reload
+                      try {
+                        const r = await fetch('/api/review-videos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+                        const jr = await r.json();
+                        if (!r.ok || !jr.success) console.warn('Failed to persist review videos', jr);
+                      } catch (err) { console.warn('Persist error', err); }
+                      setUploadStatusMessage('Upload complete');
+                      setTimeout(() => { setUploadStatusMessage(''); setUploadProgress(0); }, 1200);
+                      setEditingVideoIndex(null);
+                    } catch (err) {
+                      console.error('Video edit upload failed', err);
+                      setUploadStatusMessage('Upload failed: ' + (err.message || ''));
+                    }
+                  }} disabled={videoUploading || thumbUploading} style={{ padding: '8px 12px', background: (videoUploading || thumbUploading) ? '#999' : '#111', color: '#fff', cursor: (videoUploading || thumbUploading) ? 'not-allowed' : 'pointer' }}>Save</button>
+                </div>
               </div>
-            )}
+            </div>
+          )}
         </div>
       </section>
     </div>

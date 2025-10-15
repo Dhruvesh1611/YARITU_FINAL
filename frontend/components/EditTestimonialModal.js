@@ -5,18 +5,48 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
     const [name, setName] = useState(item?.name || '');
     const [quote, setQuote] = useState(item?.quote || '');
     const [rating, setRating] = useState(item?.rating || 5);
-    // State for the actual file or final URL
-    const [avatar, setAvatar] = useState(item?.avatar || '');
-    // State for the temporary preview URL
-    const [previewAvatar, setPreviewAvatar] = useState(item?.avatar || '');
+    // selected file + preview
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewAvatar, setPreviewAvatar] = useState(item?.avatarUrl || item?.avatar || '');
     const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+    const uploadToCloudinaryUnsigned = (cloudName, uploadPreset, file, onProgress) => {
+        return new Promise((resolve, reject) => {
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', uploadPreset);
+            fd.append('folder', 'YARITU');
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && typeof onProgress === 'function') {
+                    const pct = Math.round((event.loaded * 100) / event.total);
+                    onProgress(pct);
+                }
+            };
+            xhr.onload = () => {
+                try {
+                    const parsed = JSON.parse(xhr.responseText);
+                    if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
+                    else reject(new Error(parsed?.error?.message || `Upload failed: ${xhr.status}`));
+                } catch (err) {
+                    reject(new Error('Failed to parse upload response'));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during upload'));
+            xhr.send(fd);
+        });
+    };
 
     useEffect(() => {
         setName(item?.name || '');
         setQuote(item?.quote || '');
         setRating(item?.rating || 5);
-        setAvatar(item?.avatar || '');
-        setPreviewAvatar(item?.avatar || ''); // Set initial preview from the item prop
+        setSelectedFile(null);
+        setPreviewAvatar(item?.avatarUrl || item?.avatar || ''); // Set initial preview from the item prop
     }, [item]);
 
     // Handle image file selection and create a temporary URL for preview
@@ -27,22 +57,29 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
             // like Cloudinary. For the UI, we create a local URL to show a preview instantly.
             const localPreviewUrl = URL.createObjectURL(file);
             setPreviewAvatar(localPreviewUrl);
-            // Here you would typically store the 'file' object itself to be uploaded later.
-            // For this example, we'll just use the preview URL in the update.
-            setAvatar(localPreviewUrl); 
+            setSelectedFile(file);
         }
     };
 
     const handleUpdate = async () => {
         setLoading(true);
         try {
-            // IMPORTANT: In a real app, if a new file was selected, you would first
-            // upload it to your image hosting service, get the permanent URL, 
-            // and then send that URL in the JSON body.
+            // If a new file is selected, upload unsigned to Cloudinary and report progress
+            let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
+            if (selectedFile) {
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
+                if (!cloudName || !uploadPreset) throw new Error('Cloudinary unsigned config missing');
+                setUploadProgress(0);
+                const cloudResp = await uploadToCloudinaryUnsigned(cloudName, uploadPreset, selectedFile, (pct) => setUploadProgress(pct));
+                avatarUrlToSend = cloudResp?.secure_url || cloudResp?.secureUrl || cloudResp?.url || avatarUrlToSend;
+                setPreviewAvatar(avatarUrlToSend);
+            }
+
             const res = await fetch(`/api/testimonials/${item._id || item.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, quote, rating, avatar }),
+                body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend }),
             });
             const json = await res.json().catch(() => null);
             if (res.ok && json && (json.success || json.data)) {

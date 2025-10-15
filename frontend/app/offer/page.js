@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './offer.css';
 import OfferSignupModal from '../../components/OfferSignupModal';
 import Image from 'next/image';
@@ -8,105 +8,32 @@ import EditStoreModal from '../../components/EditStoreModal';
 import OfferEditorModal from '../../components/OfferEditorModal';
 
 export default function Offer() {
-  const stores = [
-    {
-      name: "Udaipur, Rajasthan",
-      address: "Plot no 8, 100 Feet Rd, Opp Shubh Kesar Garden, Shobhagpura Udaipur, Rajasthan 313001",
-      phone: "+91 99090 00616",
-      image: "/images/stores/store1.png"
-    },
-    {
-      name: "Indore",
-      address: "1st & 2nd Floor, 8 Gumasta Nagar, Opp. Sethi gate, Footi Kothi Road, Indore, Madhya Pradesh 452009",
-      phone: "+91 84016 73773",
-      image: "/images/stores/store2.png"
-    },
-    {
-      name: "Jaipur, Rajasthan",
-      address: "Plot No. 12, Sec.-8, Sarthi Marg, Near SBI Choraha, Vaishali Nagar, Jaipur, Rajasthan 302021",
-      phone: "+91 84016 73273",
-      image: "/images/stores/store3.png"
-    },
-    {
-      name: "Jamnagar",
-      address: "Shop No. FF-107 to 114, Nandanvan Stylus Complex Nandanvan Society, Ranjit Sagar Road, Jamnagar-361 005",
-      phone: "+91 72288 72280",
-      image: "/images/stores/store4.png"
-    },
-    {
-      name: "Jetpur",
-      address: "1st Floor, Jetpur City Mall, Opp. Gurukrupa Ceramics, Amarnagar Road, Jetpur.",
-      phone: "+91 88666 40550",
-      image: "/images/stores/store5.png"
-    },
-    {
-      name: "Morbi",
-      address: "2nd Floor, Shop No.5-8, 3rd, 4th Floor, Balaji Comp., Opp. Canal Chowk, Ravapar Road, Morbi-363 641",
-      phone: "+91 75675 14014",
-      image: "/images/stores/store6.png"
-    },
-    {
-      name: "Amreli",
-      address: "2nd floor, Shivam Plaza, Near Panchanath Mahadev Temple, Old Marketing Yard, Amreli-365601",
-      phone: "+91 88496 68776",
-      image: "/images/stores/store7.png"
-    },
-    {
-      name: "Navsari",
-      address: "1st Floor, Shreenath House, Near. City Tower, Kaliawadi, Navsari-396427",
-      phone: "+91 93287 48970",
-      image: "/images/stores/store8.png"
-    },
-    {
-      name: "Nikol, Ahmedabad",
-      address: "Opp. Sardar Mall, Nikol Road, Approach Ahmedabad-382350",
-      phone: "+91 99099 45508",
-      image: "/images/stores/store9.png"
-    },
-    {
-      name: "Gota, Ahmedabad",
-      address: "Shop No. 211 to 214, Shlok Infinity, Opp. Vishwakarma Mandir, Nr. Gota Railway Bridge, Chandlodiya, Ahmedabad-382481",
-      phone: "+91 97122 05000",
-      image: "/images/stores/store10.png"
-    },
-    {
-      name: "Bopal, Ahmedabad",
-      address: "Shop No. 2013 to 2018, TRP Mall, Ghuma Road, B.R.T.S. Bopal, Ahmedabad-380058",
-      phone: "+91 93166 97344",
-      image: "/images/stores/store1.png"
-    },
-    {
-      name: "Maruti Chowk, Surat",
-      address: "shop no. 1-5, 1floor, panchdev shopping center, Lambe Hanuman Rd, opp. maruti gaushala, Navi Shakti Vijay Society, Mohan Nagar, Varachha, Surat, Gujarat 395006",
-      phone: "+91 89806 14403",
-      image: "/images/stores/store2.png"
-    },
-    {
-      name: "Katargam, Surat",
-      address: "Shop No.1 to 3, 1st floor, Bhavya Complex, Laxminarayan Soc., Dabholi Char Rasta, Ved Road, Surat.",
-      phone: "+91 89806 14400",
-      image: "/images/stores/store3.png"
-    },
-    {
-      name: "Yogi Chowk, Surat",
-      address: "2nd Floor and 3rd Floor, Pragati IT, World, Yogi Chowk Road, near Satyam Clinic, Punagam, Surat, Gujarat 395010",
-      phone: "+91 84016 73473",
-      image: "/images/stores/store4.png"
-    },
-    {
-      name: "Rajkot",
-      address: "Opp. Ambika Park, Before Hanuman Madhi Chowk, Raiya Road, Rajkot 360007",
-      phone: "+91 99090 00615",
-      image: "/images/stores/store5.png"
-    },
-    {
-      name: "Mehsana",
-      address: "BHAGWATI CHAMBER, NEAR BHARAT PETROL PUMP, Radhanpur Rd, Dediyasan, Mehsana, Gujarat 384002",
-      phone: "+91 88667 06069",
-      image: "/images/stores/store6.png"
-    },
-  ];
-  const [selectedIdx, setSelectedIdx] = useState(9); // Default to Gota, Ahmedabad
+  const staticStores = [
+    { name: 'AMRELI', address: '2nd floor, Shivam plaza, Old, Market Yard Rd, Amreli Irrigation Division, D.L.B. Society, Amreli, Gujarat 365601' },
+    { name: 'BOPAL', address: '2nd floor, Nr. TRP Mall BRTS Main Rd, Bopal, Ahmedabad, Gujarat 380058' },
+    { name: 'BOTAD', address: '1st & 2nd Floor, Surya Garden Restaurant, Opp:, Paliyad Rd, Botad, Gujarat 364710' },
+    { name: 'GOTA', address: '2nd Floor, Block - B, Shlok Infinity, Chandlodiya, Ahmedabad, Gujarat 382481' },
+    { name: 'INDORE', address: '1st & 2nd Floor, 8, Footi Kothi Rd, opp. Sethi Gate Road, Gumasta Nagar, Scheme 71, Indore, Madhya Pradesh 452009' },
+    { name: 'JAMNAGAR', address: 'Shop No. FF-114, Nandanvan Stylus Complex, Ranjitsagar Rd, Nandanvan Society, Jamnagar, Gujarat 361006' },
+    { name: 'JAIPUR', address: 'Plot No. 12, Sarthi Marg, near SBI Choraha, Sector 8, Vaishali Nagar, Jaipur, Rajasthan 302021' },
+    { name: 'JETPUR', address: 'Amar Nagar Rd, Dobariya Wadi, Vekariya Nagar, Jetpur, Gujarat 360370' },
+    { name: 'KATARGAM', address: 'Shop No.1 to 3, 1st Floor, Bhavya Complex, Laxminarayan Soc Dhabholi Char Rasta, Ved Rd, Katargam, Surat, Gujarat 395004' },
+    { name: 'MARUTI CHOWK', address: 'shop no. 1-5, 1floor, panchdev shopping center, Lambe Hanuman Rd, opp. maruti gaushala, Navi Shakti Vijay Society, Panchdev Society, Mohan Nagar, Varachha, Surat, Gujarat 395006' },
+    { name: 'MEHSANA', address: 'BHAGWATI CHAMBER, Radhanpur Rd, near BHARAT PETROL PUMP, Dediyasan, Mehsana, Gujarat 384002' },
+    { name: 'MORBI', address: '2nd to 4th Floor, Balaji Complex, Shop No, 5-8, Ravapar Rd, opposite Canal Chowk, Morbi, Gujarat 363641' },
+    { name: 'NAVSARI', address: '1st floor, Grid Rd, nearby City Tower Apartment, Kachiyawadi, Kaliawadi, Navsari, Gujarat 396427' },
+    { name: 'NIKOL', address: 'Nikol Gam Rd, opp. Sardar hawl, prajapati chawl, Indrajit Society, Thakkarbapanagar, Nikol, Ahmedabad, Gujarat 382350' },
+    { name: 'RAJKOT', address: 'Opp: Ambika Park, Raiya Rd, Hanuman Madhi Chowk, Before, Rajkot, Gujarat 360007' },
+    { name: 'UDAIPUR', address: 'Plot No.8, 100 Feet Rd, opp. Shubh Kesar Garden, New Ashok Vihar, Shobhagpura, Udaipur, Rajasthan 313001' },
+    { name: 'YOGICHOWK', address: '2nd Floor and 3rd Floor, Pragati IT World, Shop No. 201 to 208 and 303 to 308, Yogi Chowk Rd, near Satyam Clinic, Yogi Chowk Ground, Punagam, Nana Varachha, Surat, Gujarat 395011' },
+  ].sort((a, b) => a.name.localeCompare(b.name));
+
+  const stores = staticStores.map(s => ({
+    ...s,
+    phone: s.phone || '',
+    image: s.image || '/images/stores/store-placeholder.png'
+  }));
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const { data: session } = useSession();
   const [storesData, setStoresData] = useState(stores);
   const [editOpen, setEditOpen] = useState(false);
@@ -114,14 +41,48 @@ export default function Offer() {
   const [offersContent, setOffersContent] = useState(null);
   const [offerEditorOpen, setOfferEditorOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
+  const modalIdx = typeof editIdx === 'number' ? editIdx : selectedIdx;
+  // Claim toast state
+  const [claimToast, setClaimToast] = useState({ show: false, text: '' });
+  const toastTimerRef = useRef(null);
+
+  const showClaimToast = (text) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setClaimToast({ show: true, text });
+    toastTimerRef.current = setTimeout(() => {
+      setClaimToast({ show: false, text: '' });
+      toastTimerRef.current = null;
+    }, 3000);
+  };
+
+  const handleClaim = (e, offer) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const storeName = (storesData[selectedIdx]?.name || stores[selectedIdx]?.name || '').toString();
+    const msg = storeName ? `Visit our ${storeName} branch` : 'Visit our branch';
+    showClaimToast(msg);
+    // You can extend this to call any claim API or analytics here
+  };
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/admin/stores');
+        // Use the public stores API so the Offer page shows the same stores as the homepage "Visit Our Stores"
+        const res = await fetch('/api/stores', { cache: 'no-store' });
         if (res.ok) {
           const j = await res.json();
-          if (j.success && Array.isArray(j.data)) setStoresData(j.data);
+          if (j.success && Array.isArray(j.data)) {
+            // sort ascending by name, case-insensitive
+            const sorted = j.data.slice().sort((a, b) => {
+              const na = (a.name || '').toString().toLowerCase();
+              const nb = (b.name || '').toString().toLowerCase();
+              return na.localeCompare(nb);
+            }).map(s => ({
+              ...s,
+              phone: s.phone || '',
+              image: s.image || '/images/stores/store-placeholder.png'
+            }));
+            setStoresData(sorted);
+          }
         }
       } catch (e) { /* ignore */ }
     };
@@ -143,6 +104,12 @@ export default function Offer() {
 
   return (
     <>
+      {/* Claim toast banner (styled via offer.css) */}
+      <div className={`claim-toast-container ${claimToast.show ? 'visible' : ''}`} aria-live="polite">
+        <div className="claim-toast">
+          <div className="claim-toast-text">{claimToast.text}</div>
+        </div>
+      </div>
       <OfferSignupModal openAfter={5000} />
       <div className="offer-page">
         <div className="container reviews-content">
@@ -164,7 +131,6 @@ export default function Offer() {
                 ))}
               </select>
 
-              {/* Display selected store details */}
               <div className="selected-store-info">
                 <h3>{storesData[selectedIdx]?.name}</h3>
                 <p className="store-address">{storesData[selectedIdx]?.address}</p>
@@ -189,30 +155,44 @@ export default function Offer() {
           <EditStoreModal
             open={editOpen}
             onClose={() => setEditOpen(false)}
-            store={storesData[editIdx]}
-            idx={editIdx}
-            onSaved={(updated) => setStoresData((p) => p.map((x, i) => i === editIdx ? updated : x))}
+            store={storesData[modalIdx]}
+            idx={modalIdx}
+            onSaved={(updated) => setStoresData((p) => p.map((x, i) => i === modalIdx ? updated : x))}
           />
         )}
         <section id="offers" className="offers-section section-padding">
           <div className="page-container">
             <div className="offers-header">
               <Image src="/images/location.png" alt="Location icon" width={50} height={50} />
-              <h2>{stores[selectedIdx].name}</h2>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2>{storesData[selectedIdx]?.name || stores[selectedIdx]?.name}</h2>
+                {storesData[selectedIdx]?.phone || stores[selectedIdx]?.phone ? (
+                  <div style={{ fontSize: 14, color: '#666', marginTop: 4 }}>📞 {storesData[selectedIdx]?.phone || stores[selectedIdx]?.phone}</div>
+                ) : null}
+              </div>
             </div>
             <div className="offers-grid">
-              {session && session.user && session.user.role === 'admin' && (
-                <div className="admin-add-offer">
-                  <button className="admin-add-offer-btn" onClick={() => { setEditingOffer(null); setOfferEditorOpen(true); }}>Add Offer</button>
-                </div>
-              )}
-              {/* If offersContent loaded, show its items; otherwise fall back to static three cards */}
-              {Array.isArray(offersContent) ? (
-                offersContent.map((off, i) => (
+              {(() => {
+                if (!Array.isArray(offersContent)) return null;
+                const hasStoreField = offersContent.some(o => typeof o.store === 'string');
+                const selectedStoreName = (storesData[selectedIdx]?.name || stores[selectedIdx]?.name || '').toString().toLowerCase();
+                const filteredOffers = hasStoreField ? offersContent.filter(o => (o.store || '').toString().toLowerCase() === selectedStoreName) : offersContent;
+                if (filteredOffers.length === 0) {
+                  return (
+                    <div style={{ padding: 30, textAlign: 'center', width: '100%' }}>
+                      <p style={{ fontSize: 18, color: '#666' }}>No offers available for {storesData[selectedIdx]?.name || stores[selectedIdx]?.name} at the moment.</p>
+                      {session && session.user && session.user.role === 'admin' && (
+                        <p style={{ color: '#333' }}>You can add offers for this store using the Add Offer button.</p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return filteredOffers.map((off, i) => (
                   <div key={off.id} className={`offer-card ${i === 1 ? 'offset-up' : ''}`}>
                     <div className="offer-card-image">
                       <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                        <Image src={off.image} alt={off.heading} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'contain' }} />
+                        <Image src={off.image} alt={off.heading} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'fill' }} />
                       </div>
                       {off.discount ? <div className="discount-tag">{off.discount}</div> : null}
                     </div>
@@ -220,7 +200,7 @@ export default function Offer() {
                       <h3>{off.heading}</h3>
                       <p>{off.subheading}</p>
                       <span className="validity-date">{off.validity}</span>
-                      <a href="#" className="claim-button">Claim Offer</a>
+                      <a href="#" className="claim-button" onClick={(e) => handleClaim(e, off)}>Claim Offer</a>
                       {session && session.user && session.user.role === 'admin' && (
                         <div style={{ marginTop: 8 }}>
                           <button onClick={() => { setEditingOffer(off); setOfferEditorOpen(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Edit</button>
@@ -228,86 +208,50 @@ export default function Offer() {
                       )}
                     </div>
                   </div>
-                ))
-              ) : (
+                ));
+              })()}
+              {session && session.user && session.user.role === 'admin' && (
+                <div className="admin-add-offer">
+                  <button className="admin-add-offer-btn" onClick={() => { setEditingOffer(null); setOfferEditorOpen(true); }}>Add Offer</button>
+                </div>
+              )}
+              {!Array.isArray(offersContent) && (
                 <>
-                  <div className={`offer-card ${0 === 1 ? 'offset-up' : ''}`}>
-                    <div className="offer-card-image">
-                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                        <Image
-                          src="/images/shervani.png"
-                          alt="Wedding Season Special"
-                          fill
-                          sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
-                          style={{ objectFit: 'contain' }}
-                        />
-                      </div>
-                      <div className="discount-tag">25% OFF</div>
-                    </div>
-                    <div className="offer-card-content">
-                      <h3>Wedding Season Special</h3>
-                      <p>On all bridal lehengas and sherwanis</p>
-                      <span className="validity-date">Valid until March 31, 2025</span>
-                      <a href="#" className="claim-button">Claim Offer</a>
-                    </div>
-                  </div>
-
-                  <div className={`offer-card ${1 === 1 ? 'offset-up' : ''}`}>
-                    <div className="offer-card-image">
-                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                        <Image
-                          src="/images/image.png"
-                          alt="couple combo deal"
-                          fill
-                          sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
-                          style={{ objectFit: 'contain' }}
-                        />
-                      </div>
-                      <div className="discount-tag">₹2,000/- OFF</div>
-                    </div>
-                    <div className="offer-card-content">
-                      <h3>Couple Combo Deal</h3>
-                      <p>When you buy both bride & groom outfits</p>
-                      <span className="validity-date">Limited time offer</span>
-                      <a href="#" className="claim-button">Claim Offer</a>
-                    </div>
-                  </div>
-
-                  <div className="offer-card">
-                    <div className="offer-card-image">
-                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                        <Image
-                          src="/images/festival.png"
-                          alt="festival Collection"
-                          fill
-                          sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw"
-                          style={{ objectFit: 'contain' }}
-                        />
-                      </div>
-                      <div className="discount-tag">25% OFF</div>
-                    </div>
-                    <div className="offer-card-content">
-                      <h3>Festival Collection</h3>
-                      <p>On ethnic wear for all occasions</p>
-                      <span className="validity-date">Ends February 28, 2025</span>
-                      <a href="#" className="claim-button">Claim Offer</a>
-                    </div>
-                  </div>
+                  {/* Fallback Cards */}
                 </>
               )}
               {offerEditorOpen && (
                 <OfferEditorModal
                   open={offerEditorOpen}
                   item={editingOffer}
+                  storeName={storesData[selectedIdx]?.name}
                   onClose={() => setOfferEditorOpen(false)}
+                  
+                  // *** YAHAN BADLAV KIYA GAYA HAI ***
                   onSaved={(saved) => {
-                    // update local state
+                    // Manually add the store name to the object returned from the API
+                    const newOfferWithStore = {
+                      ...saved, // All data from the API response (id, heading, etc.)
+                      store: storesData[selectedIdx]?.name, // Add the current selected store name
+                    };
+
+                    // Now, update the state with this new, complete object
                     setOffersContent((prev) => {
-                      if (!Array.isArray(prev)) return [saved];
-                      const idx = prev.findIndex(p => p.id === saved.id);
-                      if (idx === -1) return [saved, ...prev];
-                      const copy = [...prev]; copy[idx] = saved; return copy;
+                      if (!Array.isArray(prev)) return [newOfferWithStore];
+                      
+                      const idx = prev.findIndex(p => p.id === newOfferWithStore.id);
+                      
+                      // If it's a new offer, add it to the beginning of the array
+                      if (idx === -1) {
+                        return [newOfferWithStore, ...prev];
+                      }
+                      
+                      // If it's an existing offer (edit), replace it
+                      const copy = [...prev];
+                      copy[idx] = newOfferWithStore;
+                      return copy;
                     });
+                    
                     setOfferEditorOpen(false);
                   }}
                   onDeleted={(deletedId) => {
@@ -317,9 +261,8 @@ export default function Offer() {
               )}
             </div>
           </div>
-          {/* Global WhatsApp button is provided in app/layout.js */}
         </section>
-        
+
         <section id="newsletter" className="newsletter-section section-padding">
           <div className="page-container">
             <div className="newsletter-content">
@@ -337,4 +280,3 @@ export default function Offer() {
     </>
   );
 }
-

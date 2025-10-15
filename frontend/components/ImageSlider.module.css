@@ -7,6 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: 60px; /* Add button ke liye space */
 }
 
 .imageWrapper {
@@ -19,27 +20,12 @@
 }
 
 .imageCard {
-  width: 50%; /* default: center larger on desktop */
+  width: 50%;
   height: 90%;
   border-radius: 16px;
   overflow: hidden;
-  position: absolute; /* Layering ke liye zaroori */
+  position: absolute;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-  transition: transform 0.35s ease, opacity 0.35s ease;
-}
-
-.imageCard.left,
-.imageCard.right {
-  width: 40%;
-  height: 85%;
-  opacity: 0.8;
-  transform: scale(0.92);
-}
-
-.imageCard.center {
-  z-index: 20;
-  transform: scale(1);
-  opacity: 1;
 }
 
 .image {
@@ -74,63 +60,182 @@
   right: 5%;
 }
 
-/* === TABLET RESPONSIVE STYLES (NEW) === */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .carouselContainer {
-    height: 480px; /* Desktop aur mobile ke beech ki height */
-  }
-  .imageWrapper {
-    width: 70%; /* Tablet par thoda चौड़ा dikhega */
-  }
-  .leftArrow {
-    left: 8%; /* Arrow ko thoda adjust kiya */
-  }
-  .rightArrow {
-    right: 8%; /* Arrow ko thoda adjust kiya */
-  }
+
+/* === ADD FEATURED BUTTON & FEATURED GRID (NEW STYLES) === */
+
+.addFeaturedContainer {
+  position: absolute;
+  top: -50px; /* Slider ke upar */
+  right: 0;
+  z-index: 40;
 }
 
-/* === MOBILE RESPONSIVE STYLES === */
+.addFeaturedBtn {
+  background-color: #0a2137;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.addFeaturedBtn:hover {
+  background-color: #1a3650;
+  transform: translateY(-2px);
+}
+
+.featuredGrid {
+  margin-top: 24px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 16px;
+}
+
+.featuredCard {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
+}
+
+.featuredCard:hover {
+  transform: scale(1.05);
+}
+
+.featuredCardImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardActionsOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.25s ease-in-out;
+}
+
+.featuredCard:hover .cardActionsOverlay {
+  opacity: 1;
+}
+
+.cardActionBtn {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.cardActionBtn:hover {
+  transform: scale(1.1);
+}
+
+.editBtn {
+  color: #0a2137;
+}
+.editBtn:hover {
+  background-color: #e0e0e0;
+}
+
+.deleteBtn {
+  color: #e53e3e; /* Red for delete */
+}
+.deleteBtn:hover {
+  background-color: #fed7d7; /* Light red */
+}
+
+/* Delete Confirmation Modal Styles */
+.confirmDeleteOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.confirmDeleteModal {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  max-width: 320px;
+}
+.confirmDeleteModal h4 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+.confirmDeleteModal p {
+  margin-bottom: 20px;
+  color: #555;
+}
+.confirmDeleteModal div {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.confirmDeleteModal button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  font-weight: 500;
+}
+.confirmDeleteModal button.confirmBtn {
+  background-color: #e53e3e;
+  color: white;
+  border-color: #e53e3e;
+}
+
+
+/* === RESPONSIVE STYLES === */
 @media (max-width: 768px) {
   .carouselContainer {
-    height: 400px;
+    height: 500px;
+    margin-top: 50px;
   }
   .imageWrapper {
     width: 100%;
-    overflow: hidden;
-  }
-  /* Mobile scroll container */
-  .snapContainer {
-    display: flex;
-    gap: 16px;
-    padding: 12px 16px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    align-items: center;
-    justify-content: center;
-  }
-  .snapItem {
-    scroll-snap-align: center;
-    flex: 0 0 85%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .leftArrow {
-    left: -4%;
-  }
-  .rightArrow {
-    right: -4%;
+    overflow: hidden; /* Yeh line add karein */
   }
   .imageCard {
     width: 70%;
-    height: 100%;
-    border-radius: 16px;
-    overflow: hidden;
-    position: absolute; /* Layering ke liye zaroori */
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    transform-origin: center center;
+    height: 90%;
+  }
+  .leftArrow {
+    left: 2%;
+  }
+  .rightArrow {
+    right: 2%;
+  }
+  .addFeaturedContainer {
+    top: -45px;
+    right: 16px;
+  }
+  .addFeaturedBtn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
   }
 }

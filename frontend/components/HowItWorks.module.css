@@ -1,10 +1,9 @@
-/* components/HowItWorks.module.css */
-
 /* --- GENERAL STYLES --- */
 .mainContainer {
     position: relative;
     background-color: #fdfaf6; 
     padding: 80px 0;
+    background-image: url('/images/BLUE.png');
 }
 
 .mainHeading {
@@ -12,7 +11,7 @@
     font-family: 'Playfair Display', serif; 
     font-size: 3rem;
     font-weight: 500;
-    color: #333;
+    color: #ffffff;
     margin-bottom: 60px;
     position: relative;
 }
@@ -30,6 +29,7 @@
     height: 100vh; 
     position: sticky;
     top: 50px;
+    margin-left: 0px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -37,15 +37,16 @@
 
 .imageContainer {
     position: relative;
-    width: 90%; 
-    max-width: 500px; 
+    width: 95%;
+    height: 600px;
+    max-width: 600px;
     aspect-ratio: 4 / 3.5;
-    transform: translateX(20px); 
+    transform: translateX(20px);
 }
 
 .imageFrameWrapper {
     position: relative;
-    width: 70%;
+    width: 100%;
     height: 100%;
     border: 5px solid rgb(142, 112, 64);
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
@@ -65,8 +66,8 @@
 .imageFrame img {
     width: 100%;
     height: 100%;
-    border: 5px solid#c9a87c;
-    object-fit: fill; 
+    border: 5px solid #c9a87c;
+    object-fit: cover; 
 }
 
 .visible {
@@ -81,24 +82,24 @@
 
 .frameStands {
     position: absolute;
-    bottom: -30px;
-    left: -45px;
-    top: -20px;
-    width: 100%;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% + 40px);
     display: flex;
     justify-content: space-between;
-    padding: 0 100px;
+    padding: 0 8%;
     box-sizing: border-box;
+    pointer-events: none;
 }
 
 .stand {
-    width: 45px; 
-    height: 30px;
+    width: 50px;
+    height: 34px;
     background-color: #e3d9c7;
-    border-radius: 5px 5px 0 0;
+    border-radius: 6px 6px 0 0;
     box-shadow: 0 -3px 5px rgba(0, 0, 0, 0.05);
     position: relative;
-    left: -20px;
     z-index: 2;
 }
 
@@ -113,14 +114,14 @@
 
 .timeline {
     position: relative;
-    padding-left: 80px; 
+    padding-left: 180px; 
     width: 100%;
 }
 
 .timeline::before {
     content: '';
     position: absolute;
-    left: 98px; 
+    left: 198px; 
     top: 0;
     width: 2px;
     height: 100%;
@@ -207,7 +208,7 @@
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 10px;
-    color: #333;
+    color: #ffdfbe;
 }
 
 .timelineContent p {
@@ -215,7 +216,7 @@
     font-size: 1rem;
     line-height: 1.7;
     max-width: 380px;
-    color: #666;
+    color: #ffffff;
 }
 
 /* === TABLET RESPONSIVE STYLES === */
@@ -232,16 +233,18 @@
         width: 45%;
     }
 
-    /* --- Naye changes yahan add kiye hain --- */
     .frameStands {
-        padding: 0 70px; /* Padding kam ki */
-        left: -32.5px;     /* Left position adjust ki */
+        padding: 0 6%;
+        top: -22px;
+        width: calc(100% + 20px);
+        left: 50%;
+        transform: translateX(-50%);
     }
 
     .stand {
-        left: -15px;    /* Stand ki position adjust ki */
+        width: 44px;
+        height: 28px;
     }
-    /* --- Yahan tak --- */
 
     .rightScrollingColumn {
         width: 55%;
@@ -279,15 +282,17 @@
 }
 
 
-/* --- MOBILE RESPONSIVE STYLES --- */
+/* --- MOBILE PORTRAIT STYLES --- */
 @media (max-width: 768px) {
     .mainContainer {
-        padding: 40px 0;
+        padding: 0;
+        background-color: #fdfaf6;
     }
 
     .mainHeading {
         font-size: 2rem;
         margin-bottom: 30px;
+        padding-top: 40px;
     }
 
     .contentWrapper {
@@ -296,49 +301,56 @@
 
     .leftStickyColumn {
         position: sticky;
-        top: 88px;
+        top: 0;
         width: 100%;
-        height: 50vh;
-        transform: none;
-        box-shadow: rgb(102, 120, 145) 0px 4px 12px;
+        height: 55vh;
         z-index: 10;
         background-color: #fdfaf6;
-        padding-top: 20px;
         display: flex;
         justify-content: center;
         align-items: center;
+        transform: none;
+        box-shadow: none; 
+        padding-top: 0;
     }
 
     .imageContainer {
-        width: 70%;
-        max-width: 300px;
+        width: 100%;
+        height: 100%;
+        max-width: none;
         transform: none;
-        aspect-ratio: 4 / 3.5;
-        display: flex;
-        justify-content: center;
+        aspect-ratio: unset;
+    }
+    
+    .imageFrameWrapper {
+        border: none;
+    }
+
+    .imageFrame img {
+        width: 100%;
+        height: 100%;
+        border: none;
+        object-fit: cover;
     }
 
     .frameStands {
-        padding: 0 75px;
-        left: 0px;
-        top: -10px;
-    }
-
-    .stand {
-        width: 35px;
-        height: 20px;
-        left: 0px;
-         z-index: 2;
+       display: none;
     }
 
     .rightScrollingColumn {
         width: 100%;
-        padding-top: 0;
         z-index: 5;
+        position: relative;
+        background-image: url('/images/BLUE.png');
+        padding: 0;
+        margin-top: -20px; 
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
     }
 
     .timeline {
         padding-left: 40px;
+        padding-top: 20px;
     }
 
     .timeline::before {
@@ -346,8 +358,10 @@
     }
 
     .timelineItem {
-        min-height: 60vh;
+        min-height: 45vh;
         padding: 20px 0;
+        display: flex;
+        flex-direction: column;
         justify-content: center;
     }
 
@@ -367,17 +381,95 @@
     }
 
     .timelineContent {
-        display: block;
         padding-left: 60px;
         transform: translateY(0);
     }
 
     .timelineContent h3 {
         font-size: 1.3rem;
+        color: #ffdfbe;
     }
 
     .timelineContent p {
         font-size: 0.9rem;
         max-width: 90%;
+        color: #ffffff;
+    }
+}
+
+/* === LANDSCAPE MOBILE STYLES === */
+/* Yeh naya code hai jo mobile ko horizontal karne par apply hoga */
+@media (max-width: 900px) and (orientation: landscape) {
+    
+    .mainContainer {
+        padding: 40px 0; /* Original padding wapas laaye */
+    }
+
+    .mainHeading {
+        font-size: 2.2rem;
+        margin-bottom: 40px;
+        padding-top: 0;
+    }
+
+    .contentWrapper {
+        flex-direction: row; /* Columns ko side-by-side karega */
+        padding: 0 20px;
+    }
+
+    /* Left column ko wapas desktop jaisa banayega */
+    .leftStickyColumn {
+        position: sticky;
+        top: 20px; /* Thoda neeche stick karega */
+        width: 45%;
+        height: 100vh;
+        background-color: transparent;
+        z-index: auto;
+    }
+
+    /* Image container ko bhi desktop jaisa banayega */
+    .imageContainer {
+        width: 95%;
+        height: auto; /* Height auto rakhein taki aspect ratio kaam kare */
+        max-width: 450px;
+        transform: translateX(0);
+        aspect-ratio: 4 / 3.5;
+    }
+
+    .imageFrameWrapper {
+        border: 5px solid rgb(142, 112, 64); /* Border wapas laaye */
+    }
+    
+    .imageFrame img {
+        border: 5px solid #c9a87c; /* Image border wapas laaye */
+    }
+
+    .frameStands {
+        display: flex; /* Stands ko wapas dikhaye */
+    }
+    
+    /* Right column ko wapas desktop jaisa banayega */
+    .rightScrollingColumn {
+        width: 55%;
+        margin-top: 0;
+        border-radius: 0;
+        background-image: none; /* Background main container se aayega */
+        padding-top: 50px;
+    }
+    
+    .timeline {
+        padding-left: 40px;
+        padding-top: 0;
+    }
+    
+    .timeline::before {
+        left: 58px;
+    }
+
+    .timelineItem {
+        min-height: 60vh; /* Thodi height adjust karein */
+    }
+
+    .timelineContent h3, .timelineContent p {
+        color: #ffffff; /* Text color wapas white karein */
     }
 }

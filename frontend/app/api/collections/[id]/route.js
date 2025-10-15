@@ -50,6 +50,17 @@ export async function PUT(request, { params }) {
     }
 
     const updateData = { ...fields, updatedAt: new Date() };
+  if (fields.collectionGroup) updateData.childCategory = fields.collectionGroup;
+
+    // productId is required
+    if (!fields.productId || !fields.productId.toString().trim()) {
+      return NextResponse.json({ success: false, error: 'Product ID is required.' }, { status: 400 });
+    }
+    await dbConnect();
+    const dup = await Collection.findOne({ productId: fields.productId.toString().trim(), _id: { $ne: id } }).lean();
+    if (dup) {
+      return NextResponse.json({ success: false, error: 'Product ID must be unique. Another collection already uses this Product ID.' }, { status: 400 });
+    }
     
     if (files.mainImage) {
         const mainImageFile = files.mainImage;
@@ -93,6 +104,13 @@ export async function PUT(request, { params }) {
     if (!updated) {
       return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
     }
+
+      // Auto-add meta options for filters
+      try {
+        const catKey = (updated.category || 'General').toString().toLowerCase();
+        if (updated.occasion) await MetaOption.create({ key: `occasion_${catKey}`, value: updated.occasion });
+        if (updated.collectionType) await MetaOption.create({ key: `collectionType_${catKey}`, value: updated.collectionType });
+      } catch (e) { /* ignore */ }
     
     return NextResponse.json({ success: true, data: updated });
   } catch (err) {

@@ -1,19 +1,299 @@
-.adminPage { max-width: 1100px; margin: 40px auto; padding: 20px; }
-.header { display:flex; align-items:center; justify-content:space-between; gap:20px; }
-.header h1 { margin:0; font-size:28px; }
-.tabs button { margin-left:8px; padding:8px 12px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; }
-.tabs .active { background:#25384d; color:#fff; border-color:#25384d }
-.headerButtonsWrapper { display:flex; align-items:center; gap:16px; }
-.headerButtons { display:flex; gap:8px; }
-.quickBtn { background: #25384d; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight:600; }
-.quickBtn:hover { opacity: 0.95; }
-.content { margin-top:20px; }
-.item { display:flex; justify-content:space-between; gap:20px; padding:12px; border:1px solid #eee; border-radius:8px; margin-bottom:10px; }
-.itemMain { flex:1; }
-.itemActions { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
-.itemActions button { background:#ff6b6b; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer }
+/* === 1. Theming & Global Styles === */
+:root {
+  --primary-color: #2563eb; /* A more modern blue */
+  --primary-color-dark: #1d4ed8;
+  --destructive-color: #dc2626;
+  --destructive-color-dark: #b91c1c;
+  --text-light: #ffffff;
+  --text-dark: #1f2937;
+  --bg-light: #ffffff;
+  --bg-medium: #f3f4f6;
+  --border-color: #e5e7eb;
 
-.adminDrawerOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.25); display:flex; }
-.adminDrawer { width:240px; background:#fff; padding:20px; box-shadow: 2px 0 12px rgba(0,0,0,0.12); }
-.drawerBtn { display:block; width:100%; padding:10px 12px; margin-bottom:8px; border-radius:8px; border:1px solid #ddd; background:#f7f7f7; cursor:pointer; text-align:left; }
-.drawerBtn:hover { background:#eee }
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 40px;
+  
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* === 2. Main Page Layout === */
+.adminPage {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+  font-family: var(--font-family);
+}
+
+/* === 3. Header Section === */
+.header {
+  display: flex;
+  flex-direction: column; /* Mobile first: stack items vertically */
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: var(--text-dark);
+}
+
+.headerButtonsWrapper {
+  display: flex;
+  flex-direction: column; /* Stack tabs and buttons on mobile */
+  width: 100%;
+  gap: var(--spacing-md);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap; /* Allow tabs to wrap if needed */
+  gap: var(--spacing-sm);
+}
+
+.tabs button {
+  padding: var(--spacing-sm) 12px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-light);
+  color: var(--text-dark);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.tabs button:hover {
+  background-color: var(--bg-medium);
+  border-color: #d1d5db;
+}
+
+.tabs .active {
+  background: var(--primary-color);
+  color: var(--text-light);
+  border-color: var(--primary-color);
+}
+
+.headerButtons {
+  display: flex;
+  gap: var(--spacing-sm);
+  width: 100%; /* Full width on mobile */
+}
+
+.quickBtn {
+  flex-grow: 1; /* Make button take available space on mobile */
+  background: var(--primary-color);
+  color: var(--text-light);
+  border: none;
+  padding: 10px 14px;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.quickBtn:hover {
+  background: var(--primary-color-dark);
+}
+
+
+/* === 4. Content & Items List === */
+.content {
+  margin-top: var(--spacing-lg);
+}
+
+.item {
+  display: flex;
+  flex-direction: column; /* Mobile first: stack content */
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+  background: var(--bg-light);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.item:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.itemMain {
+  flex: 1;
+}
+
+.item h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 1.1rem;
+}
+
+.item p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.itemActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: stretch; /* Stretch buttons to be same height */
+  width: 100%; /* Full width on mobile */
+}
+
+.itemActions button {
+  flex-grow: 1; /* Make buttons share space equally */
+  background: var(--destructive-color);
+  color: var(--text-light);
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.itemActions button:hover {
+  background: var(--destructive-color-dark);
+}
+
+/* === 5. Responsive Adjustments (Desktop View) === */
+@media (min-width: 768px) {
+  .adminPage {
+    padding: var(--spacing-xl);
+  }
+
+  .header {
+    flex-direction: row; /* Side-by-side on desktop */
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .headerButtonsWrapper {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+  }
+  
+  .headerButtons {
+      width: auto;
+  }
+  
+  .quickBtn {
+      flex-grow: 0; /* Revert flex grow */
+  }
+
+  .item {
+    flex-direction: row; /* Side-by-side on desktop */
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .itemActions {
+    flex-direction: column;
+    align-items: flex-end;
+    width: auto; /* Revert to auto width */
+  }
+  
+  .itemActions button {
+      flex-grow: 0; /* Revert flex grow */
+  }
+}
+
+/* === 6. Drawer (Mobile Navigation) === */
+.adminDrawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  /* Add animation for entry */
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.adminDrawer {
+  width: 280px;
+  max-width: 80%;
+  background: var(--bg-light);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  /* Add animation for entry */
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+}
+
+/* Example for hiding the drawer */
+.adminDrawerOverlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.adminDrawerOverlay.hidden .adminDrawer {
+    transform: translateX(-100%);
+}
+
+
+.drawerBtn {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.drawerBtn:hover {
+  background: var(--bg-medium);
+}
+
+/* === 7. Access Denied Page Styling === */
+.adminAccessDenied {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+  font-family: var(--font-family);
+  padding: var(--spacing-lg);
+}
+
+.container {
+    max-width: 500px;
+}
+
+.adminAccessDenied h2 {
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    margin-bottom: var(--spacing-sm);
+}
+
+.adminAccessDenied p {
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.adminAccessDenied a {
+    color: var(--primary-color);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.adminAccessDenied a:hover {
+    text-decoration: underline;
+}
