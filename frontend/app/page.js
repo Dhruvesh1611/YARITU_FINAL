@@ -1,13 +1,21 @@
 // app/page.js
 
 import HomePageClient from './HomePageClient';
+import { headers } from 'next/headers';
+
+// Ensure this page is always rendered dynamically (no static caching)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Server par data fetch karne ke liye helper function
 async function getHomepageData() {
   try {
-    // Apne server ka poora URL yahan daalein
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://https://your-vercel-domain.vercel.app:3000';
-    
+    // Build absolute base URL from incoming request headers
+    const h = headers();
+    const host = h.get('x-forwarded-host') || h.get('host');
+    const proto = h.get('x-forwarded-proto') || (process.env.VERCEL ? 'https' : 'http');
+    const baseUrl = `${proto}://${host}`;
+
     const [heroRes, storesRes, trendingRes] = await Promise.all([
       fetch(`${baseUrl}/api/hero`, { cache: 'no-store' }),
       fetch(`${baseUrl}/api/stores`, { cache: 'no-store' }),

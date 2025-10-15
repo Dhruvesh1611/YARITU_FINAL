@@ -51,6 +51,18 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
   const centerImageRef = useRef(null); 
   const featuredContainerRef = useRef(null);
 
+  // Client-side fallback: if no stores came from SSR, fetch once on mount
+  useEffect(() => {
+    if (!stores || stores.length === 0) {
+      fetch('/api/stores', { cache: 'no-store' })
+        .then((r) => r.ok ? r.json() : Promise.reject(new Error('Failed to fetch stores')))
+        .then((j) => {
+          if (j?.success && Array.isArray(j.data)) setStores(j.data);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // Helper to upload directly to Cloudinary unsigned with XHR so we can get progress
   const uploadToCloudinaryUnsigned = (cloudName, formData, onProgress) => {
     return new Promise((resolve, reject) => {

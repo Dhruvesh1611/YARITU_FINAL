@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server';
+
+// Ensure this route is always dynamic and runs on Node.js runtime (for Mongoose)
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import dbConnect from '../../../lib/dbConnect';
 import Store from '../../../models/Store';
 import { auth } from '../auth/[...nextauth]/route';
