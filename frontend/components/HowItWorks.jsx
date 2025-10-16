@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import styles from './HowItWorks.module.css';
 
-// Har step ka data
+// Har step ka data (Isme koi change nahi hai)
 const stepsData = [
   {
     title: 'Visit Our Showroom',
@@ -35,8 +35,34 @@ const stepsData = [
 const HowItWorks = () => {
   const [activeStep, setActiveStep] = useState(0);
   const stepRefs = useRef([]);
+  
+  // === 1. YEH NAYA STATE ADD KIYA GAYA HAI ===
+  // Yeh check karega ki view mobile hai ya nahi
+  const [isMobile, setIsMobile] = useState(false);
+
+  // === 2. SCREEN SIZE CHECK KARNE KE LIYE YEH NAYA useEffect ADD KIYA GAYA HAI ===
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    // Component load hone par check karega
+    checkScreenSize();
+
+    // Window resize hone par check karega
+    window.addEventListener('resize', checkScreenSize);
+
+    // Cleanup function
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
 
   useEffect(() => {
+    // === 3. rootMargin KO AB CONDITIONALLY SET KIYA GAYA HAI ===
+    // Agar mobile hai, toh trigger point neeche rakhenge.
+    // Agar desktop hai, toh trigger point upar rakhenge.
+    const rootMargin = isMobile ? '0px 0px -40% 0px' : '0px 0px -70% 0px';
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -47,11 +73,8 @@ const HowItWorks = () => {
         });
       },
       {
-        root: null, 
-        root: null, 
-        // === YEH LINE CHANGE KI GAYI HAI ===
-        // Ab trigger point screen ke top par hai.
-        rootMargin: '0px 0px -70% 0px', 
+        root: null,
+        rootMargin: rootMargin, // Yahan dynamic value use ki hai
         threshold: 0,
       }
     );
@@ -66,9 +89,9 @@ const HowItWorks = () => {
         if (ref) observer.unobserve(ref);
       });
     };
-  }, []); 
+  }, [isMobile]); // Dependency array me 'isMobile' add kiya gaya hai
 
-  // Simple inline icon renderer
+  // Icon component (Isme koi change nahi hai)
   const Icon = ({ name, size = 24 }) => {
     const fill = '#F7C948';
     const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', xmlns: 'http://www.w3.org/2000/svg' };
@@ -86,7 +109,7 @@ const HowItWorks = () => {
       <h2 className={styles.mainHeading}>HOW YARITU WORKS</h2>
       <div className={styles.contentWrapper}>
         
-        {/* === LEFT (STICKY) COLUMN: Image Display === */}
+        {/* Left (Sticky) Column */}
         <div className={styles.leftStickyColumn}>
           <div className={styles.imageContainer}>
             <div className={styles.imageFrameWrapper}>
@@ -115,7 +138,7 @@ const HowItWorks = () => {
           </div>
         </div>
 
-        {/* === RIGHT (SCROLLING) COLUMN: Timeline === */}
+        {/* Right (Scrolling) Column */}
         <div className={styles.rightScrollingColumn}>
           <div className={styles.timeline}>
             {stepsData.map((step, index) => (

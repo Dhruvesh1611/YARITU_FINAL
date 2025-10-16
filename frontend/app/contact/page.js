@@ -269,9 +269,9 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
               <div className={`${styles.infoCard} ${styles.socialCard}`}>
                 <h3>Connect With Us</h3>
                 <div className={styles.contactSocialLinks}>
-                  <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer"><img src="/images/instagram.png" alt="Instagram" width="40" height="40" style={{ width: '40px', height: '40px' }} decoding="async" /></a>
-                  <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer"><img src="/images/facebook.png" alt="Facebook" width="40" height="40" style={{ width: '40px', height: '40px' }} decoding="async" /></a>
-                  <a href="mailto:dhruveshshyaraog@gmail.com"><img src="/images/gmail.png" alt="Gmail" width="40" height="40" style={{ width: '40px', height: '40px' }} decoding="async" /></a>
+                  <a href="https://www.instagram.com/yaritu.official/?hl=en" target="_blank" rel="noopener noreferrer"><img src="/images/instagram copy.png" alt="Instagram" width="40" height="40" style={{ width: '40px', height: '40px' }} decoding="async" /></a>
+                  <a href="https://www.facebook.com/yaritu.official/" target="_blank" rel="noopener noreferrer"><img src="/images/facebook.png" alt="Facebook" width="40" height="40" style={{ width: '40px', height: '40px' }} decoding="async" /></a>
+                  <a href="sales@yaritu.com"><img src="/images/gmail.png" alt="Gmail" width="40" height="40" style={{ width: '40px', height: '40px' }} decoding="async" /></a>
                 </div>
                 <p className={styles.socialCaption}>Follow us for the latest updates and exclusive offers</p>
               </div>
