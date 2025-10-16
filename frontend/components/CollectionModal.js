@@ -32,7 +32,7 @@ function formReducer(state, action) {
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
     case 'RESET_DEPENDENT_FIELDS':
-      return { ...state, occasion: '', collectionType: '', otherOccasion: '', otherCollectionType: '', collectionGroup: '' };
+      return { ...state, occasion: '', collectionType: '', collectionGroup: '' };
     case 'LOAD_INITIAL':
       return { ...action.payload };
     default:
@@ -59,8 +59,6 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     status: initial?.status || 'Available',
     isFeatured: !!initial?.isFeatured,
     tags: (initial?.tags || []).join(', '),
-  otherOccasion: (initial?.occasion && !OPTIONS_BY_CATEGORY.MEN?.occasions?.includes(initial.occasion.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.WOMEN?.occasions?.includes(initial.occasion.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.CHILDREN?.occasions?.includes(initial.occasion.toString().toUpperCase())) ? initial.occasion.toString().toUpperCase() : '',
-  otherCollectionType: (initial?.collectionType && !OPTIONS_BY_CATEGORY.MEN?.collectionTypes?.includes(initial.collectionType.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.WOMEN?.collectionTypes?.includes(initial.collectionType.toString().toUpperCase()) && !OPTIONS_BY_CATEGORY.CHILDREN?.collectionTypes?.includes(initial.collectionType.toString().toUpperCase())) ? initial.collectionType.toString().toUpperCase() : ''
   };
 
   const [state, dispatch] = useReducer(formReducer, initialState);
@@ -236,40 +234,12 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
       newErrors.collectionType = 'Collection Type is required.';
     }
 
-    // If user provided an 'other' value, ensure it doesn't already exist in metaOptions or in current collections for this category
-    const catKey = state.category ? state.category.toString().toLowerCase() : 'men';
-    const occKey = `occasion_${catKey}`;
-    const typeKey = `collectionType_${catKey}`;
-
-    const existingOccasions = new Set();
-    (metaOptions[occKey] || []).forEach(x => { if (x) existingOccasions.add(x.toString().toLowerCase()); });
-    (collections || []).forEach(c => { if (c.occasion) existingOccasions.add(c.occasion.toString().toLowerCase()); });
-
-    const existingTypes = new Set();
-    (metaOptions[typeKey] || []).forEach(x => { if (x) existingTypes.add(x.toString().toLowerCase()); });
-    (collections || []).forEach(c => { if (c.collectionType) existingTypes.add(c.collectionType.toString().toLowerCase()); });
-
-    if (state.occasion === 'OTHER' && state.otherOccasion && state.otherOccasion.trim()) {
-      if (existingOccasions.has(state.otherOccasion.trim().toLowerCase())) {
-        newErrors.otherOccasion = 'This occasion already exists.';
-      }
-    }
-
-    if (state.collectionType === 'OTHER' && state.otherCollectionType && state.otherCollectionType.trim()) {
-      if (existingTypes.has(state.otherCollectionType.trim().toLowerCase())) {
-        newErrors.otherCollectionType = 'This type already exists.';
-      }
-    }
-
     setErrors(newErrors);
 
     if (missing.length > 0) {
       setErrors(prev => ({ ...prev, form: `Please fill the required fields: ${missing.join(', ')}.` }));
       return false;
     }
-
-    // If we have other-field duplicate errors, consider form invalid
-    if (newErrors.otherOccasion || newErrors.otherCollectionType) return false;
 
     return Object.keys(newErrors).length === 0;
   };
@@ -288,15 +258,11 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
         }
     });
 
-    // Handle "Other" logic (normalize other values to UPPERCASE)
-    const finalOccasion = (state.occasion && state.occasion.toString().toUpperCase() === 'OTHER')
-      ? (state.otherOccasion || '').toString().toUpperCase().trim()
-      : (state.occasion || '').toString().toUpperCase();
+    // Final normalized values
+    const finalOccasion = (state.occasion || '').toString().toUpperCase();
     formData.set('occasion', finalOccasion);
 
-    const finalCollectionType = (state.collectionType && state.collectionType.toString().toUpperCase() === 'OTHER')
-      ? (state.otherCollectionType || '').toString().toUpperCase().trim()
-      : (state.collectionType || '').toString().toUpperCase();
+    const finalCollectionType = (state.collectionType || '').toString().toUpperCase();
     formData.set('collectionType', finalCollectionType);
 
     // Append image file if it's new
@@ -324,14 +290,6 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
     
     try {
-      // Include any newly entered 'other' options so the server can create MetaOption docs
-      if (state.otherOccasion && state.otherOccasion.toString().trim()) {
-        formData.append('newOptions[occasion_' + state.category.toLowerCase() + ']', state.otherOccasion.toString().toUpperCase().trim());
-      }
-      if (state.otherCollectionType && state.otherCollectionType.toString().trim()) {
-        formData.append('newOptions[collectionType_' + state.category.toLowerCase() + ']', state.otherCollectionType.toString().toUpperCase().trim());
-      }
-
       const url = isEditMode ? `/api/collections/${initial._id}` : '/api/collections';
       const method = isEditMode ? 'PUT' : 'POST';
 
@@ -385,28 +343,12 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   // Determine collection type options: for Children use selected group (Boys/Girls), otherwise use category mapping
   let collectionTypeOptions = [];
   if (state.category === 'CHILDREN') {
-    // derive types for the selected child group from existing collections (so new saved types appear)
     const group = state.collectionGroup ? state.collectionGroup.toString().toUpperCase() : '';
-    const derived = [];
-    (collections || []).forEach(c => {
-      try {
-        if ((c.category || '').toString().toUpperCase() === 'CHILDREN') {
-          const g = (c.childCategory || c.collectionGroup || '').toString().toUpperCase();
-          const t = (c.collectionType || '').toString().toUpperCase();
-          if (g && t) {
-            if (!derived.includes(t)) derived.push(t);
-          }
-        }
-      } catch (e) { /* ignore malformed */ }
-    });
-    // if derived list is empty fall back to constants
-    const fallback = state.collectionGroup === 'BOYS' ? CHILDREN_GROUPS.BOYS : (state.collectionGroup === 'GIRLS' ? CHILDREN_GROUPS.GIRLS : []);
-    collectionTypeOptions = derived.length ? derived.filter(t => {
-      // only include types that belong to selected group when group selected
-      if (!group) return true;
-      // we don't have authoritative mapping of type->group; include all derived types when group equals their saved group
-      return (collections || []).some(c => ((c.collectionType||'').toString().toUpperCase() === t) && ((c.childCategory||c.collectionGroup||'').toString().toUpperCase() === group));
-    }) : fallback;
+    const key = group === 'BOYS' ? 'collectionType_children_boys' : (group === 'GIRLS' ? 'collectionType_children_girls' : null);
+    const metaList = key ? (metaOptions[key] || []) : [];
+    const cleaned = (metaList || []).filter(v => v && v.toString().toUpperCase() !== 'OTHER');
+    const fallback = group === 'BOYS' ? CHILDREN_GROUPS.BOYS : (group === 'GIRLS' ? CHILDREN_GROUPS.GIRLS : []);
+    collectionTypeOptions = cleaned.length ? cleaned : fallback;
   } else {
     collectionTypeOptions = (categoryOptions.collectionTypes || []);
   }
@@ -458,27 +400,20 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
                     <select id="occasion" name="occasion" value={state.occasion} onChange={handleChange}>
                       <option value="">SELECT OCCASION</option>
                       {/* If the current value isn't in the known list, show it so editors see the saved value */}
-                      {state.occasion && state.occasion !== '' && !categoryOptions.occasions.includes(state.occasion) && state.occasion !== 'OTHER' && (
+                      {state.occasion && state.occasion !== '' && !categoryOptions.occasions.includes(state.occasion) && (
                         <option key={state.occasion} value={state.occasion}>{state.occasion}</option>
                       )}
                       {categoryOptions.occasions.map(occ => <option key={occ} value={occ}>{occ}</option>)}
-                      <option value="OTHER">OTHER</option>
                     </select>
                 </div>
-                {state.occasion === 'OTHER' && (
-                    <div className="form-group indented">
-            <input type="text" name="otherOccasion" placeholder="Specify other occasion" value={state.otherOccasion} onChange={handleChange} />
-            {errors.otherOccasion && <span className="error-text">{errors.otherOccasion}</span>}
-                    </div>
-                )}
               </>
             ) : (
               <div className="form-group">
                 <label htmlFor="collectionGroup">Collection</label>
                 <select id="collectionGroup" name="collectionGroup" value={state.collectionGroup} onChange={handleChange}>
                   <option value="">SELECT COLLECTION</option>
-                  <option value="BOYS">BOYS COLLECTION</option>
-                  <option value="GIRLS">GIRLS COLLECTION</option>
+                  <option value="BOYS">BOYS</option>
+                  <option value="GIRLS">GIRLS</option>
                 </select>
               </div>
             )}
@@ -489,19 +424,12 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
             <select id="collectionType" name="collectionType" value={state.collectionType} onChange={handleChange}>
               <option value="">SELECT TYPE</option>
               {/* Show saved value if it's not present in the current options */}
-              {state.collectionType && state.collectionType !== '' && !collectionTypeOptions.includes(state.collectionType) && state.collectionType !== 'OTHER' && (
+              {state.collectionType && state.collectionType !== '' && !collectionTypeOptions.includes(state.collectionType) && (
                 <option key={state.collectionType} value={state.collectionType}>{state.collectionType}</option>
               )}
               {collectionTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
-              <option value="OTHER">OTHER</option>
             </select>
             </div>
-            {state.collectionType === 'OTHER' && (
-        <div className="form-group indented">
-          <input type="text" name="otherCollectionType" placeholder="Specify other type" value={state.otherCollectionType} onChange={handleChange} />
-          {errors.otherCollectionType && <span className="error-text">{errors.otherCollectionType}</span>}
-        </div>
-            )}
 
             {/* Price Fields */}
             <div className="form-row">

@@ -7,26 +7,26 @@ import styles from './HowItWorks.module.css';
 // Har step ka data
 const stepsData = [
   {
-    title: 'Select Your Style',
-    description: 'Browse our exquisite collection of traditional and contemporary designs. Each piece is carefully curated to reflect elegance and sophistication.',
+    title: 'Visit Our Showroom',
+    description: 'Browse our exquisite collection of traditional and contemporary designs. Each piecStep into your nearest Yaritu Showroom and explore our exclusive range of rental outfits for every occasion. Our team helps you find the perfect fit for your style and budget.',
     imgSrc: '/images/step1.png',
     icon: 'gem',
   },
   {
-    title: 'Visit Our Showroom',
-    description: 'Experience our luxurious showrooms with traditional architecture and personalized service. Our experts will help you find the perfect outfit.',
+    title: 'Select Your Outfit',
+    description: 'Choose from our wide collection of designer lehengas, sherwanis, gowns, suits and more. Try them on to find your dream look for weddings, parties, or special events.',
     imgSrc: '/images/step2.png',
     icon: 'location',
   },
   {
-    title: 'Experience Luxury',
-    description: 'Enjoy the perfect fit and exquisite craftsmanship. Our garments are designed to make every moment special and memorable.',
+    title: 'Shine at Your Function',
+    description: 'Wear your selected outfit and make a statement at your event. Be confident, stylish, and picture-perfect while enjoying your special moments.',
     imgSrc: '/images/step3.png',
     icon: 'star',
   },
   {
-    title: 'Hassle-free Returns',
-    description: 'Complete satisfaction guaranteed. Our flexible return policy ensures you’re completely happy with your purchase.',
+    title: 'Return with Ease',
+    description: 'After your event, simply return the outfit to our showroom. We take care of cleaning and maintenance—hassle-free and convenient for you.',
     imgSrc: '/images/step4.png',
     icon: 'return',
   },
@@ -48,8 +48,10 @@ const HowItWorks = () => {
       },
       {
         root: null, 
+        root: null, 
         // === YEH LINE CHANGE KI GAYI HAI ===
-        rootMargin: '-60% 0px 0px 0px', 
+        // Ab trigger point screen ke top par hai.
+        rootMargin: '0px 0px -70% 0px', 
         threshold: 0,
       }
     );

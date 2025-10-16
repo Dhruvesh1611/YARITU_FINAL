@@ -102,37 +102,13 @@ export async function POST(request) {
     
     await dbConnect();
 
-    // productId is required and must be unique
-    if (!fields.productId || !fields.productId.toString().trim()) {
-      return NextResponse.json({ success: false, error: 'Product ID is required.' }, { status: 400 });
-    }
-    const existing = await Collection.findOne({ productId: fields.productId.toString().trim() }).lean();
-    if (existing) {
-      return NextResponse.json({ success: false, error: 'Product ID must be unique. Another collection already uses this Product ID.' }, { status: 400 });
-    }
-
     const newCollectionData = { 
         ...fields, 
         mainImage: imageUrl,
         mainImage2: imageUrl2,
         otherImages: otherImageUrls
     };
-  // If frontend sent collectionGroup (from CHILDREN modal), map it to childCategory for storage
-  if (fields.collectionGroup) newCollectionData.childCategory = fields.collectionGroup;
     const doc = await Collection.create(newCollectionData);
-
-    // Auto-add meta options for filters so admin-added occasions/types show up
-    try {
-      const catKey = (doc.category || 'General').toString().toLowerCase();
-      if (doc.occasion) {
-        await MetaOption.create({ key: `occasion_${catKey}`, value: doc.occasion });
-      }
-      if (doc.collectionType) {
-        await MetaOption.create({ key: `collectionType_${catKey}`, value: doc.collectionType });
-      }
-    } catch (e) {
-      // ignore duplicates / validation errors
-    }
 
     return NextResponse.json({ success: true, data: doc }, { status: 201 });
   } catch (err) {

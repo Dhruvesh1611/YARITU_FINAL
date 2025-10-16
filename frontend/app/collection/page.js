@@ -14,6 +14,7 @@ import CollectionModal from '../../components/CollectionModal';
 import JewelleryModal from '../../components/JewelleryModal';
 
 import ProductCard from '../../components/ProductCard';
+import CategoryMetaEditor from '../../components/CategoryMetaEditor';
 
 
 
@@ -87,6 +88,8 @@ const [selectedProduct, setSelectedProduct] = useState(null);
 const [viewMode, setViewMode] = useState('grid');
 
 const [openDropdown, setOpenDropdown] = useState(null);
+const [showMetaEditor, setShowMetaEditor] = useState(false);
+const [editorCategory, setEditorCategory] = useState(null);
 
 
 
@@ -377,6 +380,11 @@ scrollToCollectionTitle();
 
 };
 
+	const openEditor = (category) => {
+		setEditorCategory(category);
+		setShowMetaEditor(true);
+	};
+
 
 
 const getBreadcrumbs = () => {
@@ -465,6 +473,11 @@ return (
 <button onClick={() => handleCategoryTap('MEN')} className={styles.categoryButton}>MEN</button>
 
 <div className={styles['dropdown-menu']}>
+	{isAdmin && (
+		<div style={{ position: 'absolute', right: 12, top: 8 }}>
+			<button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('MEN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
+		</div>
+	)}
 
 {(() => {
 	const types = getTypesForCategory('MEN');
@@ -498,6 +511,11 @@ return (
 <button onClick={() => handleCategoryTap('WOMEN')} className={styles.categoryButton}>WOMEN</button>
 
 <div className={styles['dropdown-menu']}>
+	{isAdmin && (
+		<div style={{ position: 'absolute', right: 12, top: 8 }}>
+			<button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('WOMEN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
+		</div>
+	)}
 
 {(() => {
 	const types = getTypesForCategory('WOMEN');
@@ -531,17 +549,22 @@ return (
 <button onClick={() => handleCategoryTap('CHILDREN')} className={styles.categoryButton}>CHILDREN</button>
 
 <div className={styles['dropdown-menu']}>
+	{isAdmin && (
+		<div style={{ position: 'absolute', right: 12, top: 8 }}>
+			<button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('CHILDREN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
+		</div>
+	)}
 
 {(() => {
 	const groups = getChildrenTypesByGroup();
 	return (
 		<>
-			<div className={styles['dropdown-column']}><h4>BOYS<br/>COLLECTION</h4>
+			<div className={styles['dropdown-column']}><h4>BOYS</h4>
 				<ul>
 					{groups.BOYS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'BOYS'); }}>{t}</a></li>)}
 				</ul>
 			</div>
-			<div className={styles['dropdown-column']}><h4>GIRLS<br/> COLLECTION</h4>
+			<div className={styles['dropdown-column']}><h4>GIRLS</h4>
 				<ul>
 					{groups.GIRLS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'GIRLS'); }}>{t}</a></li>)}
 				</ul>
@@ -644,6 +667,14 @@ return (
 
 </div>
 
+{/* Empty state message when no items to show in current filter */}
+{!jewelleryMode && currentProducts.length === 0 && (
+	<div style={{ textAlign: 'center', padding: '32px 12px', color: '#555' }}>
+		<div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>No collection found</div>
+		<div style={{ fontSize: 14 }}>Try a different type or occasion, or add items from the admin panel.</div>
+	</div>
+)}
+
 {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}
 
 </div>
@@ -689,6 +720,15 @@ collections={collections}
 			setEditingCollection(null);
 		}}
 		stores={storesList}
+	/>
+)}
+
+{showMetaEditor && editorCategory && (
+	<CategoryMetaEditor
+		category={editorCategory}
+		metaMap={metaOptions}
+		onClose={() => { setShowMetaEditor(false); setEditorCategory(null); }}
+		onSaved={(updated) => setMetaOptions(updated)}
 	/>
 )}
 

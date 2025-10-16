@@ -114,14 +114,15 @@
 
 .timeline {
     position: relative;
-    padding-left: 180px; 
+    padding-left: 100px; 
     width: 100%;
+    padding-bottom: 200px; 
 }
 
 .timeline::before {
     content: '';
     position: absolute;
-    left: 198px; 
+    left: 118px; 
     top: 0;
     width: 2px;
     height: 100%;

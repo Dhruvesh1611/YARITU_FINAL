@@ -31,7 +31,7 @@ export default function Footer() {
                     <li><Link href="/">HOME</Link></li>
                     <li><Link href="/about">ABOUT US</Link></li>
                     <li><Link href="/contact">CONTACT US</Link></li>
-                    <li><Link href="/stores">STORES</Link></li>
+                    <li><Link href="/about#about-stores">STORES</Link></li>
                 </ul>
             </div>
             <div className="footer-contact">
@@ -40,6 +40,9 @@ export default function Footer() {
                 <p><a href="tel:+918401721212">+91 84017 21212</a></p>
                 <address>Pruvachi Private Limited, 301, 3rd Floor, Shantam Complex, Near Amiras Hotel, Sarthana Jakatnaka, 395013, Surat, Gujarat, India</address>
             </div>
+        </div>
+        <div className="footer-credits">
+            <span>Website developed by <strong>Dhruvesh Shyara</strong></span>
         </div>
     </footer>
   );
