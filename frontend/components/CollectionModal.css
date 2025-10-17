@@ -36,10 +36,13 @@
   animation: slideIn 0.3s ease;
 }
 
+/* make container a positioned parent so we can absolutely place the close button */
+.modal-container { position: relative; padding-right: 48px; }
+
 /* --- Modal Header --- */
 .modal-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* center the title since close is absolute */
   align-items: center;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid rgba(0,0,0,0.06);
@@ -52,18 +55,30 @@
   letter-spacing: -0.2px;
   font-weight: 500;
 }
+.modal-header { position: relative; }
+.modal-header h3 { position: relative; left: 0; transform: translateX(0); }
 
 .close-button {
-  background: none;
-  border: none;
-  font-size: 1.75rem;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  font-size: 18px;
   cursor: pointer;
   color: var(--text-muted);
   line-height: 1;
-  padding: 0;
 }
 .close-button:hover {
   color: var(--text-color);
+  transform: translateY(-1px);
 }
 
 /* --- Modal Body & Layout --- */
@@ -347,6 +362,11 @@
   .other-image-item { width: 64px; height: 64px; }
 }
 
+/* remove the extra right padding on smaller screens so content fits */
+@media (max-width: 900px) {
+  .modal-container { padding-right: 12px; }
+}
+
 @media (max-width: 768px) {
     .modal-body {
         flex-direction: column-reverse;
@@ -363,3 +383,47 @@
 /* subtle transitions */
 .image-uploader, .other-image-item, .image-uploader-small, .btn { transition: all 160ms ease-in-out; }
 .other-image-item:hover .remove-image-btn { transform: scale(1.05); }
+
+
+
+
+
+
+
+/* --- Add this CSS for Upload Progress Bar --- */
+
+.upload-progress-container {
+  width: 100%;
+  height: 20px;
+  background-color: #e9ecef; /* Light grey background */
+  border-radius: 10px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.upload-progress-bar {
+  height: 100%;
+  width: 0%;
+  background-color: #25334d; /* Your theme's dark blue color */
+  border-radius: 10px;
+  transition: width 0.2s ease-in-out;
+}
+
+.upload-progress-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #343a40; /* Dark text */
+  font-weight: bold;
+  font-size: 12px;
+  /* Text ko bar ke upar dikhane ke liye */
+  mix-blend-mode: difference;
+  color: white; /* Text bar ke upar white dikhega */
+}

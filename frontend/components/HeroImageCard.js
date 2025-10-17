@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 export default function HeroImageCard({ item, onUpdate, onDelete }) {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState({ title: item.title || '', imageUrl: item.imageUrl, link: item.link || '' });
+  const [form, setForm] = useState({ title: item.title || '', imageUrl: item.imageUrl, link: item.link || '', visibility: item.visibility || 'both' });
   
   // State for upload and delete processes
   const [uploading, setUploading] = useState(false);
@@ -131,6 +131,14 @@ export default function HeroImageCard({ item, onUpdate, onDelete }) {
                   </div>
                 )}
                 {uploadError && <div className="errorMessage">{uploadError}</div>}
+              </div>
+              <div className="formGroup">
+                <label htmlFor="visibility">Visibility</label>
+                <select id="visibility" value={form.visibility} onChange={(e) => setForm((p) => ({ ...p, visibility: e.target.value }))}>
+                  <option value="both">Both (Desktop & Mobile)</option>
+                  <option value="desktop">Desktop only</option>
+                  <option value="mobile">Mobile only</option>
+                </select>
               </div>
               <div className="modalFooter">
                  <button type="button" onClick={handleDelete} className="btnDelete" disabled={deleting || uploading}>

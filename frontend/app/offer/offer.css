@@ -555,7 +555,7 @@
 }
 .offer-modal-right {
   text-align: center;
-  padding: 36px 32px;
+  padding: 6px 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -653,13 +653,24 @@
         pointer-events: none;
     }
     .offer-modal-phone-wrapper .phone-input {
-        padding-left: 50px;
-        padding-right: 60px;
+        /* Make room for flag + country code on the left */
+        padding-left: 16px;
+        padding-right: 16px;
         margin-bottom: 0;
     }
     .offer-modal-phone-wrapper .phone-code {
         position: absolute;
-        right: 16px;
+        right: 186px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #888;
+        font-size: 14px;
+        pointer-events: none;
+    }
+    /* left-positioned country code that sits after the flag */
+    .offer-modal-phone-wrapper .phone-code-left {
+        position: absolute;
+        left: 48px; /* to the right of the flag at 16px (flag ~24px) */
         top: 50%;
         transform: translateY(-50%);
         color: #888;
@@ -860,7 +871,7 @@
 }
 .offer-modal-right {
     text-align: left;
-    padding: 8px 6px;
+    padding: 8px 36px;
 }
 
 @media (max-width: 880px) {

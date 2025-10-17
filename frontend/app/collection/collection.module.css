@@ -416,12 +416,37 @@
   .collection-content {
     transition: transform 160ms ease;
   }
-
-  /* Desktop: allow hover to push content down, but only when hovering categories that are allowed to hover (i.e., not .noHover).
-     Using :has to check if a non-.noHover container is hovered and contains an openable dropdown, then push content. */
+  
+  /* --- YEH HAI NAYA FIX --- */
+  /* Saare "hover" rules ko is desktop media query ke andar daal diya */
+  
+  /* Desktop: allow hover to push content down... */
   .category-buttons:has(.category-button-container:not(.noHover):hover) + .collection-content {
     transform: translateY(120px);
   }
+  
+  /* Hover behavior: only activate dropdown open on hover for containers that do NOT have .noHover */
+  .category-button-container:not(.noHover):hover .dropdown-menu {
+    display: flex;
+    opacity: 1;
+    margin-left: 20px;
+    visibility: visible;
+  }
+
+  /* Transparent bridge between button and dropdown so moving cursor from button -> dropdown doesn't close it */
+  .category-button-container:not(.noHover)::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: calc(100% - 2px);
+    height: 18px;
+    background: transparent; /* invisible */
+    z-index: 4; 
+    pointer-events: auto; 
+  }
+  /* --- END NAYA FIX --- */
+
 
   .view-toggle-container { display: none; }
 
@@ -521,9 +546,28 @@
     flex-direction: column;
     align-items: center;
   }
+  
+  /* --- YEH AAPKA FIX HAI --- */
 
+  /* 1. Container ko center karo, default width do, aur flex column banao */
+  .category-button-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    width: 220px; /* Default width (button ke barabar) */
+    /* transition: width 0.3s ease-in-out; */ /* <-- Yeh line hata di hai */
+  }
+
+  /* 2. Jab container open ho, toh use bada karo */
+  .category-button-container.open {
+    width: 90vw; /* Screen ka 90% */
+    max-width: 500px; /* Ek max limit */
+  }
+
+  /* 3. Button ki width ko fix rakho */
   .category-button {
-    width: 220px;
+    width: 220px; 
     height: 40px;
     border-radius: 30px;
     background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
@@ -538,32 +582,41 @@
     position: relative;
     overflow: hidden;
   }
-
+  
   .category-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(44, 62, 80, 0.4);
-    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    transform: none; 
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3); 
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); 
   }
 
   .category-button .btn-text { position: relative; z-index: 2; color: white; }
   .category-button .btn-glow,
   .category-button .btn-bg { display: none; }
-
+  
+  /* 4. Dropdown ko 'static' karo taaki woh content push kare */
   .category-button-container .dropdown-menu {
-    position: static;
-    transform: none;
-    width: 100%;
-    max-width: 1560px;
+    position: static; 
+    transform: none; 
+    
+    width: 100%;      /* Container ki 100% width lo (jo open hone par 90vw hai) */
+    max-width: 100%;  
+    
+    margin: 12px 0 0 0; 
+    box-sizing: border-box; 
+    z-index: 10;
+    
     background: #213346;
     color: #fff;
     border-radius: 12px;
     padding: 18px;
-    margin: 12px 10px 0 0;
     display: none;
     opacity: 1;
     visibility: visible;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   }
+  
+  /* --- END FIX --- */
+  
 
   .category-button-container.open .dropdown-menu,
   .category-button-container .dropdown-menu.show {

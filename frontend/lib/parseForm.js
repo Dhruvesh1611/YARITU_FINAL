@@ -1,7 +1,7 @@
 // lib/parseForm.js
 import { v2 as cloudinary } from 'cloudinary';
 
-// Cloudinary config - make sure it's also configured in your routes
+// Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -39,27 +39,35 @@ export const parseForm = async (request) => {
 
 
 /**
- * Takes a File object, reads its buffer, and uploads it to Cloudinary.
+ * NAYA AUR SIMPLIFIED processImage function
+ * (Optimization steps hata diye gaye hain speed test karne ke liye)
  */
 export const processImage = async (file) => {
   if (!file) {
     return null;
   }
 
-  // This will now work correctly because 'file' is a proper File object
-  const buffer = await file.arrayBuffer();
-  const bytes = Buffer.from(buffer);
+  try {
+    // 1. File ko Buffer mein convert karo
+    const buffer = await file.arrayBuffer();
+    const bytes = Buffer.from(buffer);
 
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream({
-      resource_type: 'auto',
-    }, (err, result) => {
-      if (err) {
-        console.error("Cloudinary upload error:", err);
-        return reject(err);
-      }
-      resolve(result);
+    // 2. Buffer ko Base64 Data URI mein convert karo
+    const base64String = `data:${file.type};base64,${bytes.toString('base64')}`;
+
+    // 3. 'upload' method ka istemal karo (BINA optimization ke)
+    // Hum check kar rahe hain ki kya optimization ki vajah se slow tha
+    const result = await cloudinary.uploader.upload(base64String, {
+      resource_type: 'auto', 
+      // Saare transformation aur quality options hata diye gaye hain
+      // taaki upload raw aur fast ho.
     });
-    stream.end(bytes);
-  });
+    
+    return result;
+
+  } catch (err) {
+    console.error("Cloudinary upload error in processImage:", err);
+    // Error ko aage bhejo taaki API route use handle kar sake
+    throw err;
+  }
 };

@@ -35,70 +35,82 @@ export async function POST(request) {
 
     const { fields, files } = await parseForm(request);
     
-    // Accept newOptions sent either as an object (some clients) or as
-    // FormData bracketed keys like `newOptions[occasion]=...`.
+    // Meta options ko collect karne ka logic (yeh sahi hai)
     const collectNewOptions = async () => {
       const collected = {};
-
-      // Case 1: fields.newOptions already an object (server-side clients)
       if (fields.newOptions && typeof fields.newOptions === 'object') {
         Object.assign(collected, fields.newOptions);
       }
-
-      // Case 2: FormData may have keys like 'newOptions[foo]'
       for (const [k, v] of Object.entries(fields)) {
         const m = k.match(/^newOptions\[(.+)\]$/);
         if (m) {
           const optKey = m[1];
-          // Try to parse JSON value else take as string
           let parsed = v;
           try { parsed = JSON.parse(v); } catch (e) { /* keep string */ }
           collected[optKey] = parsed;
         }
       }
-
-      // Create MetaOption docs for any collected entries
       const entries = Object.entries(collected);
       await Promise.all(entries.map(async ([key, value]) => {
         if (value === undefined || value === null || value === '') return;
         try {
           await MetaOption.create({ key, value });
-        } catch (e) {
-          // ignore duplicates / validation errors
-        }
+        } catch (e) { /* ignore duplicates */ }
       }));
     };
+    await collectNewOptions(); // Meta options ko save hone do
 
-    await collectNewOptions();
-
-    let imageUrl = '';
+    // --- NAYA PARALLEL UPLOAD LOGIC ---
+    
+    // 1. Saari image upload promises ko ek array mein collect karo
+    const uploadPromises = [];
+    
+    // Main Image
     if (files.mainImage) {
-      const mainImageFile = files.mainImage;
-      const result = await processImage(mainImageFile);
-      if (result) {
-        imageUrl = result.secure_url;
-      }
+      uploadPromises.push(processImage(files.mainImage));
+    } else {
+      uploadPromises.push(Promise.resolve(null)); // mainImage ke liye placeholder
+    }
+
+    // Main Image 2 (Aapke code mein yeh tha)
+    if (files.mainImage2) {
+      uploadPromises.push(processImage(files.mainImage2));
+    } else {
+      uploadPromises.push(Promise.resolve(null)); // mainImage2 ke liye placeholder
+    }
+
+    // Other Images
+    if (files.otherImages) {
+        const otherImageFiles = Array.isArray(files.otherImages) ? files.otherImages : [files.otherImages];
+        otherImageFiles.forEach(file => {
+            uploadPromises.push(processImage(file));
+        });
+    }
+
+    // 2. Saari promises ko ek saath (parallel) run karo
+    // Isse 6 images upload karne mein utna hi time lagega jitna 1 mein lagta hai
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // 3. Results ko alag-alag karo
+    let imageUrl = '';
+    if (uploadResults[0]) { // mainImage ka result
+      imageUrl = uploadResults[0].secure_url;
     }
 
     let imageUrl2 = '';
-    if (files.mainImage2) {
-      const mainImage2File = files.mainImage2;
-      const result = await processImage(mainImage2File);
-      if (result) {
-        imageUrl2 = result.secure_url;
-      }
+    if (uploadResults[1]) { // mainImage2 ka result
+      imageUrl2 = uploadResults[1].secure_url;
     }
-
+    
+    // Baaki ke results 'otherImages' ke hain
     let otherImageUrls = [];
-    if (files.otherImages) {
-        const otherImageFiles = Array.isArray(files.otherImages) ? files.otherImages : [files.otherImages];
-        for (const file of otherImageFiles) {
-            const result = await processImage(file);
-            if (result) {
-                otherImageUrls.push(result.secure_url);
-            }
-        }
+    if (uploadResults.length > 2) {
+      otherImageUrls = uploadResults.slice(2) // Pehle 2 (main, main2) ko chhodkar
+        .filter(result => result) // Null results (agar koi fail hua) ko hatao
+        .map(result => result.secure_url);
     }
+    // --- END OF NAYA LOGIC ---
+
     
     await dbConnect();
 
@@ -112,7 +124,9 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, data: doc }, { status: 201 });
   } catch (err) {
+    // Yeh error handling humne pehle fix kiya tha (yeh sahi hai)
     console.error("Error in POST /api/collections:", err);
-    return NextResponse.json({ success: false, error: String(err) }, { status: 400 });
+    const errorMessage = err.message || String(err); 
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 400 });
   }
 }

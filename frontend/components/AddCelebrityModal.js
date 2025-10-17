@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 
 export default function AddCelebrityModal({ onClose, onAdd }) {
-  const [form, setForm] = useState({ title: '', videoUrl: '' });
+  const [form, setForm] = useState({ title: '', videoUrl: '', visibility: 'both' });
   const [saving, setSaving] = useState(false);
   
   // State for upload progress
@@ -126,6 +126,15 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
                 onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))}
                 placeholder="https://example.com/video.mp4"
               />
+            </div>
+
+            <div className="formGroup">
+              <label htmlFor="visibility">Visibility</label>
+              <select id="visibility" value={form.visibility} onChange={(e) => setForm((p) => ({ ...p, visibility: e.target.value }))}>
+                <option value="both">Both (Desktop & Mobile)</option>
+                <option value="desktop">Desktop only</option>
+                <option value="mobile">Mobile only</option>
+              </select>
             </div>
 
             {form.videoUrl && (

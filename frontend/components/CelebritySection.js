@@ -8,6 +8,8 @@ import AddCelebrityModal from './AddCelebrityModal';
 const CelebritySection = () => {
   const [currentVideo, setCurrentVideo] = useState(0);
   const [videos, setVideos] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const { data: session } = useSession();
   const isAdmin = !!session;
@@ -16,6 +18,8 @@ const CelebritySection = () => {
 
   // === NEW: Scrollable container ke liye ek Ref banaya hai ===
   const scrollContainerRef = useRef(null);
+  // refs to each video element so we can control play/pause programmatically
+  const videoRefs = useRef([]);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -29,6 +33,64 @@ const CelebritySection = () => {
     };
     fetchVideos();
   }, []);
+
+  // viewport detection (client-side)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    setMounted(true);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // derive filtered videos by visibility (client-side)
+  const filteredVideos = videos && videos.length > 0
+    ? videos.filter(v => {
+        const vis = v.visibility || 'both';
+        if (vis === 'both') return true;
+        if (vis === 'mobile') return isMobile;
+        if (vis === 'desktop') return !isMobile;
+        return true;
+      })
+    : [];
+
+  // displayed list is either the filtered (client) list after mount, or the server-provided videos (SSR)
+  const displayed = mounted ? filteredVideos : videos;
+
+  // Keep currentVideo in-bounds when displayed list changes
+  useEffect(() => {
+    if (!displayed || displayed.length === 0) {
+      setCurrentVideo(0);
+      return;
+    }
+    if (currentVideo >= displayed.length) {
+      setCurrentVideo(0);
+      goToVideo(0);
+    }
+  }, [displayed.length]);
+
+  // Play/pause logic: pause all videos then play the current one
+  useEffect(() => {
+    const refs = videoRefs.current || [];
+    refs.forEach((v, i) => {
+      try {
+        if (!v) return;
+        if (i === currentVideo) {
+          // attempt to play; browsers may block autoplay if not muted
+          v.muted = true;
+          const playPromise = v.play && v.play();
+          if (playPromise && playPromise.then) {
+            playPromise.catch(() => { /* ignore autoplay block */ });
+          }
+        } else {
+          v.pause && v.pause();
+          try { v.currentTime = 0; } catch (e) {}
+        }
+      } catch (err) {
+        // ignore
+      }
+    });
+  }, [currentVideo, displayed.length]);
 
   // === NEW: Jab user swipe/scroll kare, toh state ko update karne ke liye ===
   useEffect(() => {
@@ -67,28 +129,37 @@ const CelebritySection = () => {
         }
       });
     };
-  }, [videos]); // Yeh effect tab chalega jab videos load honge
+  }, [mounted, filteredVideos]); // Re-run when displayed list changes or after mount
 
   // === UPDATED: Arrows/dots click karne par programmatically scroll karwane ke liye ===
   const goToVideo = (index) => {
     const container = scrollContainerRef.current;
-    if (container && videos.length > 0) {
-      const targetIndex = (index + videos.length) % videos.length;
+    const len = displayed.length || 0;
+    if (container && len > 0) {
+      const targetIndex = (index + len) % len;
       const scrollLeft = container.offsetWidth * targetIndex;
-      container.scrollTo({
-        left: scrollLeft,
-        behavior: 'smooth'
-      });
+      // update state immediately so controls and playback react without waiting for observer
+      setCurrentVideo(targetIndex);
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
   };
 
+  // Reset video refs when the displayed list length changes to avoid stale refs
+  useEffect(() => {
+    videoRefs.current = [];
+  }, [displayed.length]);
+
   const goToPrevious = () => {
-    const newIndex = currentVideo === 0 ? videos.length - 1 : currentVideo - 1;
+    const len = displayed.length || 0;
+    if (len === 0) return;
+    const newIndex = currentVideo === 0 ? len - 1 : currentVideo - 1;
     goToVideo(newIndex);
   };
 
   const goToNext = () => {
-    const newIndex = (currentVideo + 1) % videos.length;
+    const len = displayed.length || 0;
+    if (len === 0) return;
+    const newIndex = (currentVideo + 1) % len;
     goToVideo(newIndex);
   };
 
@@ -96,7 +167,7 @@ const CelebritySection = () => {
   const handleFileChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    const current = videos[currentVideo];
+    const current = displayed[currentVideo];
     if (!current) {
       alert('No video selected to replace');
       e.target.value = '';
@@ -135,7 +206,7 @@ const CelebritySection = () => {
 
   const handleDelete = async (e) => {
     e.stopPropagation();
-    const current = videos[currentVideo];
+    const current = displayed[currentVideo];
     if (!current || !confirm('Delete this video?')) return;
     try {
       const res = await fetch(`/api/celebrity/${current._id}`, { method: 'DELETE' });
@@ -143,7 +214,14 @@ const CelebritySection = () => {
       const deleted = (await res.json()).data;
       if (deleted) {
         setVideos((prev) => prev.filter((x) => x._id !== deleted._id));
-        goToVideo(0); // Go to the first video after deletion
+        // After deleting, ensure we land on a valid slide index
+        const newLen = (displayed.length - 1);
+        if (newLen <= 0) {
+          goToVideo(0);
+        } else {
+          const newIndex = Math.min(currentVideo, newLen - 1);
+          goToVideo(newIndex);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -169,21 +247,41 @@ const CelebritySection = () => {
           
           {/* === CHANGED: Ab yeh container scroll hoga aur isme saare videos honge === */}
           <div className="video-container" ref={scrollContainerRef}>
-            {videos.length > 0 ? (
-              videos.map((video, index) => (
-                <div className="video-slide" key={video._id} data-index={index}>
+            {displayed.length > 0 ? (
+              displayed.map((video, index) => (
+                <div className="video-slide" key={video._id} data-index={index} style={{ position: 'relative' }}>
                   <video
+                    ref={(el) => (videoRefs.current[index] = el)}
                     src={video.videoUrl}
                     muted
                     playsInline
                     loop
-                    // Sirf current video hi autoplay hoga
-                    autoPlay={index === currentVideo}
+                    // leave autoplay attribute off and control playback programmatically
                     className="main-video"
                   >
                     <source src={video.videoUrl} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
+
+                  {/* Admin controls tethered to the active slide so they move with it */}
+                  {isAdmin && index === currentVideo && (
+                    <div className="slide-admin-controls">
+                      <button onClick={() => fileInputRef.current?.click()} className="admin-btn" disabled={replacing}>
+                        Replace
+                      </button>
+                      <button onClick={handleDelete} className="admin-btn delete" disabled={replacing}>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+
+                  {isAdmin && index === currentVideo && (
+                    <div className="slide-add-button">
+                      <button onClick={() => setIsAddOpen(true)} className="admin-btn add-new">
+                        + Add Video
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -196,32 +294,13 @@ const CelebritySection = () => {
                     <span>Replacing...</span>
                 </div>
             )}
-
-            {isAdmin && videos.length > 0 && (
-              <div className="admin-video-controls">
-                <button onClick={() => fileInputRef.current?.click()} className="admin-btn" disabled={replacing}>
-                  Replace
-                </button>
-                <button onClick={handleDelete} className="admin-btn delete" disabled={replacing}>
-                  Delete
-                </button>
-              </div>
-            )}
-
-            {isAdmin && (
-              <div className="admin-add-button-container">
-                <button onClick={() => setIsAddOpen(true)} className="admin-btn add-new">
-                  + Add Video
-                </button>
-              </div>
-            )}
           </div>
           
           <button className="video-nav-arrow next" onClick={goToNext} aria-label="Next video">&#8250;</button>
         </div>
 
         <div className="video-dots">
-          {videos.map((_, index) => (
+          {displayed.map((_, index) => (
             <button
               key={index}
               className={`dot ${index === currentVideo ? 'active' : ''}`}
@@ -232,19 +311,30 @@ const CelebritySection = () => {
         </div>
 
         {isAdmin && (
-          <div className="admin-grid-container">
-            {videos.length > 0 ? (
-              videos.map((v) => (
+          <div style={{ paddingTop: 24 }}>
+            <h3 style={{ marginBottom: 8 }}>Desktop Celebrity Videos</h3>
+            <div className="admin-grid-container">
+              {videos.filter(v => (v.visibility || 'both') === 'desktop' || (v.visibility || 'both') === 'both').map((v) => (
                 <CelebrityVideoCard
                   key={v._id}
                   item={v}
                   onUpdate={(updated) => setVideos((prev) => prev.map((x) => (x._id === updated._id ? updated : x)))}
                   onDelete={(id) => setVideos((prev) => prev.filter((x) => x._id !== id))}
                 />
-              ))
-            ) : (
-              <div className="no-videos-message">No videos yet — use the Add Video button to create one.</div>
-            )}
+              ))}
+            </div>
+
+            <h3 style={{ margin: '20px 0 8px' }}>Mobile Celebrity Videos</h3>
+            <div className="admin-grid-container">
+              {videos.filter(v => (v.visibility || 'both') === 'mobile').map((v) => (
+                <CelebrityVideoCard
+                  key={v._id}
+                  item={v}
+                  onUpdate={(updated) => setVideos((prev) => prev.map((x) => (x._id === updated._id ? updated : x)))}
+                  onDelete={(id) => setVideos((prev) => prev.filter((x) => x._id !== id))}
+                />
+              ))}
+            </div>
           </div>
         )}
 
@@ -436,6 +526,20 @@ const CelebritySection = () => {
             flex-wrap: wrap;
             justify-content: center;
         }
+    .slide-admin-controls {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      z-index: 30;
+      display: flex;
+      gap: 8px;
+    }
+    .slide-add-button {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 30;
+    }
         .no-videos-message {
             padding: 20px;
             background: #f5f5f5;

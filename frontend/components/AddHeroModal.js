@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 export default function AddHeroModal({ onClose, onAdd }) {
-  const [form, setForm] = useState({ title: '', imageUrl: '', link: '' });
+  const [form, setForm] = useState({ title: '', imageUrl: '', link: '', visibility: 'both' });
   const [saving, setSaving] = useState(false);
 
   // State for upload progress
@@ -106,6 +106,14 @@ export default function AddHeroModal({ onClose, onAdd }) {
               <label>Image</label>
               <div className="imagePreview">
                  {form.imageUrl ? <img src={form.imageUrl} alt="preview" /> : <span>No Image Selected</span>}
+              </div>
+              <div className="formGroup">
+                <label htmlFor="visibility">Visibility</label>
+                <select id="visibility" value={form.visibility} onChange={(e) => setForm((p) => ({ ...p, visibility: e.target.value }))}>
+                  <option value="both">Both (Desktop & Mobile)</option>
+                  <option value="desktop">Desktop only</option>
+                  <option value="mobile">Mobile only</option>
+                </select>
               </div>
               <label htmlFor="image-upload" className={`uploadButton ${uploading ? 'disabled' : ''}`}>
                 Choose Image File

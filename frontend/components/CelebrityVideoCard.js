@@ -6,7 +6,7 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
   const { data: session } = useSession();
   const isAdmin = !!session;
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState({ title: item.title || '', videoUrl: item.videoUrl });
+  const [form, setForm] = useState({ title: item.title || '', videoUrl: item.videoUrl, visibility: item.visibility || 'both' });
   
   // State for async operations
   const [saving, setSaving] = useState(false);
@@ -143,6 +143,15 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
               <div className="formGroup">
                 <label htmlFor="videoUrl">Or paste Video URL</label>
                 <input id="videoUrl" value={form.videoUrl} onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))} />
+              </div>
+
+              <div className="formGroup">
+                <label htmlFor="visibility">Visibility</label>
+                <select id="visibility" value={form.visibility} onChange={(e) => setForm((p) => ({ ...p, visibility: e.target.value }))}>
+                  <option value="both">Both (Desktop & Mobile)</option>
+                  <option value="desktop">Desktop only</option>
+                  <option value="mobile">Mobile only</option>
+                </select>
               </div>
 
               <div className="modalFooter">

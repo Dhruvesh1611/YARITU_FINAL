@@ -27,15 +27,17 @@ const DeleteIcon = () => (
 
 // === FEATURED IMAGE CARD COMPONENT (WITH FINAL FIX) ===
 const FeaturedImageCard = ({ item, onUpdate, onDelete }) => {
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const handleDelete = async () => {
+    const handleDelete = async (e) => {
+        e.stopPropagation();
         setIsProcessing(true);
         try {
             const response = await fetch(`/api/featured/${item._id}`, { method: 'DELETE' });
             const result = await response.json();
             if (result.success) {
-                onDelete(item._1d || item._id);
+                onDelete(item._id);
             } else {
                 console.error("Failed to delete:", result.error);
                 alert("Failed to delete image.");
@@ -45,6 +47,7 @@ const FeaturedImageCard = ({ item, onUpdate, onDelete }) => {
             alert("An error occurred.");
         } finally {
             setIsProcessing(false);
+            setIsDeleting(false);
         }
     };
 
@@ -61,19 +64,25 @@ const FeaturedImageCard = ({ item, onUpdate, onDelete }) => {
                 <button className={`${styles.cardActionBtn} ${styles.editBtn}`} onClick={() => onUpdate(item)}>
                     <EditIcon />
                 </button>
-                <button
-                    className={`${styles.cardActionBtn} ${styles.deleteBtn}`}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        const ok = window.confirm('Are you sure you want to delete this image?');
-                        if (!ok) return;
-                        handleDelete();
-                    }}
-                    disabled={isProcessing}
-                >
+                <button className={`${styles.cardActionBtn} ${styles.deleteBtn}`} onClick={() => setIsDeleting(true)}>
                     <DeleteIcon />
                 </button>
             </div>
+
+            {isDeleting && (
+                <div className={styles.confirmDeleteOverlay} onClick={() => setIsDeleting(false)}>
+                    <div className={styles.confirmDeleteModal} onClick={(e) => e.stopPropagation()}>
+                        <h4>Confirm Deletion</h4>
+                        <p>Are you sure you want to delete this image?</p>
+                        <div>
+                            <button onClick={() => setIsDeleting(false)} disabled={isProcessing}>Cancel</button>
+                            <button onClick={handleDelete} className={styles.confirmBtn} disabled={isProcessing}>
+                                {isProcessing ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

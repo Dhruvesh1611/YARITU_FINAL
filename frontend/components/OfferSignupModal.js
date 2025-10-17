@@ -36,10 +36,22 @@ export default function OfferSignupModal({ openAfter = 5000 }) {
   const onSubmit = (e) => {
     e.preventDefault();
     // Send signup to the new offers endpoint
+    // Ensure phone starts with +91
+    let phoneToSend = (form.phone || '').trim();
+    if (phoneToSend && !phoneToSend.startsWith('+')) {
+      // strip any leading zeros or non-digit characters then prefix
+      phoneToSend = phoneToSend.replace(/^0+/, '').replace(/[^0-9]/g, '');
+      phoneToSend = '+91' + phoneToSend;
+    } else if (phoneToSend && phoneToSend.startsWith('+') && !phoneToSend.startsWith('+91')) {
+      // If user included another country code, keep it as-is
+    }
+
+    const payload = { ...form, phone: phoneToSend };
+
     fetch('/api/offers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     }).then(res => {
       if (!res.ok) throw new Error('Network response was not ok');
       return res.json();
@@ -88,9 +100,9 @@ export default function OfferSignupModal({ openAfter = 5000 }) {
                 <input ref={firstInputRef} name="name" value={form.name} onChange={onChange} placeholder="Your Name" required />
                 <input name="email" value={form.email} onChange={onChange} placeholder="Your Email" type="email" required />
                 <div className="offer-modal-phone-wrapper">
-                  <span className="phone-prefix">🇮🇳</span>
+                  {/* <span className="phone-prefix">🇮🇳</span> */}
+                  {/* <span className="phone-code phone-code-left">+91</span> */}
                   <input name="phone" value={form.phone} onChange={onChange} placeholder="Mobile Number" inputMode="tel" className="phone-input" />
-                  <span className="phone-code">+91</span>
                 </div>
                 <button type="submit" className="offer-modal-submit">GET SPECIAL DEALS</button>
               </form>

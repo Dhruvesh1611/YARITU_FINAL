@@ -46,12 +46,33 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
   const fileInputRef = useRef(null);
   const [replacing, setReplacing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
   
   const trendingContainerRef = useRef(null);
   const centerImageRef = useRef(null); 
   const featuredContainerRef = useRef(null);
 
   // Client-side fallback: if no stores came from SSR, fetch once on mount
+  useEffect(() => {
+    const checkIsMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkIsMobile();
+    // mark mounted once we have an accurate viewport
+    setMounted(true);
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  // derive filtered hero items based on visibility flag
+  const filteredHeroItems = heroItems && heroItems.length > 0
+    ? heroItems.filter(h => {
+        const v = (h.visibility || 'both');
+        if (v === 'both') return true;
+        if (v === 'mobile') return isMobile;
+        if (v === 'desktop') return !isMobile;
+        return true;
+      })
+    : [];
   useEffect(() => {
     if (!stores || stores.length === 0) {
       fetch('/api/stores', { cache: 'no-store' })
@@ -91,8 +112,11 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
 
   // Data fetching wala useEffect hata diya gaya hai, baki sab waisa hi hai
   useEffect(() => {
+    // when filtered list changes, reset index to 0 to avoid showing an out-of-range or filtered-out item
+    setCurrentHeroImage(0);
     const heroInterval = setInterval(() => {
-      setCurrentHeroImage(prev => (prev + 1) % (heroItems.length > 0 ? heroItems.length : heroImages.length));
+      const len = (filteredHeroItems.length > 0 ? filteredHeroItems.length : heroImages.length);
+      setCurrentHeroImage(prev => (prev + 1) % len);
     }, 3000);
 
     const initializeScrollPositions = () => {
@@ -107,7 +131,7 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
       clearInterval(heroInterval);
       clearTimeout(timer);
     };
-  }, [heroItems.length]);
+  }, [filteredHeroItems.length, isMobile]);
 
   // Effect to center trending section when it comes into view
   useEffect(() => {
@@ -116,26 +140,38 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
 
     if (!trendingContainer || !imageToCenter) return;
 
-    const centerTrendingView = () => {
-      if (window.innerWidth <= 1200) {
-          const containerCenter = trendingContainer.offsetWidth / 2;
-          const imageCenter = imageToCenter.offsetLeft + imageToCenter.offsetWidth / 2;
-          const scrollPosition = imageCenter - containerCenter;
-          trendingContainer.scrollLeft = scrollPosition;
-      } else {
-          const containerCenter = trendingContainer.offsetWidth / 2;
-          const imageCenter = imageToCenter.offsetLeft + imageToCenter.offsetWidth / 2;
-          const scrollPosition = imageCenter - containerCenter;
-          trendingContainer.scrollLeft = scrollPosition;
+    // Helper which centers the given element inside the scroll container
+    const centerTrendingView = (elem) => {
+      try {
+        const containerRect = trendingContainer.getBoundingClientRect();
+        const elemRect = elem.getBoundingClientRect();
+        // compute element center relative to container scrollLeft
+        const containerCenterX = containerRect.width / 2;
+        const elemCenterOffset = (elemRect.left - containerRect.left) + (elemRect.width / 2);
+        const scrollPosition = Math.max(0, elemCenterOffset - containerCenterX + trendingContainer.scrollLeft);
+        trendingContainer.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+      } catch (err) {
+        // fallback: compute using offsets
+        const containerCenter = trendingContainer.offsetWidth / 2;
+        const imageCenter = (elem.offsetLeft || 0) + (elem.offsetWidth || 0) / 2;
+        const scrollPosition = imageCenter - containerCenter;
+        trendingContainer.scrollLeft = scrollPosition;
       }
     };
 
-    const initialTimeout = setTimeout(centerTrendingView, 150);
+    // On mobile we want the 3rd video to be centered initially
+    const initialTimeout = setTimeout(() => {
+      // prefer the explicit centerImageRef (pos === 3), otherwise pick the 3rd child
+      const el = centerImageRef.current || trendingContainer.querySelector('.trending-img.pos3') || trendingContainer.children[2];
+      if (el) centerTrendingView(el);
+    }, 150);
 
+    // When the trending container becomes visible again (re-entry), recenter to the 3rd video
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          centerTrendingView();
+          const el = centerImageRef.current || trendingContainer.querySelector('.trending-img.pos3') || trendingContainer.children[2];
+          if (el) centerTrendingView(el);
         }
       },
       { threshold: 0.5 }
@@ -203,9 +239,9 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
             transition={{ duration: 0.8, ease: 'easeInOut' }}
             aria-hidden="true"
           >
-            {(heroItems.length > 0 && heroItems[currentHeroImage % heroItems.length]?.imageUrl) || heroImages[currentHeroImage] ? (
+            {((mounted ? filteredHeroItems : heroItems).length > 0 && (mounted ? filteredHeroItems : heroItems)[currentHeroImage % (mounted ? filteredHeroItems.length : heroItems.length)]?.imageUrl) || heroImages[currentHeroImage] ? (
               <Image 
-                src={heroItems.length > 0 ? heroItems[currentHeroImage % heroItems.length].imageUrl : heroImages[currentHeroImage]} 
+                src={(mounted ? filteredHeroItems : heroItems).length > 0 ? (mounted ? filteredHeroItems : heroItems)[currentHeroImage % (mounted ? filteredHeroItems.length : heroItems.length)].imageUrl : heroImages[currentHeroImage]} 
                 alt={`Hero ${currentHeroImage + 1}`} 
                 fill 
                 sizes="100vw"
@@ -216,7 +252,7 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
           </motion.div>
         </AnimatePresence>
         <div className="hero-dots">
-          {(heroItems.length > 0 ? heroItems : heroImages).map((_, index) => (
+          {((mounted ? filteredHeroItems : heroItems).length > 0 ? (mounted ? filteredHeroItems : heroItems) : heroImages).map((_, index) => (
             <button
               key={index}
               className={`hero-dot ${index === currentHeroImage ? 'active' : ''}`}
@@ -229,8 +265,21 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
 
       {session && (
         <section style={{ padding: 12, borderTop: '1px solid #eee', background: '#fafafa' }}>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
-            {heroItems.map((h) => (
+          <h3 style={{ margin: '8px 0' }}>Desktop Hero Images</h3>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8, justifyContent: 'center' }}>
+            {heroItems.filter(h => (h.visibility || 'both') === 'desktop' || (h.visibility || 'both') === 'both').map((h) => (
+              <HeroImageCard
+                key={h._id}
+                item={h}
+                onUpdate={(updated) => setHeroItems((prev) => prev.map((x) => (x._id === updated._id ? updated : x)))}
+                onDelete={(id) => setHeroItems((prev) => prev.filter((x) => x._id !== id))}
+              />
+            ))}
+          </div>
+
+          <h3 style={{ margin: '16px 0 8px 0' }}>Mobile Hero Images</h3>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8, justifyContent: 'center' }}>
+            {heroItems.filter(h => (h.visibility || 'both') === 'mobile').map((h) => (
               <HeroImageCard
                 key={h._id}
                 item={h}

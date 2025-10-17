@@ -19,10 +19,10 @@ export default function Footer() {
                 </div>
                 <p>Step into a world of elegance and grace with Yaritu’s gallery. Explore trending festival looks, celebrity attire, top-rated outfits, and a variety of collection that reflect the pulse of Indian Fashion.</p>
                 <div className="social-links">
-                    <a href="https://www.facebook.com/yaritu.official/" target="_blank" rel="noopener noreferrer"><Image src="/images/facebook.png" alt="Facebook" width={40} height={40} loading="lazy" /></a>
+                    <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer"><Image src="/images/facebook.png" alt="Facebook" width={40} height={40} loading="lazy" /></a>
                     <a href="https://wa.me/" target="_blank" rel="noopener noreferrer"><Image src="/images/logos_whatsapp-icon.png" alt="WhatsApp" width={40} height={40} loading="lazy" /></a>
-                    <a href="https://www.instagram.com/yaritu.official/?hl=en" target="_blank" rel="noopener noreferrer"><Image src="/images/instagram copy.png" alt="Instagram" width={40} height={40} loading="lazy" /></a>
-                    <a href="https://www.youtube.com/channel/UCVF9Z3xxiAKZu8j5D2CjSYQ" target="_blank" rel="noopener noreferrer"><Image src="/images/youtube.png" alt="YouTube" width={40} height={40} loading="lazy" /></a>
+                    <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer"><Image src="/images/instagram.png" alt="Instagram" width={40} height={40} loading="lazy" /></a>
+                    <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer"><Image src="/images/youtube.png" alt="YouTube" width={40} height={40} loading="lazy" /></a>
                 </div>
             </div>
             <div className="footer-links">

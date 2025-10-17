@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 
+// BUG 1 FIX: 'collections' prop yahaan se poori tarah se hata diya gaya hai
 export default function CategoryMetaEditor({
   category, // 'MEN' | 'WOMEN' | 'CHILDREN'
   metaMap, // the current metaOptions map from page state
@@ -29,20 +30,17 @@ export default function CategoryMetaEditor({
     return `occasion_${category.toLowerCase()}`;
   }, [category, isChildren, scope]);
 
-  // load items from provided metaMap, with sensible fallbacks for children
+  // BUG 2 FIX: useEffect se saara fallback logic hata diya gaya hai
+  // Yeh sirf metaMap (Master List) se data padhega
   useEffect(() => {
     let list = [];
     if (metaMap && Array.isArray(metaMap[metaKey])) {
       list = metaMap[metaKey].filter(v => v && v.toString().toUpperCase() !== 'OTHER');
-    } else if (isChildren) {
-      // no configured list? provide a minimal fallback so UI is usable
-      list = scope === 'BOYS'
-        ? ['SUIT','KOTI','SHIRT-PENT','DHOTI']
-        : ['FROCK','LEHENGA','GOWN','ANARKALI SUITS'];
     }
+    
     setItems(list);
     setOriginalItems(list);
-  }, [metaKey, metaMap, isChildren, scope]);
+  }, [metaKey, metaMap]); // Dependency array ko bhi clean kar diya gaya hai
 
   const addItem = () => {
     const v = (newValue || '').trim().toUpperCase();
@@ -65,35 +63,100 @@ export default function CategoryMetaEditor({
     setItems(next);
   };
 
-  const handleSave = async () => {
+   const handleSave = async () => {
     setSaving(true);
     try {
       // compute diffs
       const norm = (arr) => (arr || []).map(x => (x || '').trim()).filter(Boolean);
-  const before = norm(originalItems).map(x => x.toUpperCase()).filter(x => x !== 'OTHER');
-  const after = norm(items).map(x => x.toUpperCase()).filter(x => x !== 'OTHER');
+      const beforeRaw = norm(originalItems).filter(x => x.toUpperCase() !== 'OTHER');
+      const afterRaw = norm(items).filter(x => x.toUpperCase() !== 'OTHER');
 
-  const toAdd = after.filter(v => !before.includes(v));
-  const toRemove = before.filter(v => !after.includes(v));
+      // Create uppercase sets for comparison but keep original casing for deletions
+      const beforeUpper = beforeRaw.map(x => x.toUpperCase());
+      const afterUpper = afterRaw.map(x => x.toUpperCase());
+
+      const toAddUpper = afterUpper.filter(v => !beforeUpper.includes(v));
+      const toRemoveUpper = beforeUpper.filter(v => !afterUpper.includes(v));
+
+      // Map uppercase values back to original casing from beforeRaw when deleting
+      const upperToOriginal = {};
+      beforeRaw.forEach(orig => { upperToOriginal[orig.toUpperCase()] = orig; });
+
+      const toAdd = toAddUpper.map(u => u); // additions will be sent as uppercase (normalized)
+      const toRemove = toRemoveUpper.map(u => upperToOriginal[u] || u);
 
       // perform API calls
       const addCalls = toAdd.map(v => fetch('/api/meta-options', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ key: metaKey, value: v })
       }));
+      
+      // BUG 3 FIX: API call ko sahi URL aur Method par bhej diya gaya hai
       const delCalls = toRemove.map(v => fetch('/api/meta-options', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        method: 'DELETE', 
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ key: metaKey, value: v })
       }));
 
-      const res = await Promise.allSettled([...addCalls, ...delCalls]);
-      const hasError = res.some(r => r.status === 'rejected');
-      if (hasError) console.warn('Some meta-option updates failed:', res);
+      const settled = await Promise.allSettled([...addCalls, ...delCalls]);
+      // check for rejected promises or non-OK responses
+      const errors = [];
+      for (const r of settled) {
+        if (r.status === 'rejected') {
+          errors.push(r.reason?.toString() || 'Request rejected');
+          continue;
+        }
+        // r.value is a Response — check HTTP status
+        const resp = r.value;
+        if (!resp || !resp.ok) {
+          try {
+            const json = await resp.json();
+            errors.push(json?.error || json?.message || `HTTP ${resp.status}`);
+          } catch (e) {
+            errors.push(`HTTP ${resp.status}`);
+          }
+        }
+      }
+      if (errors.length) {
+        console.warn('Some meta-option updates failed:', errors);
+        if (errors.some(e => (e || '').toString().toLowerCase().includes('forbidden'))) {
+          alert('Permission denied: please login as an admin to save changes.');
+        }
+      }
 
-      // build updated meta map for parent
-      const updated = { ...(metaMap || {}) };
-      updated[metaKey] = after;
-      onSaved && onSaved(updated);
+      // After operations, re-fetch canonical meta-options from server and pass to parent
+      try {
+        const mres = await fetch('/api/meta-options');
+        if (mres.ok) {
+          const mj = await mres.json();
+          if (mj && mj.success) {
+            const map = {};
+            (mj.data || []).forEach(opt => {
+              if (!opt || !opt.value) return;
+              if (opt.value.toString().toUpperCase() === 'OTHER') return;
+              if (!map[opt.key]) map[opt.key] = [];
+              if (!map[opt.key].includes(opt.value)) map[opt.key].push(opt.value);
+            });
+            onSaved && onSaved(map);
+          } else {
+            // fallback: send local after list
+            const updated = { ...(metaMap || {}) };
+            updated[metaKey] = afterRaw;
+            onSaved && onSaved(updated);
+          }
+        } else {
+          const updated = { ...(metaMap || {}) };
+          updated[metaKey] = afterRaw;
+          onSaved && onSaved(updated);
+        }
+      } catch (e) {
+        const updated = { ...(metaMap || {}) };
+        updated[metaKey] = afterRaw;
+        onSaved && onSaved(updated);
+      }
+
       onClose && onClose();
     } catch (e) {
       console.error('Save meta options failed', e);

@@ -325,6 +325,7 @@
         margin: 0 8px !important;
         transform: none !important;
         box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+        /* scroll-snap-type: x mandatory; */ /* <-- YEH GALAT JAGAH THA */
         border-radius: 16px;
         overflow: hidden;
         display: block !important;
@@ -339,6 +340,7 @@
         width: 100% !important;
         height: auto !important;
         object-fit: cover !important;
+        /* scroll-snap-align: center; */ /* <-- YEH GALAT JAGAH THA */
         display: block !important;
         border-radius: 12px !important;
     }
@@ -515,13 +517,16 @@
         padding: 20px 0;
         width: 100%;
         height: auto;
-        scroll-snap-type: x mandatory;
+        scroll-snap-type: x mandatory; /* <--- YEH SAHI HAI (Point #2) */
         -webkit-overflow-scrolling: touch;
         justify-content: flex-start;
         /* Padding to allow proper centering and side views */
     /* Adjusted padding to match center image half-width (130px) for proper centering */
     padding-left: calc(50vw - 130px); /* Center images properly */
     padding-right: calc(50vw - 130px); /* Center images properly */
+        /* enable snapping so each card can snap into the center of the viewport */
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
     }
 
     .trending-images-container::-webkit-scrollbar {
@@ -537,12 +542,14 @@
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 6px 18px rgba(0,0,0,0.10);
-        scroll-snap-align: center; /* Snap to center instead of start */
+        scroll-snap-align: center; /* <--- YEH SAHI HAI (Point #2) */
         transition: transform 0.28s ease, opacity 0.28s ease;
         /* Remove absolute positioning styles */
         top: auto !important;
         left: auto !important;
         transform: none !important;
+        /* snap align each card to center of the container */
+        scroll-snap-align: center !important;
         /* margin: 0 8px; small gap around cards for breathing room */
     }
 
@@ -1011,10 +1018,3 @@
     width: 100%;
     height: 100%;
 }
-
-
-
-
-
-
-

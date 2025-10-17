@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // --- NAYA: 'useRef' pehle se imported hai, jo achha hai ---
 
 import styles from './collection.module.css';
 
@@ -79,7 +79,7 @@ const [metaOptions, setMetaOptions] = useState({});
 const [showModal, setShowModal] = useState(false);
 
 const [editingCollection, setEditingCollection] = useState(null);
-	const [showJewelleryModal, setShowJewelleryModal] = useState(false);
+    const [showJewelleryModal, setShowJewelleryModal] = useState(false);
 
 const [currentPage, setCurrentPage] = useState(1);
 
@@ -96,6 +96,9 @@ const [editorCategory, setEditorCategory] = useState(null);
 const collectionTitleRef = useRef(null);
 
 const collectionContentRef = useRef(null);
+
+// --- NAYA CHANGE (Step 1): Button container ke liye ek naya Ref ---
+const dropdownsContainerRef = useRef(null);
 
 
 
@@ -123,14 +126,14 @@ products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase(
 
 }
 
-																// filtering only — no network calls here
+                                                                // filtering only — no network calls here
 
-								if (activeType) {
-									const t = activeType.toUpperCase();
-									products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase() === t) || ((p.description||'').toUpperCase().includes(t)) || ((p.title||p.name||'').toUpperCase().includes(t)));
-								} else if (activeOccasion) {
-									products = products.filter(p => (p.occasion || '').toUpperCase() === activeOccasion.toUpperCase());
-								}
+                                if (activeType) {
+                                    const t = activeType.toUpperCase();
+                                    products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase() === t) || ((p.description||'').toUpperCase().includes(t)) || ((p.title||p.name||'').toUpperCase().includes(t)));
+                                } else if (activeOccasion) {
+                                    products = products.filter(p => (p.occasion || '').toUpperCase() === activeOccasion.toUpperCase());
+                                }
 
 setFilteredProducts(products);
 
@@ -142,111 +145,108 @@ setCurrentPage(1);
 
 useEffect(() => {
 
-	let mounted = true;
+    let mounted = true;
 
-	(async () => {
-		try {
-			const [resCollections, resMeta] = await Promise.all([
-				fetch('/api/collections'),
-				fetch('/api/meta-options')
-			]);
+    (async () => {
+        try {
+            const [resCollections, resMeta] = await Promise.all([
+                fetch('/api/collections'),
+                fetch('/api/meta-options')
+            ]);
 
-			// fetch stores for store filter dropdown (home page uses same /api/stores)
-			try {
-				const rs = await fetch('/api/stores');
-				if (rs.ok) {
-					const js = await rs.json();
-					if (js && js.success) setStoresList(js.data || []);
-				}
-			} catch (e) { console.error('Failed to fetch stores', e); }
+            // fetch stores for store filter dropdown (home page uses same /api/stores)
+            try {
+                const rs = await fetch('/api/stores');
+                if (rs.ok) {
+                    const js = await rs.json();
+                    if (js && js.success) setStoresList(js.data || []);
+                }
+            } catch (e) { console.error('Failed to fetch stores', e); }
 
-			// also fetch jewellery list (public)
-			try {
-				const rj = await fetch('/api/jewellery');
-				if (rj.ok) {
-					const jj = await rj.json();
-					if (jj.success) setJewelleryItems(jj.data || []);
-				}
-			} catch (_) {}
+            // also fetch jewellery list (public)
+            try {
+                const rj = await fetch('/api/jewellery');
+                if (rj.ok) {
+                    const jj = await rj.json();
+                    if (jj.success) setJewelleryItems(jj.data || []);
+                }
+            } catch (_) {}
 
-			const j = await resCollections.json();
-			const m = await resMeta.json();
-			if (resCollections.ok && j.success && mounted) setCollections(j.data || []);
-			if (resMeta.ok && m.success && mounted) {
-				const map = {};
-				(m.data || []).forEach(opt => {
-					// skip placeholder/literal 'OTHER' entries (case-insensitive)
-					if (!opt || !opt.value) return;
-					if (opt.value.toString().toUpperCase() === 'OTHER') return;
-					if (!map[opt.key]) map[opt.key] = [];
-					if (!map[opt.key].includes(opt.value)) map[opt.key].push(opt.value);
-				});
-				setMetaOptions(map);
-			}
-		} catch (e) { console.error(e); }
-	})();
+            const j = await resCollections.json();
+            const m = await resMeta.json();
+            if (resCollections.ok && j.success && mounted) setCollections(j.data || []);
+            if (resMeta.ok && m.success && mounted) {
+                const map = {};
+                (m.data || []).forEach(opt => {
+                    // skip placeholder/literal 'OTHER' entries (case-insensitive)
+                    if (!opt || !opt.value) return;
+                    if (opt.value.toString().toUpperCase() === 'OTHER') return;
+                    if (!map[opt.key]) map[opt.key] = [];
+                    if (!map[opt.key].includes(opt.value)) map[opt.key].push(opt.value);
+                });
+                setMetaOptions(map);
+            }
+        } catch (e) { console.error(e); }
+    })();
 
-	return () => { mounted = false; };
+    return () => { mounted = false; };
 
 }, []);
 
 // refetch jewellery when store filter or jewellery mode changes
 useEffect(() => {
-	let mounted = true;
-	(async () => {
-		try {
-			const url = selectedStoreFilter ? `/api/jewellery?store=${encodeURIComponent(selectedStoreFilter)}` : '/api/jewellery';
-			const res = await fetch(url);
-			if (!res.ok) return;
-			const j = await res.json();
-			if (j && j.success && mounted) setJewelleryItems(j.data || []);
-		} catch (e) { console.error('Failed to fetch jewellery', e); }
-	})();
-	return () => { mounted = false; };
+    let mounted = true;
+    (async () => {
+        try {
+            const url = selectedStoreFilter ? `/api/jewellery?store=${encodeURIComponent(selectedStoreFilter)}` : '/api/jewellery';
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const j = await res.json();
+            if (j && j.success && mounted) setJewelleryItems(j.data || []);
+        } catch (e) { console.error('Failed to fetch jewellery', e); }
+    })();
+    return () => { mounted = false; };
 }, [selectedStoreFilter, jewelleryMode]);
 
 // Helper: get collection types for a category (from metaOptions or fallback)
+// Helper: get collection types for a category (from metaOptions ONLY)
 const getTypesForCategory = (category) => {
-	const key = `collectionType_${category.toLowerCase()}`;
-	if (metaOptions[key] && metaOptions[key].length) {
-		// filter out literal OTHER values and normalize
-		return metaOptions[key].filter(v => v && v.toString().toUpperCase() !== 'OTHER');
-	}
-	// fallback defaults
-	if (category === 'MEN') return ['SHERVANI','INDO WESTERN','SUIT','BLAZER'];
-	if (category === 'WOMEN') return ['SARI','LEHENGA','GOWN'];
-	return [];
+    const key = `collectionType_${category.toLowerCase()}`;
+    if (metaOptions[key] && metaOptions[key].length) {
+        // filter out literal OTHER values and normalize
+        return metaOptions[key].filter(v => v && v.toString().toUpperCase() !== 'OTHER');
+    }
+    // Koi fallback nahi, sirf empty array return karo
+    return [];
 };
 
 // Helper: get occasions for a category
+// Helper: get occasions for a category (from metaOptions ONLY)
 const getOccasionsForCategory = (category) => {
-	const key = `occasion_${category.toLowerCase()}`;
-	if (metaOptions[key] && metaOptions[key].length) {
-		return metaOptions[key].filter(v => v && v.toString().toUpperCase() !== 'OTHER');
-	}
-	if (category === 'MEN') return ['WEDDING','PRE WEDDING SHOOT','SANGEET','COCKTAIL PARTY'];
-	if (category === 'WOMEN') return ['WEDDING','PRE WEDDING SHOOT','SANGEET','COCKTAIL PARTY'];
-	if (category === 'CHILDREN') return ['BIRTHDAY','FESTIVAL','WEDDING'];
-	return [];
+    const key = `occasion_${category.toLowerCase()}`;
+    if (metaOptions[key] && metaOptions[key].length) {
+        return metaOptions[key].filter(v => v && v.toString().toUpperCase() !== 'OTHER');
+    }
+    // Koi fallback nahi, sirf empty array return karo
+    return [];
 };
-
-// Helper: derive children types grouped by childCategory (BOYS/GIRLS) from saved collections
+// Helper: derive children types grouped by childCategory (BOYS/GIRLS)
+// Prefer canonical values from `metaOptions` (server-configured). If those are absent,
+// fall back to scanning saved `collections`, and finally to hardcoded defaults.
+// Helper: derive children types grouped by childCategory (BOYS/GIRLS)
+// Read canonical values ONLY from `metaOptions`.
 const getChildrenTypesByGroup = () => {
-    const groups = { BOYS: [], GIRLS: [] };
-    collections.forEach(c => {
-        if ((c.category || '').toUpperCase() === 'CHILDREN') {
-            const group = (c.childCategory || c.collectionGroup || '').toString().toUpperCase();
-            const type = (c.collectionType || '').toString().toUpperCase();
-            if (group && type && type !== 'OTHER') {
-                if (!groups[group]) groups[group] = [];
-                if (!groups[group].includes(type)) groups[group].push(type);
-            }
-        }
-    });
-    // fallbacks if empty
-    if (!groups.BOYS.length) groups.BOYS = ['SUIT','KOTI','SHIRT-PENT','DHOTI'];
-    if (!groups.GIRLS.length) groups.GIRLS = ['FROCK','LEHENGA','GOWN','ANARKALI SUITS'];
-    return groups;
+    // Try to read canonical lists from metaOptions first
+    const boysMeta = (metaOptions['collectionType_children_boys'] || []).filter(v => v && v.toString().toUpperCase() !== 'OTHER');
+    const girlsMeta = (metaOptions['collectionType_children_girls'] || []).filter(v => v && v.toString().toUpperCase() !== 'OTHER');
+
+    // Build final groups: ONLY from metaOptions.
+    const final = {
+        BOYS: boysMeta,
+        GIRLS: girlsMeta,
+    };
+
+    return final;
 };
 
 
@@ -258,6 +258,30 @@ document.body.style.overflow = selectedProduct || showModal ? 'hidden' : 'auto';
 return () => { document.body.style.overflow = 'auto'; };
 
 }, [selectedProduct, showModal]);
+
+
+// --- NAYA CHANGE (Step 2): Click outside to close logic ---
+useEffect(() => {
+    // Agar koi dropdown khula nahi hai, toh kuch mat karo
+    if (!openDropdown) return;
+
+    // Function jo check karegi ki click kahan hua
+    function handleClickOutside(event) {
+      if (dropdownsContainerRef.current && !dropdownsContainerRef.current.contains(event.target)) {
+        // Click container ke BAHAAR hua hai, toh dropdown band karo
+        setOpenDropdown(null);
+      }
+    }
+
+    // Page par click listener add karo ('mousedown' behtar hai)
+    document.addEventListener('mousedown', handleClickOutside);
+
+    // Cleanup function: Jab component unmount ho ya dropdown band ho, listener hata do
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+}, [openDropdown]); // Yeh effect tabhi chalega jab openDropdown state change hogi
+// --- END NAYA CHANGE ---
 
 
 
@@ -294,7 +318,7 @@ window.scrollTo({ top: y, behavior: 'smooth' });
 
 const handleCategoryClick = (category) => {
 
-	setJewelleryMode(false); // entering a clothing category should exit jewellery mode
+    setJewelleryMode(false); // entering a clothing category should exit jewellery mode
 setActiveCategory(category);
 
 setActiveType(null);
@@ -310,38 +334,38 @@ scrollToCollectionTitle();
 };
 
 const handleJewelleryClick = () => {
-	// enter jewellery section
-	setJewelleryMode(true);
-	setActiveCategory('ALL');
-	setActiveType(null);
-	setActiveSubcategory(null);
-	setActiveOccasion(null);
-	setOpenDropdown(null);
-	scrollToCollectionTitle();
+    // enter jewellery section
+    setJewelleryMode(true);
+    setActiveCategory('ALL');
+    setActiveType(null);
+    setActiveSubcategory(null);
+    setActiveOccasion(null);
+    setOpenDropdown(null);
+    scrollToCollectionTitle();
 };
 
 // Mobile two-step tap behavior:
 // 1) first tap opens the dropdown card for the category (shows Rent by Type / Occasion)
 // 2) second tap on the same button closes the card and scrolls to the collection content
 const handleCategoryTap = (category) => {
-	if (typeof window !== 'undefined' && window.innerWidth <= 768) {
-		// if the dropdown for this category isn't open yet, open it (don't navigate)
-		if (openDropdown !== category) {
-			setOpenDropdown(category);
-			return;
-		}
-		// second tap: close dropdown and navigate to the collection
-		setOpenDropdown(null);
-		setActiveCategory(category);
-		setActiveType(null);
-		setActiveSubcategory(null);
-		setActiveOccasion(null);
-		// give the layout a moment (close animation) then scroll
-		setTimeout(() => scrollToCollectionTitle(), 80);
-		return;
-	}
-	// Desktop: behave as normal
-	handleCategoryClick(category);
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+        // if the dropdown for this category isn't open yet, open it (don't navigate)
+        if (openDropdown !== category) {
+            setOpenDropdown(category);
+            return;
+        }
+        // second tap: close dropdown and navigate to the collection
+        setOpenDropdown(null);
+        setActiveCategory(category);
+        setActiveType(null);
+        setActiveSubcategory(null);
+        setActiveOccasion(null);
+        // give the layout a moment (close animation) then scroll
+        setTimeout(() => scrollToCollectionTitle(), 80);
+        return;
+    }
+    // Desktop: behave as normal
+    handleCategoryClick(category);
 };
 
 
@@ -380,30 +404,34 @@ scrollToCollectionTitle();
 
 };
 
-	const openEditor = (category) => {
-		setEditorCategory(category);
-		setShowMetaEditor(true);
-	};
+    const openEditor = (category) => {
+        setEditorCategory(category);
+        setShowMetaEditor(true);
+    };
 
 
 
 const getBreadcrumbs = () => {
-	// Build breadcrumbs that reflect the filter type so it reads like:
-	// MEN > RENT BY OCCASION > WEDDING
-	// MEN > RENT BY TYPE > SHERVANI
-	const cat = activeCategory || 'ALL';
-	if (activeType) {
-		// For children, if there's a subgroup (BOYS/GIRLS), show it
-		if (activeCategory === 'CHILDREN' && activeSubcategory) {
-			return `${cat} > ${activeSubcategory} COLLECTION > ${activeType}`.toUpperCase();
-		}
-		return `${cat} > RENT BY TYPE > ${activeType}`.toUpperCase();
-	}
-	if (activeOccasion) {
-		return `${cat} > RENT BY OCCASION > ${activeOccasion}`.toUpperCase();
-	}
-	// default breadcrumb
-	return cat.toUpperCase();
+    // Build breadcrumbs that reflect the filter type so it reads like:
+    // MEN > RENT BY OCCASION > WEDDING
+    // MEN > RENT BY TYPE > SHERVANI
+    // If we're in jewellery mode, show the selected store name (or ALL if none selected)
+    if (jewelleryMode) {
+        return (selectedStoreFilter && selectedStoreFilter.toString().trim()) ? selectedStoreFilter.toString().toUpperCase() : 'ALL';
+    }
+    const cat = activeCategory || 'ALL';
+    if (activeType) {
+        // For children, if there's a subgroup (BOYS/GIRLS), show it
+        if (activeCategory === 'CHILDREN' && activeSubcategory) {
+            return `${cat} > ${activeSubcategory} COLLECTION > ${activeType}`.toUpperCase();
+        }
+        return `${cat} > RENT BY TYPE > ${activeType}`.toUpperCase();
+    }
+    if (activeOccasion) {
+        return `${cat} > RENT BY OCCASION > ${activeOccasion}`.toUpperCase();
+    }
+    // default breadcrumb
+    return cat.toUpperCase();
 
 };
 
@@ -411,35 +439,64 @@ const getBreadcrumbs = () => {
 
 const handleSaveCollection = (savedData, metaData) => {
 
-	setShowModal(false);
+    setShowModal(false);
 
-	// If the modal returned updated meta-options, merge them into state so dropdowns refresh immediately
-	if (metaData && Array.isArray(metaData)) {
-		const map = { ...metaOptions };
-		metaData.forEach(opt => {
-			if (!map[opt.key]) map[opt.key] = [];
-			if (!map[opt.key].includes(opt.value)) map[opt.key].push(opt.value);
-		});
-		setMetaOptions(map);
-	}
+    // If the modal returned updated meta-options, merge them into state so dropdowns refresh immediately
+    if (metaData && Array.isArray(metaData)) {
+        const map = { ...metaOptions };
+        metaData.forEach(opt => {
+            if (!map[opt.key]) map[opt.key] = [];
+            if (!map[opt.key].includes(opt.value)) map[opt.key].push(opt.value);
+        });
+        setMetaOptions(map);
+    }
 
-	// Optimistically add/update the saved collection in the list so UI reflects changes immediately
-	if (savedData && savedData._id) {
-		setCollections(prev => {
-			const filtered = (prev || []).filter(c => c._id !== savedData._id);
-			return [savedData, ...filtered];
-		});
-		return;
-	}
+    // If nothing was provided, re-fetch as a fallback
+    if (!savedData) {
+        (async () => {
+            try {
+                const res = await fetch('/api/collections');
+                const j = await res.json();
+                if (res.ok && j.success) setCollections(j.data || []);
+            } catch (e) { console.error(e); }
+        })();
+        return;
+    }
 
-	// Fallback: re-fetch collections from server
-	(async () => {
-		try {
-			const res = await fetch('/api/collections');
-			const j = await res.json();
-			if (res.ok && j.success) setCollections(j.data || []);
-		} catch (e) { console.error(e); }
-	})();
+    // If this is a provisional optimistic object (sent when upload reached 100%), insert it quickly
+    if (savedData && savedData.isPending) {
+        setCollections(prev => {
+            // avoid duplicate provisional items (match by productId or _id)
+            const exists = (prev || []).some(c => (c.productId && savedData.productId && c.productId === savedData.productId) || c._id === savedData._id);
+            if (exists) return prev;
+            return [savedData, ...(prev || [])];
+        });
+        return;
+    }
+
+    // Otherwise this is the real saved document from server. Replace provisional if present, or add/update normally.
+    setCollections(prev => {
+        const list = prev ? [...prev] : [];
+
+        // Try to find a provisional entry to replace: match by productId or pending id prefix
+        const matchIndex = list.findIndex(c => {
+            if (c._id && c._id.toString().startsWith('pending-') && savedData.productId && c.productId && c.productId === savedData.productId) return true;
+            if (c.productId && savedData.productId && c.productId === savedData.productId) return true;
+            return false;
+        });
+
+        if (matchIndex !== -1) {
+            // replace the provisional item
+            list.splice(matchIndex, 1, savedData);
+            // move updated item to front
+            const updated = [list[matchIndex], ...list.slice(0, matchIndex), ...list.slice(matchIndex + 1)];
+            return updated;
+        }
+
+        // No provisional found: update by _id (edit) or prepend (new)
+        const filtered = list.filter(c => c._id !== savedData._id);
+        return [savedData, ...filtered];
+    });
 
 };
 
@@ -458,7 +515,11 @@ return (
 <hr className={styles.divider} />
 {/* header controls: store filter + add button will be shown in the header area below when jewelleryMode is active */}
 
-<div className={`${styles['category-buttons']} ${openDropdown ? styles['dropdown-open'] : ''}`}>
+{/* --- NAYA CHANGE (Step 3): 'ref' ko yahaan container par lagao --- */}
+<div 
+    ref={dropdownsContainerRef} 
+    className={`${styles['category-buttons']} ${openDropdown ? styles['dropdown-open'] : ''}`}
+>
 
 <div className={`${styles['category-button-container']} ${activeCategory === 'ALL' ? styles.active : ''} ${styles.noHover}`}>
 
@@ -473,33 +534,33 @@ return (
 <button onClick={() => handleCategoryTap('MEN')} className={styles.categoryButton}>MEN</button>
 
 <div className={styles['dropdown-menu']}>
-	{isAdmin && (
-		<div style={{ position: 'absolute', right: 12, top: 8 }}>
-			<button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('MEN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
-		</div>
-	)}
+    {isAdmin && (
+        <div style={{ position: 'absolute', right: 12, top: 8 }}>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('MEN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
+        </div>
+    )}
 
 {(() => {
-	const types = getTypesForCategory('MEN');
-	const occ = getOccasionsForCategory('MEN');
-	return (
-		<>
-			<div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
-				<ul>
-					{types.map(t => (
-						<li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('MEN', t); }}>{t}</a></li>
-					))}
-				</ul>
-			</div>
-			<div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
-				<ul>
-					{occ.map(o => (
-						<li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('MEN', o); }}>{o}</a></li>
-					))}
-				</ul>
-			</div>
-		</>
-	);
+    const types = getTypesForCategory('MEN');
+    const occ = getOccasionsForCategory('MEN');
+    return (
+        <>
+            <div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
+                <ul>
+                    {types.map(t => (
+                        <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('MEN', t); }}>{t}</a></li>
+                    ))}
+                </ul>
+            </div>
+            <div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
+                <ul>
+                    {occ.map(o => (
+                        <li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('MEN', o); }}>{o}</a></li>
+                    ))}
+                </ul>
+            </div>
+        </>
+    );
 })()}
 
 </div>
@@ -511,33 +572,33 @@ return (
 <button onClick={() => handleCategoryTap('WOMEN')} className={styles.categoryButton}>WOMEN</button>
 
 <div className={styles['dropdown-menu']}>
-	{isAdmin && (
-		<div style={{ position: 'absolute', right: 12, top: 8 }}>
-			<button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('WOMEN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
-		</div>
-	)}
+    {isAdmin && (
+        <div style={{ position: 'absolute', right: 12, top: 8 }}>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('WOMEN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
+        </div>
+    )}
 
 {(() => {
-	const types = getTypesForCategory('WOMEN');
-	const occ = getOccasionsForCategory('WOMEN');
-	return (
-		<>
-			<div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
-				<ul>
-					{types.map(t => (
-						<li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('WOMEN', t); }}>{t}</a></li>
-					))}
-				</ul>
-			</div>
-			<div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
-				<ul>
-					{occ.map(o => (
-						<li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('WOMEN', o); }}>{o}</a></li>
-					))}
-				</ul>
-			</div>
-		</>
-	);
+    const types = getTypesForCategory('WOMEN');
+    const occ = getOccasionsForCategory('WOMEN');
+    return (
+        <>
+            <div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
+                <ul>
+                    {types.map(t => (
+                        <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('WOMEN', t); }}>{t}</a></li>
+                    ))}
+                </ul>
+            </div>
+            <div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
+                <ul>
+                    {occ.map(o => (
+                        <li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('WOMEN', o); }}>{o}</a></li>
+                    ))}
+                </ul>
+            </div>
+        </>
+    );
 })()}
 
 </div>
@@ -549,28 +610,28 @@ return (
 <button onClick={() => handleCategoryTap('CHILDREN')} className={styles.categoryButton}>CHILDREN</button>
 
 <div className={styles['dropdown-menu']}>
-	{isAdmin && (
-		<div style={{ position: 'absolute', right: 12, top: 8 }}>
-			<button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('CHILDREN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
-		</div>
-	)}
+    {isAdmin && (
+        <div style={{ position: 'absolute', right: 12, top: 8 }}>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditor('CHILDREN'); }} style={{ padding: '4px 8px', borderRadius: 6 }}>Edit</button>
+        </div>
+    )}
 
 {(() => {
-	const groups = getChildrenTypesByGroup();
-	return (
-		<>
-			<div className={styles['dropdown-column']}><h4>BOYS</h4>
-				<ul>
-					{groups.BOYS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'BOYS'); }}>{t}</a></li>)}
-				</ul>
-			</div>
-			<div className={styles['dropdown-column']}><h4>GIRLS</h4>
-				<ul>
-					{groups.GIRLS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'GIRLS'); }}>{t}</a></li>)}
-				</ul>
-			</div>
-		</>
-	);
+    const groups = getChildrenTypesByGroup();
+    return (
+        <>
+            <div className={styles['dropdown-column']}><h4>BOYS</h4>
+                <ul>
+                    {groups.BOYS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'BOYS'); }}>{t}</a></li>)}
+                </ul>
+            </div>
+            <div className={styles['dropdown-column']}><h4>GIRLS</h4>
+                <ul>
+                    {groups.GIRLS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'GIRLS'); }}>{t}</a></li>)}
+                </ul>
+            </div>
+        </>
+    );
 })()}
 
 </div>
@@ -578,10 +639,11 @@ return (
 </div>
 
 <div className={`${styles['category-button-container']} ${jewelleryMode ? styles.active : ''} ${styles.noHover}`}>
-	<button onClick={() => handleJewelleryClick()} className={`${styles.categoryButton} ${styles.noHover}`}>JEWELLERY</button>
+    <button onClick={() => handleJewelleryClick()} className={`${styles.categoryButton} ${styles.noHover}`}>JEWELLERY</button>
 </div>
 
-</div>
+</div> 
+{/* --- END NAYA CHANGE (Step 3) --- */}
 
 
 
@@ -589,7 +651,7 @@ return (
 
 <p className={styles.breadcrumbs}>{getBreadcrumbs()}</p>
 
-<h2 ref={collectionTitleRef} className={styles['collection-title']}>Royal Collection</h2>
+<h2 ref={collectionTitleRef} className={styles['collection-title']}>{jewelleryMode ? 'Jewellery Collection' : 'Royal Collection'}</h2>
 
 <p className={styles['collection-subtitle']}>Explore our finest selection.</p>
 
@@ -597,26 +659,26 @@ return (
 
 {/* Header action area: show collection-add for clothing, or store filter + jewellery-add when in jewellery mode */}
 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12, alignItems: 'center' }}>
-	{!jewelleryMode && isAdmin && (
-		<button onClick={() => { setEditingCollection(null); setShowModal(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Add New Collection</button>
-	)}
+    {!jewelleryMode && isAdmin && (
+        <button onClick={() => { setEditingCollection(null); setShowModal(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Add New Collection</button>
+    )}
 
-	{jewelleryMode && (
-		<>
-			<select
-				value={selectedStoreFilter}
-				onChange={(e) => setSelectedStoreFilter(e.target.value)}
-				className={styles.storeFilterSelect}
-				style={{ marginRight: 8 }}
-			>
-				<option value="">All Stores</option>
-				{storesList.map(s => <option key={s._id || s.name} value={s.name}>{s.name}</option>)}
-			</select>
-			{isAdmin && (
-				<button onClick={() => { setEditingCollection(null); setShowJewelleryModal(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Add New Jewellery</button>
-			)}
-		</>
-	)}
+    {jewelleryMode && (
+        <>
+            <select
+                value={selectedStoreFilter}
+                onChange={(e) => setSelectedStoreFilter(e.target.value)}
+                className={styles.storeFilterSelect}
+                style={{ marginRight: 8 }}
+            >
+                <option value="">All Stores</option>
+                {storesList.map(s => <option key={s._id || s.name} value={s.name}>{s.name}</option>)}
+            </select>
+            {isAdmin && (
+                <button onClick={() => { setEditingCollection(null); setShowJewelleryModal(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Add New Jewellery</button>
+            )}
+        </>
+    )}
 </div>
 
 
@@ -625,43 +687,43 @@ return (
 
 {(!jewelleryMode ? currentProducts : jewelleryItems).map(item => (
 
-	<ProductCard
+    <ProductCard
 
-		key={item._id || item.id}
+        key={item._id || item.id}
 
-		product={item}
+        product={item}
 
-		isAdmin={isAdmin}
+        isAdmin={isAdmin}
 
-		onProductClick={handleProductClick}
+        onProductClick={handleProductClick}
 
-		onEdit={(p) => {
-			if (jewelleryMode) {
-				setEditingCollection(p);
-				// pass initial to JewelleryModal by opening it with editing data
-				setShowJewelleryModal(true);
-			} else {
-				setEditingCollection(p);
-				setShowModal(true);
-			}
-		}}
+        onEdit={(p) => {
+            if (jewelleryMode) {
+                setEditingCollection(p);
+                // pass initial to JewelleryModal by opening it with editing data
+                setShowJewelleryModal(true);
+            } else {
+                setEditingCollection(p);
+                setShowModal(true);
+            }
+        }}
 
-		onDelete={async (p) => {
-			if (!confirm('Delete this item?')) return;
-			try {
-				if (jewelleryMode) {
-					const res = await fetch('/api/admin/jewellery', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: p._id }) });
-					if (res.ok) setJewelleryItems(prev => prev.filter(j => j._id !== p._id));
-					else alert('Failed to delete');
-				} else {
-					const res = await fetch(`/api/collections/${p._id}`, { method: 'DELETE' });
-					if (res.ok) setCollections(prev => prev.filter(c => c._id !== p._id));
-					else alert('Failed to delete');
-				}
-			} catch (e) { console.error(e); alert('Failed'); }
-		}}
+        onDelete={async (p) => {
+            if (!confirm('Delete this item?')) return;
+            try {
+                if (jewelleryMode) {
+                    const res = await fetch('/api/admin/jewellery', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ id: p._id }) });
+                    if (res.ok) setJewelleryItems(prev => prev.filter(j => j._id !== p._id));
+                    else alert('Failed to delete');
+                } else {
+                    const res = await fetch(`/api/collections/${p._id}`, { method: 'DELETE' });
+                    if (res.ok) setCollections(prev => prev.filter(c => c._id !== p._id));
+                    else alert('Failed to delete');
+                }
+            } catch (e) { console.error(e); alert('Failed'); }
+        }}
 
-	/>
+    />
 
 ))}
 
@@ -669,10 +731,10 @@ return (
 
 {/* Empty state message when no items to show in current filter */}
 {!jewelleryMode && currentProducts.length === 0 && (
-	<div style={{ textAlign: 'center', padding: '32px 12px', color: '#555' }}>
-		<div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>No collection found</div>
-		<div style={{ fontSize: 14 }}>Try a different type or occasion, or add items from the admin panel.</div>
-	</div>
+    <div style={{ textAlign: 'center', padding: '32px 12px', color: '#555' }}>
+        <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>No collection found</div>
+        <div style={{ fontSize: 14 }}>Try a different type or occasion, or add items from the admin panel.</div>
+    </div>
 )}
 
 {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}
@@ -706,30 +768,30 @@ collections={collections}
 )}
 
 {showJewelleryModal && (
-	<JewelleryModal
-		initial={editingCollection}
-		onClose={() => { setShowJewelleryModal(false); setEditingCollection(null); }}
-		onSaved={(saved) => {
-			// add/update in list
-			setJewelleryItems(prev => {
-				if (!saved) return prev;
-				const filtered = (prev || []).filter(j => j._id !== saved._id);
-				return [saved, ...filtered];
-			});
-			setShowJewelleryModal(false);
-			setEditingCollection(null);
-		}}
-		stores={storesList}
-	/>
+    <JewelleryModal
+        initial={editingCollection}
+        onClose={() => { setShowJewelleryModal(false); setEditingCollection(null); }}
+        onSaved={(saved) => {
+            // add/update in list
+            setJewelleryItems(prev => {
+                if (!saved) return prev;
+                const filtered = (prev || []).filter(j => j._id !== saved._id);
+                return [saved, ...filtered];
+            });
+            setShowJewelleryModal(false);
+            setEditingCollection(null);
+        }}
+        stores={storesList}
+    />
 )}
 
 {showMetaEditor && editorCategory && (
-	<CategoryMetaEditor
-		category={editorCategory}
-		metaMap={metaOptions}
-		onClose={() => { setShowMetaEditor(false); setEditorCategory(null); }}
-		onSaved={(updated) => setMetaOptions(updated)}
-	/>
+    <CategoryMetaEditor
+        category={editorCategory}
+        metaMap={metaOptions}
+        onClose={() => { setShowMetaEditor(false); setEditorCategory(null); }}
+        onSaved={(updated) => setMetaOptions(updated)}
+    />
 )}
 
 </main>
