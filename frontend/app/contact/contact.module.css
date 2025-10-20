@@ -257,8 +257,8 @@
 }
 
 .contactSocialLinks a img {
-  width: 44px; /* visible icon size */
-  height: 44px;
+  width: 40px; /* visible icon size */
+  height: 40px;
   object-fit: contain;
 }
 

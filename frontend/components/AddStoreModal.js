@@ -21,7 +21,7 @@ export default function AddStoreModal({ onClose, onAdd }) {
       fd.append('upload_preset', 'yaritu_preset'); // Make sure this is your Cloudinary preset
       fd.append('folder', 'YARITU');
 
-      const res = await fetch('https://api.cloudinary.com/v1_1/dqjegkdru/image/upload', {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
         method: 'POST',
         body: fd,
       });

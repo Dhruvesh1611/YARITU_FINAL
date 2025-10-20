@@ -213,7 +213,7 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                   className={styles.infoIcon}
                   width={24}
                   height={24}
-                  style={{ width: 'auto', height: 'auto' }}
+                  // style={{ width: 'auto', height: 'auto' }}
                 />
                 <div className={styles.infoText}>
                   <h3>Visit Us</h3>
@@ -228,7 +228,7 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                   className={styles.infoIcon}
                   width={24}
                   height={24}
-                  style={{ width: 'auto', height: 'auto' }}
+                  // style={{ width: 'auto', height: 'auto' }}
                 />
                 <div className={styles.infoText}>
                   <h3>Call Us</h3>
@@ -243,7 +243,7 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                   className={styles.infoIcon}
                   width={24}
                   height={24}
-                  style={{ width: 'auto', height: 'auto' }}
+                  // style={{ width: 'auto', height: 'auto' }}
                 />
                 <div className={styles.infoText}>
                   <h3>Email Us</h3>
@@ -258,7 +258,7 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                   className={styles.infoIcon}
                   width={24}
                   height={24}
-                  style={{ width: 'auto', height: 'auto' }}
+                  // style={{ width: 'auto', height: 'auto' }}
                 />
                 <div className={styles.infoText}>
                   <h3>Business Hours</h3>
@@ -269,9 +269,9 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
               <div className={`${styles.infoCard} ${styles.socialCard}`}>
                 <h3>Connect With Us</h3>
                 <div className={styles.contactSocialLinks}>
-                  <a href="#"><Image src="/images/instagram.png" alt="Instagram" width={16} height={16} /></a>
-                  <a href="#"><Image src="/images/facebook.png" alt="Facebook" width={16} height={16} /></a>
-                  <a href="#"><Image src="/images/gmail.png" alt="Gmail" width={16} height={16} /></a>
+                  <a href="https://www.instagram.com/yaritu.official/?hl=en" target="_blank" rel="noopener noreferrer"><img src="/images/instagram copy.png" alt="Instagram" width="40" height="40"  decoding="async" /></a>
+                  <a href="https://www.facebook.com/yaritu.official/" target="_blank" rel="noopener noreferrer"><img src="/images/facebook.png" alt="Facebook" width="40" height="40"  decoding="async" /></a>
+                  <a href="sales@yaritu.com"><img src="/images/gmail.png" alt="Gmail" width="40" height="40"  decoding="async" /></a>
                 </div>
                 <p className={styles.socialCaption}>Follow us for the latest updates and exclusive offers</p>
               </div>

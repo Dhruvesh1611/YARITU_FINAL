@@ -51,7 +51,7 @@ export default function About() {
               <p>Happy Clients</p>
             </div>
             <div className={styles.achievementItem}>
-              <Image src="/images/award.png" alt="Awards Won Icon" width={40} height={40} style={{ height: 'auto' }} />
+              <Image src="/images/award.png" alt="Awards Won Icon" width={40} height={40} />
               <h3>25+</h3>
               <p>Awards Won</p>
             </div>

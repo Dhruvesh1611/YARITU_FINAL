@@ -42,7 +42,7 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
       formData.append('folder', 'YARITU');
 
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://api.cloudinary.com/v1_1/dqjegkdru/video/upload', true);
+  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, true);
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {

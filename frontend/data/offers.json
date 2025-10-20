@@ -45,12 +45,12 @@
     "validity": "Ends Dec 31, 2025"
   },
   {
-    "id": 204,
-    "heading": "best offer ",
-    "subheading": "noice",
-    "discount": "",
-    "validity": "",
-    "image": "/images/placeholder.png"
+  "id": 204,
+  "heading": "best offer ",
+  "subheading": "noice",
+  "discount": "",
+  "validity": "",
+  "image": ""
   },
   {
     "id": 205,
@@ -61,12 +61,12 @@
     "image": "/uploads/offers/offer-205-1760396280144.png"
   },
   {
-    "id": 206,
-    "heading": "best offer ",
-    "subheading": "noice",
-    "discount": "20% off",
-    "validity": "until 30th aug",
-    "image": "/images/placeholder.png"
+  "id": 206,
+  "heading": "best offer ",
+  "subheading": "noice",
+  "discount": "20% off",
+  "validity": "until 30th aug",
+  "image": ""
   },
   {
     "id": 207,

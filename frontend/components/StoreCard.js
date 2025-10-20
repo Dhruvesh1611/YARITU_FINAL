@@ -102,7 +102,7 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
       formData.append('folder', 'YARITU');
 
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://api.cloudinary.com/v1_1/dqjegkdru/image/upload', true);
+  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, true);
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           onProgress(Math.round((event.loaded * 100) / event.total));

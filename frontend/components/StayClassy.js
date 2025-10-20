@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import './StayClassy.css';
+import SkeletonLoader from './SkeletonLoader';
 
 const collectionImages = [
   '/images/Featured1.png', '/images/Trending1.png', '/images/Featured3.png', '/images/reel2.png', '/images/reel3.png',
@@ -95,6 +96,16 @@ const StayClassy = () => {
     }
   };
 
+  const isRemote = (url) => {
+    if (!url) return false;
+    try {
+      if (url.startsWith('http://') || url.startsWith('https://')) return true;
+      const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
+      if (cloudName && url.includes(cloudName)) return true;
+    } catch (e) {}
+    return false;
+  };
+
   // UPDATED: Save function is now async to handle uploads
   const saveEdit = async () => {
     let newImageUrl = filePreview; // Start with the current preview URL
@@ -139,7 +150,7 @@ const StayClassy = () => {
       formData.append('folder', 'YARITU');
 
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://api.cloudinary.com/v1_1/dqjegkdru/image/upload', true); // YOUR CLOUD NAME
+  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, true); // YOUR CLOUD NAME
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -183,13 +194,19 @@ const StayClassy = () => {
               >
                 <div className="flip-card-front"></div>
                 <div className="flip-card-back">
-                  <Image
-                    src={displayImage}
-                    alt={`Collection item ${index + 1}`}
-                    fill
-                    sizes="(max-width: 768px) 20vw, 10vw"
-                    style={{ objectFit: 'cover' }}
-                  />
+                  {isRemote(displayImage) ? (
+                    <Image
+                      src={displayImage}
+                      alt={`Collection item ${index + 1}`}
+                      fill
+                      sizes="(max-width: 768px) 20vw, 10vw"
+                      style={{ objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0 }}>
+                      <SkeletonLoader style={{ width: '100%', height: '100%' }} />
+                    </div>
+                  )}
                   {/* meta-badge removed: category and collection info intentionally hidden */}
                 </div>
               </div>

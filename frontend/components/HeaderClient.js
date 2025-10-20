@@ -5,13 +5,14 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './Header.module.css';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUI } from '../contexts/UIProvider';
 import { useSession, signOut } from 'next-auth/react';
 
 export default function HeaderClient() {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { isMenuOpen, toggleMenu, closeMenu } = useUI();
   const { data: session } = useSession();
 
@@ -41,8 +42,8 @@ export default function HeaderClient() {
                       {session && session.user && session.user.role === 'admin' && (
                         <Link href="/admin" className={styles.navLink} style={{ marginRight: 12 }}>Admin</Link>
                       )}
-                      <Link href="/" className={navLinkClass('/')}>Home</Link>
-                      <Link href="/collection" className={navLinkClass('/collection')}>Collections</Link>
+                      <Link href="/" className={navLinkClass('/')} onClick={(e)=>{ e.preventDefault(); router.push('/'); }}>{'Home'}</Link>
+                      <Link href="/collection" className={navLinkClass('/collection')} onClick={(e)=>{ e.preventDefault(); router.push('/collection'); }}>{'Collections'}</Link>
                   </div>
 
                   <Link href="/" className={styles.navLogo}>
@@ -56,9 +57,9 @@ export default function HeaderClient() {
                   </Link>
 
                   <div className={styles.navGroup}>
-                      <Link href="/about" className={navLinkClass('/about')}>About</Link>
-                      <Link href="/contact" className={navLinkClass('/contact')}>Contact</Link>
-                      <Link href="/review" className={navLinkClass('/review')}>Reviews</Link>
+                      <Link href="/about" className={navLinkClass('/about')} onClick={(e)=>{ e.preventDefault(); router.push('/about'); }}>{'About'}</Link>
+                      <Link href="/contact" className={navLinkClass('/contact')} onClick={(e)=>{ e.preventDefault(); router.push('/contact'); }}>{'Contact'}</Link>
+                      <Link href="/review" className={navLinkClass('/review')} onClick={(e)=>{ e.preventDefault(); router.push('/review'); }}>{'Reviews'}</Link>
                       {/* admin quick links removed from right-side navbar - single Admin button moved to left */}
                       {session && (
                         <button onClick={() => signOut({ callbackUrl: '/' })} className={`${styles.navLink} ${styles.logoutButton}`}>
@@ -67,10 +68,10 @@ export default function HeaderClient() {
                       )}
                   </div>
               </div>
-              <Link href="/offer" className={styles.navOffers}>
-                  <Image src="/images/gift.svg" alt="Hot Sale Icon" className={styles.offerIcon} width={30} height={30} />
-                  <span>OFFERS</span>
-              </Link>
+        <Link href="/offer" className={styles.navOffers} onClick={(e)=>{ e.preventDefault(); router.push('/offer'); }}>
+          <Image src="/images/gift.svg" alt="Hot Sale Icon" className={styles.offerIcon} width={30} height={30} />
+          <span>OFFERS</span>
+        </Link>
               <button className={styles.hamburger} onClick={toggleMenu} aria-label="Toggle menu">
                   <div className={`${styles.hamburgerBox} ${isMenuOpen ? styles.open : ''}`}>
                       <div className={styles.hamburgerInner}></div>
@@ -82,16 +83,16 @@ export default function HeaderClient() {
       {/* Mobile Nav */}
       <div className={`${styles.mobileNav} ${isMenuOpen ? styles.open : ''}`}>
           <div className={styles.mobileLogoWrap}>
-           <Link href="/" onClick={closeMenu}>
+           <Link href="/" onClick={(e) => { e.preventDefault(); closeMenu(); router.push('/'); }}>
              <Image src="/images/yaritu_logo_black.png" alt="Yaritu" width={90} height={66} style={{ width: 'auto', height: 'auto' }} />
            </Link>
          </div>
-          <Link href="/" className={styles.mobileNavLink} onClick={closeMenu}>Home</Link>
-          <Link href="/collection" className={styles.mobileNavLink} onClick={closeMenu}>Collections</Link>
-          <Link href="/about" className={styles.mobileNavLink} onClick={closeMenu}>About</Link>
-          <Link href="/contact" className={styles.mobileNavLink} onClick={closeMenu}>Contact</Link>
-          <Link href="/review" className={styles.mobileNavLink} onClick={closeMenu}>Reviews</Link>
-          <Link href="/offer" className={styles.mobileNavLink} onClick={closeMenu}>Offers</Link>
+          <Link href="/" className={styles.mobileNavLink} onClick={(e)=>{ e.preventDefault(); closeMenu(); router.push('/'); }}>Home</Link>
+          <Link href="/collection" className={styles.mobileNavLink} onClick={(e)=>{ e.preventDefault(); closeMenu(); router.push('/collection'); }}>Collections</Link>
+          <Link href="/about" className={styles.mobileNavLink} onClick={(e)=>{ e.preventDefault(); closeMenu(); router.push('/about'); }}>About</Link>
+          <Link href="/contact" className={styles.mobileNavLink} onClick={(e)=>{ e.preventDefault(); closeMenu(); router.push('/contact'); }}>Contact</Link>
+          <Link href="/review" className={styles.mobileNavLink} onClick={(e)=>{ e.preventDefault(); closeMenu(); router.push('/review'); }}>Reviews</Link>
+          <Link href="/offer" className={styles.mobileNavLink} onClick={(e)=>{ e.preventDefault(); closeMenu(); router.push('/offer'); }}>Offers</Link>
           {session && session.user && session.user.role === 'admin' && (
             <Link href="/admin" className={styles.mobileNavLink} onClick={closeMenu}>Admin</Link>
           )}

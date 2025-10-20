@@ -705,6 +705,13 @@
     transform: translateX(0);
 }
 
+/* Fade-in for stores grid cards when data loads */
+.home-store-card.loaded {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.5s ease, transform 0.45s ease;
+}
+
 /* Alternate animation directions for left/right effect (home) */
 .home-stores .home-store-card:nth-child(odd) {
     transform: translateX(-100px); /* Come from left */
@@ -1017,4 +1024,26 @@
 .whatsapp-float img {
     width: 100%;
     height: 100%;
+}
+
+/* Fade-in animation for trending videos when they load (replacing skeletons) */
+.trending-video {
+    opacity: 0;
+    transition: opacity 0.6s ease, transform 0.4s ease;
+    will-change: opacity, transform;
+}
+.trending-video.loaded {
+    opacity: 1;
+}
+
+/* Ensure placeholders fade out smoothly as videos replace them */
+.trending-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #e9e9e9;
+    border-radius: 12px;
+    transition: opacity 0.4s ease;
+}
+.trending-placeholder.hidden {
+    opacity: 0;
 }

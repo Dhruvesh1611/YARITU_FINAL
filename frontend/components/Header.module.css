@@ -211,6 +211,86 @@
     z-index: 1006; /* above .mobileNav (1005) so it visually sits on top */
     box-shadow: 0 6px 18px rgba(0,0,0,0.08); /* subtle separation */
 }
+
+/* Ensure the logo is centered horizontally in all cases inside the mobile wrapper */
+.mobileLogoWrap {
+    text-align: center; /* fallback centering for inline children */
+}
+
+/* Ensure logo inside mobile nav is constrained and doesn't expand to viewport size */
+.mobileLogoWrap .navLogo {
+    /* Make logo a normal block inside the sticky header area on mobile */
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    margin: 0 auto;
+    width: 140px; /* explicit width to prevent fill from stretching */
+    height: 60px; /* match mobile logo height */
+}
+
+/* If using an <img> or next/image, ensure the image scales inside the container */
+.mobileLogoWrap .navLogo img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}
+
+/* Additional safety: when the mobile nav opens, make sure the logo remains constrained */
+.mobileNav.open .navLogo {
+    width: 140px;
+    height: 60px;
+}
+
+/* Also target the actual link and image used in the mobile menu (HeaderClient uses a plain Link + Image there)
+   Next/Image renders an inline wrapper and an <img>, so target img and wrapper generically. */
+.mobileLogoWrap > a {
+    display: inline-block !important; /* allow text-align:center to center it reliably */
+    width: 140px !important;
+    height: 60px !important;
+    margin: 0 auto !important;
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    vertical-align: middle;
+}
+.mobileLogoWrap img {
+    max-width: 100%;
+    max-height: 60px;
+    width: auto;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+/* Strong overrides for Next/Image wrappers (it often injects wrappers and inline styles) */
+.mobileLogoWrap a {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+}
+.mobileLogoWrap a > span {
+    /* Next/Image places an auto-generated span wrapper; constrain it */
+    display: inline-block !important;
+    width: 140px !important;
+    height: 60px !important;
+    margin: 0 auto !important;
+    position: static !important;
+}
+.mobileLogoWrap a > span > img,
+.mobileLogoWrap a img,
+.mobileLogoWrap a > span > picture > img {
+    /* Remove absolute positioning Next/Image can apply and force containment */
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 60px !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+}
 .mobileNavLink {
     padding: 16px 20px;
     font-size: 18px;

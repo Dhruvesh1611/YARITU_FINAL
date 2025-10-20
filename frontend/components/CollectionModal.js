@@ -76,9 +76,6 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
-  // NAYA STATE: Upload progress ke liye
-  const [uploadProgress, setUploadProgress] = useState(0);
-  
   const fileInputRef = useRef(null);
   const fileInputRef2 = useRef(null);
   const otherFilesInputRef = useRef(null);
@@ -95,6 +92,9 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
 
     newPreviews.splice(index, 1);
     
+    // This is a simplification. If you need to map previews to files, a more complex state shape is needed
+    // For now, we assume the file is at the same index if it was just added.
+    // A more robust solution would be to store an array of objects like { preview, file }
     if (index < newFiles.length) {
         newFiles.splice(index, 1);
     }
@@ -244,139 +244,91 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     return Object.keys(newErrors).length === 0;
   };
 
-  // --- NAYA HANDLE SAVE FUNCTION (XHR ke saath) ---
   const handleSave = async () => {
     if (!validateForm()) return;
 
     setLoading(true);
-    setUploadProgress(0); // Progress ko reset karo
     const formData = new FormData();
 
     // Append all fields from state
     Object.keys(state).forEach(key => {
+        // We handle 'other' fields separately
         if (key !== 'otherOccasion' && key !== 'otherCollectionType') {
             formData.append(key, state[key]);
         }
     });
 
     // Final normalized values
-    formData.set('occasion', (state.occasion || '').toString().toUpperCase());
-    formData.set('collectionType', (state.collectionType || '').toString().toUpperCase());
+    const finalOccasion = (state.occasion || '').toString().toUpperCase();
+    formData.set('occasion', finalOccasion);
 
-    // Images append karo
-    if (mainImageFile) formData.append('mainImage', mainImageFile);
-    else if (existingMainImage) formData.append('imageUrl', existingMainImage);
+    const finalCollectionType = (state.collectionType || '').toString().toUpperCase();
+    formData.set('collectionType', finalCollectionType);
 
-    if (mainImage2File) formData.append('mainImage2', mainImage2File);
-    else if (existingMainImage2) formData.append('mainImage2Url', existingMainImage2);
+    // Append image file if it's new
+    if (mainImageFile) {
+      formData.append('mainImage', mainImageFile);
+    } else if (existingMainImage) {
+      // Keep old image URL so the server can reuse it
+      formData.append('imageUrl', existingMainImage);
+    }
+
+    if (mainImage2File) {
+      formData.append('mainImage2', mainImage2File);
+    } else if (existingMainImage2) {
+      formData.append('mainImage2Url', existingMainImage2);
+    }
 
     if (otherImagesFiles.length > 0) {
-        otherImagesFiles.forEach(file => formData.append('otherImages', file));
+        otherImagesFiles.forEach(file => {
+            formData.append('otherImages', file);
+        });
     } else if (Array.isArray(existingOtherImages) && existingOtherImages.length) {
-        existingOtherImages.forEach(imgUrl => formData.append('otherImagesUrls[]', imgUrl));
+        existingOtherImages.forEach(imgUrl => {
+            formData.append('otherImagesUrls[]', imgUrl);
+        })
     }
     
-    // --- XHR Logic ---
-    const xhr = new XMLHttpRequest();
-    const url = isEditMode ? `/api/collections/${initial._id}` : '/api/collections';
-    const method = isEditMode ? 'PUT' : 'POST';
+    try {
+      const url = isEditMode ? `/api/collections/${initial._id}` : '/api/collections';
+      const method = isEditMode ? 'PUT' : 'POST';
 
-    xhr.open(method, url);
+      const res = await fetch(url, { method, body: formData });
+      const result = await res.json();
 
-    // 1. Progress Event
-      let optimisticSent = false;
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percent);
-          // If upload reached 100% and we haven't yet informed parent, send an optimistic placeholder
-        if (percent === 100 && !optimisticSent) {
-          optimisticSent = true;
-          try {
-            // build a more complete provisional object so the parent can render the full card
-            const nowId = `pending-${Date.now()}`;
-            const provisional = {
-              _id: nowId,
-              title: state.title || 'Uploading...',
-              description: state.description || '',
-              productId: state.productId || nowId,
-              category: state.category || 'MEN',
-              collectionType: state.collectionType || '',
-              collectionGroup: state.collectionGroup || '',
-              price: state.price || '',
-              discountedPrice: state.discountedPrice || '',
-              status: state.status || 'Available',
-              isFeatured: !!state.isFeatured,
-              tags: (state.tags || '').toString(),
-              isPending: true,
-              // Indicate image is still pending; parent can show other fields and a spinner over the image
-              imagePending: true,
-              // provide a temporary thumbnail preview (blob URL) if available so the card can show a preview
-              thumbnail: mainImagePreview || '',
-            };
-            // Inform parent immediately so UI shows the new card while server finishes processing
-            onSaved?.(provisional);
-          } catch (e) {
-            // swallow optimistic errors
-          }
-        }
-        }
-      });
-
-    // 2. Success Event
-    xhr.addEventListener('load', async () => {
-      setLoading(false);
-      let result;
-      try {
-        result = JSON.parse(xhr.responseText);
-      } catch (e) {
-        setErrors({ form: 'An invalid response was received from the server.' });
-        return;
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && result.success) {
-        // Success: Meta-options fetch karo (jaisa pehle tha)
+      if (res.ok && result.success) {
+        // After saving, re-fetch meta-options so parent UI can refresh filter lists immediately
         try {
           const metaRes = await fetch('/api/meta-options');
           const metaJson = await metaRes.json();
           if (metaRes.ok && metaJson.success) {
+            // Provide updated meta-options to parent via onSaved (if parent expects it)
             onSaved?.(result.data, metaJson.data);
           } else {
             onSaved?.(result.data);
           }
         } catch (metaErr) {
+          // If meta-options fetch fails, still call onSaved with the saved doc
           onSaved?.(result.data);
         }
+
         onClose?.();
       } else {
-        // Server Error: Error message dikhao
-        let errorMessage = "Failed to save the collection. Please try again.";
-        if (result.error) {
-          if (typeof result.error === 'object' && result.error.message) {
-            errorMessage = result.error.message;
-          } else {
-            errorMessage = String(result.error);
-          }
-        }
-        if (errorMessage.includes('Product ID must be unique') || errorMessage.includes('duplicate')) {
+        // Map common server messages to friendlier errors
+        const friendly = (result.error || '').toString();
+        if (friendly.includes('Product ID must be unique') || friendly.includes('duplicate')) {
           setErrors({ form: 'Product ID already exists. Please choose another.' });
         } else {
-          setErrors({ form: errorMessage });
+          setErrors({ form: result.error || 'Failed to save the collection. Please try again.' });
         }
       }
-    });
-
-    // 3. Error Event
-    xhr.addEventListener('error', () => {
+    } catch (err) {
+      console.error(err);
+      setErrors({ form: 'An unexpected error occurred. Please check the console.' });
+    } finally {
       setLoading(false);
-      setErrors({ form: 'An network error occurred. Please try again.' });
-    });
-
-    // 4. Request Bhejo
-    xhr.send(formData);
+    }
   };
-  // --- END OF NAYA HANDLE SAVE ---
-
 
   // Derive category options from metaOptions (server-populated) if available, otherwise fall back to static constants
   const catKeyLower = state.category ? state.category.toString().toLowerCase() : 'men';
@@ -538,19 +490,10 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
                 </div>
             </div>
              {errors.form && <div className="error-box">{errors.form}</div>}
-             
-            {/* NAYA JSX: Progress bar ke liye */}
-            {loading && uploadProgress > 0 && (
-              <div className="upload-progress-container">
-                <div className="upload-progress-bar" style={{ width: `${uploadProgress}%` }}></div>
-                <span className="upload-progress-text">Uploading... {uploadProgress}%</span>
-              </div>
-            )}
-
             <div className="modal-actions">
               <button type="button" onClick={onClose} className="btn btn-secondary" disabled={loading}>Cancel</button>
               <button type="button" onClick={handleSave} className="btn btn-primary" disabled={loading}>
-                {loading && uploadProgress === 0 ? ( // Spinner sirf tab dikhao jab progress shuru na hua ho
+                {loading ? (
                     <span className="spinner"></span>
                 ) : (
                     isEditMode ? 'Save Changes' : 'Create Collection'

@@ -20,43 +20,22 @@ import CategoryMetaEditor from '../../components/CategoryMetaEditor';
 
 // Static data is used as a fallback and for initial structure
 
-const allProducts = [
-
-{ id: 1, name: 'Royal Gold Sherwani', category: 'MEN', type: 'SHERVANI', occasion: 'WEDDING', image: 'https://placehold.co/300x349/c5a46d/25334d?text=Sherwani', description: 'men • sherwani' },
-
-{ id: 2, name: 'Classic Black Suit', category: 'MEN', type: 'SUIT', occasion: 'COCKTAIL PARTY', image: 'https://placehold.co/300x349/2a2a2a/ffffff?text=Suit', description: 'men • suit' },
-
-{ id: 3, name: 'Modern Indo-Western', category: 'MEN', type: 'INDO WESTERN', occasion: 'SANGEET', image: 'https://placehold.co/300x349/c5a46d/25334d?text=Indo-Western', description: 'men • indo western' },
-
-{ id: 4, name: 'Navy Formal Blazer', category: 'MEN', type: 'BLAZER', occasion: 'COCKTAIL PARTY', image: 'https://placehold.co/300x349/25334d/ffffff?text=Blazer', description: 'men • blazer' },
-
-{ id: 5, name: 'Elegant Wedding Sherwani', category: 'MEN', type: 'SHERVANI', occasion: 'WEDDING', image: 'https://placehold.co/300x349/c5a46d/25334d?text=Sherwani', description: 'men • sherwani' },
-
-{ id: 6, name: 'Three-Piece Suit', category: 'MEN', type: 'SUIT', occasion: 'PRE WEDDING SHOOT', image: 'https://placehold.co/300x349/2a2a2a/ffffff?text=Suit', description: 'men • suit' },
-
-{ id: 7, name: 'Crimson Red Lehenga', category: 'WOMEN', type: 'LEHENGA', occasion: 'WEDDING', image: 'https://placehold.co/300x349/c5a46d/25334d?text=Lehenga', description: 'women • lehenga' },
-
-{ id: 8, name: 'Midnight Blue Gown', category: 'WOMEN', type: 'GOWN', occasion: 'COCKTAIL PARTY', image: 'https://placehold.co/300x349/25334d/ffffff?text=Gown', description: 'women • gown' },
-
-{ id: 9, name: 'Pastel Saree', category: 'WOMEN', type: 'SAREE', occasion: 'SANGEET', image: 'https://placehold.co/300x349/c5a46d/25334d?text=Saree', description: 'men • saree' },
-
-{ id: 10, name: 'Little Prince Suit', category: 'CHILDREN', type: 'BOYS', occasion: 'BIRTHDAY', image: 'https://placehold.co/300x349/2a2a2a/ffffff?text=Boys+Suit', description: 'children • boys' },
-
-{ id: 11, name: 'Princess Pink Gown', category: 'CHILDREN', type: 'GIRLS', occasion: 'BIRTHDAY', image: 'https://placehold.co/300x349/c5a46d/25334d?text=Girls+Gown', description: 'children • girls' },
-
-{ id: 12, name: 'Floral Indo-Western', category: 'MEN', type: 'INDO WESTERN', occasion: 'SANGEET', image: 'https://placehold.co/300x349/c5a46d/25334d?text=Indo-Western', description: 'men • indo western' },
-
-];
+const allProducts = [];
 
 
 
 const PRODUCTS_PER_PAGE = 8;
 
+// Local storage cache keys (bump version to force refresh when format changes)
+const COLLECTIONS_CACHE_KEY = 'yaritu_collections_v1';
+const META_CACHE_KEY = 'yaritu_meta_v1';
+
 
 
 export default function Collection() {
 
-const [activeCategory, setActiveCategory] = useState('MEN');
+// Default to 'ALL' so the collection page shows all items on first visit
+const [activeCategory, setActiveCategory] = useState('ALL');
 
 const [activeType, setActiveType] = useState(null);
 
@@ -64,16 +43,19 @@ const [activeSubcategory, setActiveSubcategory] = useState(null);
 
 const [activeOccasion, setActiveOccasion] = useState(null);
 
-const [filteredProducts, setFilteredProducts] = useState([]);
+// Start with the local fallback products so the grid appears immediately
+// while server collections/meta-options are fetched.
+const [filteredProducts, setFilteredProducts] = useState(allProducts.slice());
 
 const { data: session } = useSession();
 
 const isAdmin = !!(session?.user?.role === 'admin' || session?.user?.isAdmin);
-const [collections, setCollections] = useState([]);
 const [jewelleryMode, setJewelleryMode] = useState(false);
 const [jewelleryItems, setJewelleryItems] = useState([]);
 const [selectedStoreFilter, setSelectedStoreFilter] = useState('');
 const [storesList, setStoresList] = useState([]);
+// Start with empty collections/meta on initial render to avoid SSR/CSR markup mismatch.
+const [collections, setCollections] = useState([]);
 const [metaOptions, setMetaOptions] = useState({});
 
 const [showModal, setShowModal] = useState(false);
@@ -104,25 +86,46 @@ const dropdownsContainerRef = useRef(null);
 
 useEffect(() => {
 
-const source = (collections && collections.length) ? collections : allProducts;
+    // If no category selected and not in jewellery mode, don't show any products yet
+    if (!activeCategory && !jewelleryMode) {
+        setFilteredProducts([]);
+        setCurrentPage(1);
+        return;
+    }
 
-let products = [];
+    const source = (collections && collections.length) ? collections : allProducts;
 
-if (activeCategory === 'ALL') {
+    let products = [];
 
-products = source.slice();
+    if (activeCategory === 'ALL') {
+        products = source.slice();
+    } else {
+        products = source.filter(p => (p.category || '').toUpperCase() === activeCategory);
+    }
 
-} else {
-
-products = source.filter(p => (p.category || '').toUpperCase() === activeCategory);
-
-}
-
+// If a subcategory is selected (used for CHILDREN: BOYS/GIRLS), filter by
+// the group's field (childCategory or collectionGroup) and also allow type
+// filtering via activeType. Keep compatibility with older items that may
+// store grouping info in different fields.
 if (activeSubcategory) {
-
-const sub = activeSubcategory.toUpperCase();
-
-products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase() === sub) || ((p.description||'').toUpperCase().includes(sub)));
+    const sub = activeSubcategory.toString().toUpperCase();
+    if (activeCategory === 'CHILDREN') {
+        products = products.filter(p => {
+            const group = (p.childCategory || p.collectionGroup || '').toString().toUpperCase();
+            // If activeType is set (e.g. SUIT), allow two cases:
+            // 1) group matches the subcategory (BOYS/GIRLS) and type matches
+            // 2) group is missing/empty but the item's type matches the activeType
+            if (activeType) {
+                const t = (p.collectionType || p.type || '').toString().toUpperCase();
+                const typeMatches = (t === activeType.toUpperCase()) || (p.description || '').toUpperCase().includes(activeType.toUpperCase());
+                return (group === sub && typeMatches) || (!group && typeMatches);
+            }
+            return group === sub || (p.description || '').toUpperCase().includes(sub);
+        });
+    } else {
+        // non-children categories — keep previous behavior
+        products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase() === sub) || ((p.description||'').toUpperCase().includes(sub)));
+    }
 
 }
 
@@ -139,8 +142,34 @@ setFilteredProducts(products);
 
 setCurrentPage(1);
 
-}, [activeCategory, activeType, activeOccasion, activeSubcategory, collections]);
+}, [activeCategory, activeType, activeOccasion, activeSubcategory, collections, jewelleryMode]);
 
+
+
+// Hydrate cached collections/meta from localStorage so previously-fetched data
+// is available immediately while we revalidate from the server.
+useEffect(() => {
+    try {
+        const raw = localStorage.getItem(COLLECTIONS_CACHE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length) {
+                setCollections(parsed);
+                // If no special filter is applied, show cached collections immediately
+                if (!jewelleryMode && (activeCategory === 'ALL' || !activeCategory)) {
+                    setFilteredProducts(parsed.slice());
+                }
+            }
+        }
+        const mRaw = localStorage.getItem(META_CACHE_KEY);
+        if (mRaw) {
+            const mParsed = JSON.parse(mRaw);
+            if (mParsed && typeof mParsed === 'object') setMetaOptions(mParsed);
+        }
+    } catch (e) {
+        console.error('Failed to hydrate cache', e);
+    }
+}, []);
 
 
 useEffect(() => {
@@ -174,7 +203,10 @@ useEffect(() => {
 
             const j = await resCollections.json();
             const m = await resMeta.json();
-            if (resCollections.ok && j.success && mounted) setCollections(j.data || []);
+            if (resCollections.ok && j.success && mounted) {
+                setCollections(j.data || []);
+                try { localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(j.data || [])); } catch (_) {}
+            }
             if (resMeta.ok && m.success && mounted) {
                 const map = {};
                 (m.data || []).forEach(opt => {
@@ -185,6 +217,7 @@ useEffect(() => {
                     if (!map[opt.key].includes(opt.value)) map[opt.key].push(opt.value);
                 });
                 setMetaOptions(map);
+                try { localStorage.setItem(META_CACHE_KEY, JSON.stringify(map)); } catch (_) {}
             }
         } catch (e) { console.error(e); }
     })();
@@ -301,16 +334,23 @@ const handleCloseModal = () => setSelectedProduct(null);
 
 const scrollToCollectionTitle = () => {
 
-setTimeout(() => {
-
-if (collectionTitleRef.current) {
-
-const y = collectionTitleRef.current.getBoundingClientRect().top + window.pageYOffset - 24;
-
-window.scrollTo({ top: y, behavior: 'smooth' });
-
+// Immediately hide any dropdown menu DOM nodes so they don't linger while we scroll
+if (dropdownsContainerRef.current) {
+    try {
+        setOpenDropdown(null);
+        const menus = dropdownsContainerRef.current.querySelectorAll(`.${styles['dropdown-menu']}`);
+        menus.forEach(m => {
+            // hide immediately via inline style; we'll remove this when opening again
+            m.style.display = 'none';
+        });
+    } catch (e) { /* ignore DOM errors */ }
 }
 
+setTimeout(() => {
+    if (collectionTitleRef.current) {
+        const y = collectionTitleRef.current.getBoundingClientRect().top + window.pageYOffset - 24;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+    }
 }, 60);
 
 };
@@ -351,17 +391,25 @@ const handleCategoryTap = (category) => {
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
         // if the dropdown for this category isn't open yet, open it (don't navigate)
         if (openDropdown !== category) {
+            // Before opening, clear any inline 'display:none' we may have set earlier
+            if (dropdownsContainerRef.current) {
+                try {
+                    const menus = dropdownsContainerRef.current.querySelectorAll(`.${styles['dropdown-menu']}`);
+                    menus.forEach(m => { m.style.display = ''; });
+                } catch (e) { /* ignore */ }
+            }
             setOpenDropdown(category);
             return;
         }
         // second tap: close dropdown and navigate to the collection
+        // Close dropdown immediately so the card hides as we start scrolling
         setOpenDropdown(null);
         setActiveCategory(category);
         setActiveType(null);
         setActiveSubcategory(null);
         setActiveOccasion(null);
-        // give the layout a moment (close animation) then scroll
-        setTimeout(() => scrollToCollectionTitle(), 80);
+        // Scroll to collection immediately (smooth behavior will animate)
+        scrollToCollectionTitle();
         return;
     }
     // Desktop: behave as normal
@@ -469,7 +517,9 @@ const handleSaveCollection = (savedData, metaData) => {
             // avoid duplicate provisional items (match by productId or _id)
             const exists = (prev || []).some(c => (c.productId && savedData.productId && c.productId === savedData.productId) || c._id === savedData._id);
             if (exists) return prev;
-            return [savedData, ...(prev || [])];
+            const updated = [savedData, ...(prev || [])];
+            try { localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(updated)); } catch (_) {}
+            return updated;
         });
         return;
     }
@@ -495,7 +545,9 @@ const handleSaveCollection = (savedData, metaData) => {
 
         // No provisional found: update by _id (edit) or prepend (new)
         const filtered = list.filter(c => c._id !== savedData._id);
-        return [savedData, ...filtered];
+        const updated = [savedData, ...filtered];
+        try { localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(updated)); } catch (_) {}
+        return updated;
     });
 
 };
@@ -545,20 +597,27 @@ return (
     const occ = getOccasionsForCategory('MEN');
     return (
         <>
-            <div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
-                <ul>
-                    {types.map(t => (
-                        <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('MEN', t); }}>{t}</a></li>
-                    ))}
-                </ul>
-            </div>
-            <div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
-                <ul>
-                    {occ.map(o => (
-                        <li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('MEN', o); }}>{o}</a></li>
-                    ))}
-                </ul>
-            </div>
+            {types && types.length > 0 && (
+                <div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
+                    <ul>
+                        {types.map(t => (
+                            <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('MEN', t); }}>{t}</a></li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {occ && occ.length > 0 && (
+                <div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
+                    <ul>
+                        {occ.map(o => (
+                            <li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('MEN', o); }}>{o}</a></li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {(!types || types.length === 0) && (!occ || occ.length === 0) && (
+                <div style={{ padding: '12px 18px', color: '#888' }}>No types or occasions configured.</div>
+            )}
         </>
     );
 })()}
@@ -583,20 +642,27 @@ return (
     const occ = getOccasionsForCategory('WOMEN');
     return (
         <>
-            <div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
-                <ul>
-                    {types.map(t => (
-                        <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('WOMEN', t); }}>{t}</a></li>
-                    ))}
-                </ul>
-            </div>
-            <div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
-                <ul>
-                    {occ.map(o => (
-                        <li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('WOMEN', o); }}>{o}</a></li>
-                    ))}
-                </ul>
-            </div>
+            {types && types.length > 0 && (
+                <div className={styles['dropdown-column']}><h4>RENT BY TYPE</h4>
+                    <ul>
+                        {types.map(t => (
+                            <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('WOMEN', t); }}>{t}</a></li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {occ && occ.length > 0 && (
+                <div className={styles['dropdown-column']}><h4>RENT BY OCCASION</h4>
+                    <ul>
+                        {occ.map(o => (
+                            <li key={o}><a href="#" onClick={(e) => { e.preventDefault(); handleOccasionClick('WOMEN', o); }}>{o}</a></li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {(!types || types.length === 0) && (!occ || occ.length === 0) && (
+                <div style={{ padding: '12px 18px', color: '#888' }}>No types or occasions configured.</div>
+            )}
         </>
     );
 })()}
@@ -620,16 +686,23 @@ return (
     const groups = getChildrenTypesByGroup();
     return (
         <>
-            <div className={styles['dropdown-column']}><h4>BOYS</h4>
-                <ul>
-                    {groups.BOYS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'BOYS'); }}>{t}</a></li>)}
-                </ul>
-            </div>
-            <div className={styles['dropdown-column']}><h4>GIRLS</h4>
-                <ul>
-                    {groups.GIRLS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'GIRLS'); }}>{t}</a></li>)}
-                </ul>
-            </div>
+            {groups.BOYS && groups.BOYS.length > 0 && (
+                <div className={styles['dropdown-column']}><h4>BOYS</h4>
+                    <ul>
+                        {groups.BOYS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'BOYS'); }}>{t}</a></li>)}
+                    </ul>
+                </div>
+            )}
+            {groups.GIRLS && groups.GIRLS.length > 0 && (
+                <div className={styles['dropdown-column']}><h4>GIRLS</h4>
+                    <ul>
+                        {groups.GIRLS.map(t => <li key={t}><a href="#" onClick={(e) => { e.preventDefault(); handleTypeClick('CHILDREN', t, 'GIRLS'); }}>{t}</a></li>)}
+                    </ul>
+                </div>
+            )}
+            {((!groups.BOYS || groups.BOYS.length === 0) && (!groups.GIRLS || groups.GIRLS.length === 0)) && (
+                <div style={{ padding: '12px 18px', color: '#888' }}>No types configured for children.</div>
+            )}
         </>
     );
 })()}
@@ -647,19 +720,24 @@ return (
 
 
 
+
 <div ref={collectionContentRef} className={`${styles['collection-content']} ${openDropdown ? styles['dropdown-active'] : ''}`}>
 
-<p className={styles.breadcrumbs}>{getBreadcrumbs()}</p>
+{(activeCategory || jewelleryMode) && (
+    <>
+        <p className={styles.breadcrumbs}>{getBreadcrumbs()}</p>
 
-<h2 ref={collectionTitleRef} className={styles['collection-title']}>{jewelleryMode ? 'Jewellery Collection' : 'Royal Collection'}</h2>
+        <h2 ref={collectionTitleRef} className={styles['collection-title']}>{jewelleryMode ? 'Jewellery Collection' : 'Royal Collection'}</h2>
 
-<p className={styles['collection-subtitle']}>Explore our finest selection.</p>
+        <p className={styles['collection-subtitle']}>Explore our finest selection.</p>
+    </>
+)}
 
 
 
 {/* Header action area: show collection-add for clothing, or store filter + jewellery-add when in jewellery mode */}
 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12, alignItems: 'center' }}>
-    {!jewelleryMode && isAdmin && (
+    {(activeCategory || jewelleryMode) && !jewelleryMode && isAdmin && (
         <button onClick={() => { setEditingCollection(null); setShowModal(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Add New Collection</button>
     )}
 
@@ -717,7 +795,13 @@ return (
                     else alert('Failed to delete');
                 } else {
                     const res = await fetch(`/api/collections/${p._id}`, { method: 'DELETE' });
-                    if (res.ok) setCollections(prev => prev.filter(c => c._id !== p._id));
+                    if (res.ok) {
+                        setCollections(prev => {
+                            const updated = (prev || []).filter(c => c._id !== p._id);
+                            try { localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(updated)); } catch (_) {}
+                            return updated;
+                        });
+                    }
                     else alert('Failed to delete');
                 }
             } catch (e) { console.error(e); alert('Failed'); }
@@ -730,7 +814,7 @@ return (
 </div>
 
 {/* Empty state message when no items to show in current filter */}
-{!jewelleryMode && currentProducts.length === 0 && (
+{(activeCategory || jewelleryMode) && !jewelleryMode && currentProducts.length === 0 && (
     <div style={{ textAlign: 'center', padding: '32px 12px', color: '#555' }}>
         <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>No collection found</div>
         <div style={{ fontSize: 14 }}>Try a different type or occasion, or add items from the admin panel.</div>

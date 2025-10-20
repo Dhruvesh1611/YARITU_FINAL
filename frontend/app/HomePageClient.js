@@ -21,6 +21,7 @@ import AddStoreModal from '../components/AddStoreModal';
 import HeroImageCard from '../components/HeroImageCard';
 import AddHeroModal from '../components/AddHeroModal';
 import TrendingVideoCard from '../components/TrendingVideoCard';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 // Yeh local fallback array abhi bhi zaroori hai agar server se data na aaye
 const heroImages = [
@@ -35,8 +36,10 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
   
   // State ko server se mile initial data se shuru karein
   const [stores, setStores] = useState(initialStores || []);
+  const [isStoresLoading, setIsStoresLoading] = useState(!(initialStores && initialStores.length > 0));
   const [heroItems, setHeroItems] = useState(initialHeroItems || []);
   const [trendingVideos, setTrendingVideos] = useState(initialTrendingVideos || []);
+  const [isTrendingLoading, setIsTrendingLoading] = useState(true);
 
   const { data: session } = useSession();
   const isAdmin = !!(session?.user?.isAdmin || session?.user?.role === 'admin');
@@ -74,15 +77,43 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
       })
     : [];
   useEffect(() => {
-    if (!stores || stores.length === 0) {
-      fetch('/api/stores', { cache: 'no-store' })
-        .then((r) => r.ok ? r.json() : Promise.reject(new Error('Failed to fetch stores')))
-        .then((j) => {
-          if (j?.success && Array.isArray(j.data)) setStores(j.data);
-        })
-        .catch(() => {});
-    }
+    let mounted = true;
+    const doFetch = async () => {
+      if (!mounted) return;
+      if (!stores || stores.length === 0) {
+        setIsStoresLoading(true);
+        try {
+          const r = await fetch('/api/stores', { cache: 'no-store' });
+          if (r.ok) {
+            const j = await r.json().catch(() => null);
+            if (j?.success && Array.isArray(j.data) && mounted) setStores(j.data);
+          }
+        } catch (err) {
+          // ignore
+        } finally {
+          if (mounted) setIsStoresLoading(false);
+        }
+      } else {
+        // we already had stores from SSR
+        setIsStoresLoading(false);
+      }
+    };
+
+    doFetch();
+    return () => { mounted = false; };
   }, []);
+
+  // When stores finish loading, add a loaded class to reveal cards with a fade-in
+  useEffect(() => {
+    if (isStoresLoading) return;
+    const timer = setTimeout(() => {
+      try {
+        const cards = document.querySelectorAll('.home-store-card');
+        cards.forEach((c) => c.classList.add('loaded'));
+      } catch (err) {}
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [isStoresLoading, stores]);
 
   // Helper to upload directly to Cloudinary unsigned with XHR so we can get progress
   const uploadToCloudinaryUnsigned = (cloudName, formData, onProgress) => {
@@ -189,6 +220,34 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
     };
   }, []);
 
+  // Load trending videos if not provided by SSR
+  useEffect(() => {
+    let mounted = true;
+    const loadTrending = async () => {
+      try {
+        if (initialTrendingVideos && Array.isArray(initialTrendingVideos) && initialTrendingVideos.length > 0) {
+          if (mounted) setTrendingVideos(initialTrendingVideos);
+          return;
+        }
+
+        const res = await fetch('/api/trending', { cache: 'no-store' });
+        if (res.ok) {
+          const j = await res.json();
+          if (j?.success && Array.isArray(j.data)) {
+            if (mounted) setTrendingVideos(j.data);
+          }
+        }
+      } catch (err) {
+        // ignore errors and show empty state
+      } finally {
+        if (mounted) setIsTrendingLoading(false);
+      }
+    };
+
+    loadTrending();
+    return () => { mounted = false; };
+  }, [initialTrendingVideos]);
+
   // Video playback logic for trending section
   useEffect(() => {
     const container = trendingContainerRef.current;
@@ -239,16 +298,43 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
             transition={{ duration: 0.8, ease: 'easeInOut' }}
             aria-hidden="true"
           >
-            {((mounted ? filteredHeroItems : heroItems).length > 0 && (mounted ? filteredHeroItems : heroItems)[currentHeroImage % (mounted ? filteredHeroItems.length : heroItems.length)]?.imageUrl) || heroImages[currentHeroImage] ? (
-              <Image 
-                src={(mounted ? filteredHeroItems : heroItems).length > 0 ? (mounted ? filteredHeroItems : heroItems)[currentHeroImage % (mounted ? filteredHeroItems.length : heroItems.length)].imageUrl : heroImages[currentHeroImage]} 
-                alt={`Hero ${currentHeroImage + 1}`} 
-                fill 
-                sizes="100vw"
-                style={{ objectFit: 'cover' }} 
-                priority 
-              />
-            ) : <div style={{width: '100%', height: '100%', backgroundColor: '#f0f0f0'}}></div>}
+            {(() => {
+              const list = (mounted ? filteredHeroItems : heroItems) || [];
+              const hasItem = list.length > 0;
+              const currentItem = hasItem ? list[currentHeroImage % list.length] : null;
+              const imageUrl = currentItem?.imageUrl;
+
+              const isRemote = (url) => {
+                if (!url) return false;
+                try {
+                  // treat absolute http(s) or cloudinary host as remote
+                  if (url.startsWith('http://') || url.startsWith('https://')) return true;
+                  const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
+                  if (cloudName && url.includes(cloudName)) return true;
+                } catch (e) {}
+                return false;
+              };
+
+              if (isRemote(imageUrl)) {
+                return (
+                  <Image
+                    src={imageUrl}
+                    alt={currentItem?.title || `Hero ${currentHeroImage + 1}`}
+                    fill
+                    sizes="100vw"
+                    style={{ objectFit: 'cover' }}
+                    priority
+                  />
+                );
+              }
+
+              // No remote image yet — render skeleton placeholder but keep layout
+              return (
+                <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                  <SkeletonLoader variant="video" style={{ width: '100%', height: '100%' }} />
+                </div>
+              );
+            })()}
           </motion.div>
         </AnimatePresence>
         <div className="hero-dots">
@@ -408,46 +494,69 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
                 </div>
               )}
 
-            {[1, 2, 3, 4, 5].map(pos => {
-              const videoItem = trendingVideos.find(t => t.position === pos);
-              const videoSrc = videoItem ? (videoItem.video || videoItem.videoUrl) : `/images/reel${pos}.mp4`;
-              
-              const styles = {
-                1: { position: 'absolute', left: '66px', top: '145px', width: '204px', height: '363px', zIndex: 2 },
-                2: { position: 'absolute', left: '279px', top: '106px', width: '224px', height: '441px', zIndex: 3 },
-                3: { position: 'absolute', left: '512px', top: '67px', width: '245px', height: '527px', zIndex: 4 },
-                4: { position: 'absolute', left: '766px', top: '106px', width: '224px', height: '441px', zIndex: 3 },
-                5: { position: 'absolute', left: '999px', top: '145px', width: '204px', height: '363px', zIndex: 2 },
-              };
-
-              return (
-                <div key={pos} style={styles[pos]}>
-                  <video
-                    key={videoSrc}
-                    ref={pos === 3 ? centerImageRef : null}
-                    className={`trending-video trending-img pos${pos} ${pos === 3 ? 'center' : ''}`}
-                    playsInline
-                    muted
-                    loop
-                    autoPlay
-                    preload="metadata"
-                    src={videoSrc}
-                    onLoadedData={(e) => { e.currentTarget.play().catch(() => {}); }}
-                    style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  {isAdmin && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', padding: 8, pointerEvents: 'none' }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setReplacePosition(pos); fileInputRef.current && fileInputRef.current.click(); }}
-                        style={{ pointerEvents: 'auto', marginBottom: 6, zIndex: 20, padding: '6px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.95)', border: '1px solid #ccc', cursor: 'pointer' }}
-                      >
-                        {replacing && replacePosition === pos ? 'Replacing...' : 'Edit'}
-                      </button>
-                    </div>
-                  )}
+            {isTrendingLoading ? (
+              [1,2,3,4,5].map(pos => (
+                <div key={`skeleton-${pos}`} style={{ position: 'absolute', left: 66 + (pos - 1) * 233, top: pos === 3 ? 67 : (pos === 2 || pos === 4 ? 106 : 145), width: pos === 3 ? 245 : (pos === 2 || pos === 4 ? 224 : 204), height: pos === 3 ? 527 : (pos === 2 || pos === 4 ? 441 : 363), zIndex: pos === 3 ? 4 : (pos === 2 || pos === 4 ? 3 : 2) }}>
+                  <SkeletonLoader variant="video" />
                 </div>
-              );
-            })}
+              ))
+            ) : (
+              [1,2,3,4,5].map(pos => {
+                const videoItem = trendingVideos.find(t => t.position === pos);
+                const videoSrc = videoItem ? (videoItem.video || videoItem.videoUrl || videoItem.url) : null;
+
+                const styles = {
+                  1: { position: 'absolute', left: '66px', top: '145px', width: '204px', height: '363px', zIndex: 2 },
+                  2: { position: 'absolute', left: '279px', top: '106px', width: '224px', height: '441px', zIndex: 3 },
+                  3: { position: 'absolute', left: '512px', top: '67px', width: '245px', height: '527px', zIndex: 4 },
+                  4: { position: 'absolute', left: '766px', top: '106px', width: '224px', height: '441px', zIndex: 3 },
+                  5: { position: 'absolute', left: '999px', top: '145px', width: '204px', height: '363px', zIndex: 2 },
+                };
+
+                return (
+                  <div key={pos} style={styles[pos]}>
+                    {videoSrc ? (
+                      <video
+                        key={videoSrc}
+                        ref={pos === 3 ? centerImageRef : null}
+                        className={`trending-video trending-img pos${pos} ${pos === 3 ? 'center' : ''}`}
+                        playsInline
+                        muted
+                        loop
+                        autoPlay
+                        preload="metadata"
+                        src={videoSrc}
+                        onLoadedData={(e) => {
+                          try {
+                            e.currentTarget.play().catch(() => {});
+                          } catch (err) {}
+                          // add loaded class to trigger CSS fade-in
+                          try { e.currentTarget.classList.add('loaded'); } catch (err) {}
+                          // hide placeholder if present
+                          try {
+                            const ph = e.currentTarget.parentElement && e.currentTarget.parentElement.querySelector('.trending-placeholder');
+                            if (ph) ph.classList.add('hidden');
+                          } catch (err) {}
+                        }}
+                        style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div className="trending-placeholder" />
+                    )}
+                    {isAdmin && (
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', padding: 8, pointerEvents: 'none' }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setReplacePosition(pos); fileInputRef.current && fileInputRef.current.click(); }}
+                          style={{ pointerEvents: 'auto', marginBottom: 6, zIndex: 20, padding: '6px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.95)', border: '1px solid #ccc', cursor: 'pointer' }}
+                        >
+                          {replacing && replacePosition === pos ? 'Replacing...' : 'Edit'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
         
@@ -464,15 +573,23 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
             </div>
           )}
           <div className="stores-grid">
-            {stores.map((store, index) => (
-              <StoreCard
-                key={store._id}
-                store={store}
-                index={index}
-                onUpdate={(updated) => setStores((prev) => prev.map((s) => (s._id === updated._id ? updated : s)))}
-                onDelete={(id) => setStores((prev) => prev.filter((s) => s._id !== id))}
-              />
-            ))}
+            {isStoresLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={`store-skel-${i}`} className="home-store-card" style={{ opacity: 0 }}>
+                  <SkeletonLoader variant="video" style={{ width: 230, height: 180 }} />
+                </div>
+              ))
+            ) : (
+              stores.map((store, index) => (
+                <StoreCard
+                  key={store._id}
+                  store={store}
+                  index={index}
+                  onUpdate={(updated) => setStores((prev) => prev.map((s) => (s._id === updated._id ? updated : s)))}
+                  onDelete={(id) => setStores((prev) => prev.filter((s) => s._id !== id))}
+                />
+              ))
+            )}
           </div>
         </section>
 

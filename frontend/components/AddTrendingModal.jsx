@@ -21,7 +21,7 @@ export default function AddTrendingModal({ onAdd }) {
       form.append('file', file);
       form.append('upload_preset', 'yaritu_preset');
       form.append('folder', 'YARITU');
-      const res = await fetch('https://api.cloudinary.com/v1_1/dqjegkdru/video/upload', { method: 'POST', body: form });
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, { method: 'POST', body: form });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       const secureUrl = data.secure_url || data.secureUrl;

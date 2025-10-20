@@ -10,10 +10,11 @@ export const revalidate = 0;
 // Server par data fetch karne ke liye helper function
 async function getHomepageData() {
   try {
-    // Build absolute base URL from incoming request headers
-    const h = headers();
-    const host = h.get('x-forwarded-host') || h.get('host');
-    const proto = h.get('x-forwarded-proto') || (process.env.VERCEL ? 'https' : 'http');
+  // Build absolute base URL from incoming request headers
+  // `headers()` should be awaited per Next.js dynamic API guidance
+  const h = await headers();
+  const host = h.get('x-forwarded-host') || h.get('host');
+  const proto = h.get('x-forwarded-proto') || (process.env.VERCEL ? 'https' : 'http');
     const baseUrl = `${proto}://${host}`;
 
     const [heroRes, storesRes, trendingRes] = await Promise.all([

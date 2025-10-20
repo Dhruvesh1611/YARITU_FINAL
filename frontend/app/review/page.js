@@ -136,11 +136,27 @@ function VideoReview({ src, className, isPlaying, onPlay, onStop, thumbnail }) {
   return (
     <div className={className} style={{ position: 'relative', cursor: 'pointer', borderRadius: '16px', overflow: 'hidden' }} onClick={handlePlay}>
       {!isPlaying && thumbnail && (
-        <img
-          src={thumbnail}
-          alt="Video thumbnail"
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
-        />
+        (() => {
+          // Detect local thumbnails (relative paths or localhost)
+          const isLocal = typeof thumbnail === 'string' && (
+            thumbnail.startsWith('/') || thumbnail.startsWith('./') || thumbnail.includes('localhost') || thumbnail.includes('127.0.0.1')
+          );
+          if (isLocal) {
+            // Render a neutral skeleton placeholder instead of loading local image
+            return (
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(90deg,#efefef,#f6f6f6,#efefef)', animation: 'placeholderShimmer 1.6s linear infinite' }}>
+                <style>{`@keyframes placeholderShimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }`}</style>
+              </div>
+            );
+          }
+          return (
+            <img
+              src={thumbnail}
+              alt="Video thumbnail"
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+            />
+          );
+        })()
       )}
       <video
         ref={videoRef}
@@ -817,7 +833,7 @@ export default function Review() {
                   </div>
                   <div style={{ width: 220 }}>
                     <div style={{ width: 160, height: 160, borderRadius: '50%', background: '#eee', marginBottom: 8, overflow: 'hidden' }}>
-                      <img src={avatarUploadedUrl || filePreview || form.avatarUrl || '/images/Rectangle 4.png'} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={avatarUploadedUrl || filePreview || form.avatarUrl || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <input
                       type="file"
@@ -935,7 +951,7 @@ export default function Review() {
                     <div style={{ marginBottom: 8 }}>
                       {/* small helper preview for selection area (not the main preview panel) */}
                       <div style={{ width: 160, height: 160, borderRadius: '8px', background: '#eee', overflow: 'hidden' }}>
-                        <img src={thumbFilePreview || thumbUploadedUrl || videos[editingVideoIndex]?.thumbnail || '/images/Rectangle 4.png'} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={thumbFilePreview || thumbUploadedUrl || videos[editingVideoIndex]?.thumbnail || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     </div>
                     <input type="file" accept="image/*" onChange={async (e) => {
@@ -986,7 +1002,7 @@ export default function Review() {
                               muted
                             />
                           ) : (
-                            <img src={posterSrc || '/images/Rectangle 4.png'} alt="thumbnail preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={posterSrc || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt="thumbnail preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           )}
                         </div>
                       );

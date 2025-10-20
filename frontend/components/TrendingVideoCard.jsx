@@ -36,7 +36,7 @@ export default function TrendingVideoCard({ item, onUpdate }) {
       fd.append('file', file);
       fd.append('upload_preset', 'yaritu_preset');
       fd.append('folder', 'YARITU');
-      const res = await fetch('https://api.cloudinary.com/v1_1/dqjegkdru/video/upload', { method: 'POST', body: fd });
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       const secureUrl = data.secure_url || data.secureUrl;

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import CelebrityVideoCard from './CelebrityVideoCard';
 import AddCelebrityModal from './AddCelebrityModal';
+import SkeletonLoader from './SkeletonLoader';
 
 const CelebritySection = () => {
   const [currentVideo, setCurrentVideo] = useState(0);
@@ -56,6 +57,16 @@ const CelebritySection = () => {
 
   // displayed list is either the filtered (client) list after mount, or the server-provided videos (SSR)
   const displayed = mounted ? filteredVideos : videos;
+
+  const isRemote = (url) => {
+    if (!url) return false;
+    try {
+      if (url.startsWith('http://') || url.startsWith('https://')) return true;
+      const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
+      if (cloudName && url.includes(cloudName)) return true;
+    } catch (e) {}
+    return false;
+  };
 
   // Keep currentVideo in-bounds when displayed list changes
   useEffect(() => {
@@ -180,7 +191,7 @@ const CelebritySection = () => {
       fd.append('upload_preset', 'yaritu_preset');
       fd.append('folder', 'YARITU');
 
-      const res = await fetch('https://api.cloudinary.com/v1_1/dqjegkdru/video/upload', { method: 'POST', body: fd });
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       const videoUrl = data.secure_url;
@@ -234,8 +245,17 @@ const CelebritySection = () => {
     <>
       <div className="celebrity-section">
         <div className="section-header">
-          <h2 className="section-title">Worn by <span className="highlight">Celebrities</span></h2>
-          <p className="section-subtitle">Trusted by the stars for their most important moments</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <h2 className="section-title">Worn by <span className="highlight">Celebrities</span></h2>
+            <p className="section-subtitle">Trusted by the stars for their most important moments</p>
+          </div>
+          {isAdmin && (
+            <div style={{ marginLeft: 'auto' }}>
+              <button onClick={() => setIsAddOpen(true)} className="admin-btn add-new" style={{ marginLeft: 12 }}>
+                + Add Video
+              </button>
+            </div>
+          )}
         </div>
 
         {isAdmin && (
@@ -250,18 +270,25 @@ const CelebritySection = () => {
             {displayed.length > 0 ? (
               displayed.map((video, index) => (
                 <div className="video-slide" key={video._id} data-index={index} style={{ position: 'relative' }}>
-                  <video
-                    ref={(el) => (videoRefs.current[index] = el)}
-                    src={video.videoUrl}
-                    muted
-                    playsInline
-                    loop
-                    // leave autoplay attribute off and control playback programmatically
-                    className="main-video"
-                  >
-                    <source src={video.videoUrl} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
+                  {isRemote(video.videoUrl) ? (
+                    <video
+                      ref={(el) => (videoRefs.current[index] = el)}
+                      src={video.videoUrl}
+                      muted
+                      playsInline
+                      loop
+                      // leave autoplay attribute off and control playback programmatically
+                      className="main-video"
+                    >
+                      <source src={video.videoUrl} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    // show skeleton placeholder instead of attempting to load a local video
+                    <div style={{ position: 'absolute', inset: 0 }}>
+                      <SkeletonLoader variant="video" style={{ width: '100%', height: '100%' }} />
+                    </div>
+                  )}
 
                   {/* Admin controls tethered to the active slide so they move with it */}
                   {isAdmin && index === currentVideo && (

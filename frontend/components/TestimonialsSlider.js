@@ -4,11 +4,13 @@ import Image from 'next/image';
 import styles from './TestimonialsSlider.module.css'; // Import the new CSS Module
 import AddTestimonialModal from './AddTestimonialModal';
 import EditTestimonialModal from './EditTestimonialModal';
+import SkeletonLoader from './SkeletonLoader';
 import { useSession } from 'next-auth/react';
 
 const TestimonialsSlider = ({ location = 'home' }) => {
     const [isPaused, setIsPaused] = useState(false);
     const [items, setItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editing, setEditing] = useState(null);
     const { data: session } = useSession();
@@ -26,6 +28,9 @@ const TestimonialsSlider = ({ location = 'home' }) => {
         } catch (err) {
             console.error('Failed to load testimonials', err);
             setItems([]);
+        }
+        finally {
+            setIsLoading(false);
         }
     };
 
@@ -72,11 +77,22 @@ const TestimonialsSlider = ({ location = 'home' }) => {
                 onMouseEnter={() => setIsPaused(true)}
                 onMouseLeave={() => setIsPaused(false)}
             >
-                <ClickableTrack 
-                    isPaused={isPaused} 
-                    items={items} 
-                    onCardClick={(t) => { if (isAdmin) setEditing(t); }} 
-                />
+                {isLoading ? (
+                    <div style={{ display: 'flex', gap: 24, padding: '12px' }}>
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={`skeleton-${i}`} style={{ flex: '0 0 auto' }}>
+                                <SkeletonLoader variant="video" style={{ width: 360, height: 200 }} />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <ClickableTrack 
+                        isPaused={isPaused} 
+                        items={items} 
+                        isLoading={isLoading}
+                        onCardClick={(t) => { if (isAdmin) setEditing(t); }} 
+                    />
+                )}
             </div>
 
                 {isAddOpen && <AddTestimonialModal location={location} onClose={() => setIsAddOpen(false)} onAdded={handleAdded} />}
@@ -96,7 +112,7 @@ const TestimonialsSlider = ({ location = 'home' }) => {
                         {uniqueItems.map((item) => (
                             <div key={item._id || item.id} className={styles.adminRow}>
                                 <div className={styles.cellUser}>
-                                    <img src={item.avatarUrl  || '/images/Rectangle 4.png'} alt={item.name} className={styles.adminAvatar} />
+                                    <img src={item.avatarUrl  || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt={item.name} className={styles.adminAvatar} />
                                     <span>{item.name || '—'}</span>
                                 </div>
                                 <div className={styles.cellReview}>
@@ -118,6 +134,18 @@ const TestimonialsSlider = ({ location = 'home' }) => {
 
 function ClickableTrack({ isPaused, items, onCardClick }) {
     const trackRef = useRef(null);
+
+    // When items change from empty to filled, add 'loaded' to cards to trigger fade-in
+    useEffect(() => {
+        const track = trackRef.current;
+        if (!track) return;
+        // small delay so CSS transition is visible after DOM paints
+        const timer = setTimeout(() => {
+            const cards = track.querySelectorAll(`.${styles.testimonialsCard}`);
+            cards.forEach((c) => c.classList.add('loaded'));
+        }, 80);
+        return () => clearTimeout(timer);
+    }, [items]);
 
     useEffect(() => {
         const track = trackRef.current;
@@ -164,7 +192,7 @@ function ClickableTrack({ isPaused, items, onCardClick }) {
                     <div className={styles.cardInner}>
                         <div className={styles.cardTop}>
                             <div className={styles.cardAvatar}>
-                                <Image src={item.avatarUrl || '/images/Rectangle 4.png'} alt={`${item.name} avatar`} width={72} height={72} loading="lazy" />
+                                <Image src={item.avatarUrl || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt={`${item.name} avatar`} width={72} height={72} loading="lazy" />
                             </div>
                             <div className={styles.cardMeta}>
                                 <div className={styles.cardName}>{item.name}</div>

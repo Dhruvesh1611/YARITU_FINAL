@@ -7,6 +7,7 @@ import styles from './ImageSlider.module.css';
 import { useRouter } from 'next/navigation'; // ✅ YEH LINE ADD KARNI HAI
 import AddFeaturedModal from './AddFeaturedModal';
 import { useSession } from 'next-auth/react';
+import SkeletonLoader from './SkeletonLoader';
 
 // === ICONS (SVG FOR EDIT AND DELETE) ===
 const EditIcon = () => (
@@ -53,13 +54,36 @@ const FeaturedImageCard = ({ item, onUpdate, onDelete }) => {
 
     return (
         <div className={styles.featuredCard}>
-            <Image
-                src={item.src}
-                alt={item.alt || 'Featured'}
-                width={150}
-                height={150}
-                className={styles.featuredCardImage}
-            />
+            {(() => {
+                const isRemote = (url) => {
+                    if (!url) return false;
+                    try {
+                        if (url.startsWith('http://') || url.startsWith('https://')) return true;
+                        const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
+                        if (cloudName && url.includes(cloudName)) return true;
+                    } catch (e) {}
+                    return false;
+                };
+
+                if (isRemote(item.src)) {
+                    return (
+                        <Image
+                            src={item.src}
+                            alt={item.alt || 'Featured'}
+                            width={150}
+                            height={150}
+                            className={styles.featuredCardImage}
+                        />
+                    );
+                }
+
+                // render placeholder instead of local thumbnail
+                return (
+                    <div style={{ width: 150, height: 150 }}>
+                        <SkeletonLoader variant="video" style={{ width: 150, height: 150 }} />
+                    </div>
+                );
+            })()}
             <div className={styles.cardActionsOverlay}>
                 <button className={`${styles.cardActionBtn} ${styles.editBtn}`} onClick={() => onUpdate(item)}>
                     <EditIcon />
@@ -112,6 +136,7 @@ const ImageSlider = () => {
     const [isMobile, setIsMobile] = useState(false);
     const { data: session } = useSession();
     const [images, setImages] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
@@ -140,6 +165,7 @@ const ImageSlider = () => {
                 setImages(imagesPlaceholder);
             } finally {
                 setCenterIndex(0);
+                setIsLoading(false);
             }
         };
         fetchFeatured();
@@ -173,7 +199,7 @@ const ImageSlider = () => {
         setImages((p) => p.map((x) => (x._id === updatedItem._id ? updatedItem : x)));
     }, []);
 
-    if (images.length === 0) {
+    if (images.length === 0 && !isLoading) {
         return null;
     }
 
@@ -229,25 +255,34 @@ const ImageSlider = () => {
                     onTouchStart={onPointerDown} onTouchMove={onPointerMove} onTouchEnd={onPointerUp}
                 >
                     <AnimatePresence>
-                        {visibleImages.map((image) => (
-                             <motion.div
-                                key={image._id ? image._id + image.position : image.src + image.position}
-                                className={styles.imageCard}
-                                variants={isMobile ? mobileVariants : desktopVariants}
-                                initial={false}
-                                animate={image.position}
-                                transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-                                onClick={() => router.push('/collection')}
-                                role="link" tabIndex={0}
-                            >
-                                <Image
-                                    src={image.src} alt={image.alt || 'Featured image'} fill
-                                    sizes="(max-width: 768px) 70vw, 22vw"
-                                    className={styles.image} priority={image.position === 'center'}
-                                />
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
+                            {visibleImages.map((image) => (
+                                 <motion.div
+                                    key={image._id ? image._id + image.position : image.src + image.position}
+                                    className={`${styles.imageCard} ${isLoading ? 'initHidden' : ''}`}
+                                    variants={isMobile ? mobileVariants : desktopVariants}
+                                    initial={false}
+                                    animate={image.position}
+                                    transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                                    onClick={() => router.push('/collection')}
+                                    role="link" tabIndex={0}
+                                >
+                                    {isLoading ? (
+                                        <SkeletonLoader variant="video" style={{ width: '100%', height: '100%' }} />
+                                    ) : (
+                                        <Image
+                                            src={image.src} alt={image.alt || 'Featured image'} fill
+                                            sizes="(max-width: 768px) 70vw, 22vw"
+                                            className={styles.image}
+                                            priority={image.position === 'center'}
+                                            onLoadingComplete={(img) => {
+                                                try { img.classList.add('loaded'); } catch (err) {}
+                                                try { const parent = img.closest(`.${styles.imageCard}`); if (parent) parent.classList.add('loaded'); } catch (err) {}
+                                            }}
+                                        />
+                                    )}
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                 </div>
                 <button onClick={goToNext} className={`${styles.arrow} ${styles.rightArrow}`}>&#10095;</button>
             </div>

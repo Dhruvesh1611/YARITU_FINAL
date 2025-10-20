@@ -2,6 +2,9 @@
 const nextConfig = {
     reactStrictMode: false,
     images: {
+        // During local development we disable the Next.js image optimization proxy
+        // to avoid timeouts when contacting remote CDNs like Cloudinary.
+        unoptimized: true,
         remotePatterns: [
             {
                 protocol: 'https',

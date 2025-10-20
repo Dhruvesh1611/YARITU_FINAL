@@ -1,90 +1,47 @@
 "use client";
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import './offer.css';
 import OfferSignupModal from '../../components/OfferSignupModal';
 import Image from 'next/image';
+import isRemote from '../../utils/isRemote';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import { useSession } from 'next-auth/react';
 import EditStoreModal from '../../components/EditStoreModal';
 import OfferEditorModal from '../../components/OfferEditorModal';
 
 export default function Offer() {
-  const staticStores = [
-    { name: 'AMRELI', address: '2nd floor, Shivam plaza, Old, Market Yard Rd, Amreli Irrigation Division, D.L.B. Society, Amreli, Gujarat 365601' },
-    { name: 'BOPAL', address: '2nd floor, Nr. TRP Mall BRTS Main Rd, Bopal, Ahmedabad, Gujarat 380058' },
-    { name: 'BOTAD', address: '1st & 2nd Floor, Surya Garden Restaurant, Opp:, Paliyad Rd, Botad, Gujarat 364710' },
-    { name: 'GOTA', address: '2nd Floor, Block - B, Shlok Infinity, Chandlodiya, Ahmedabad, Gujarat 382481' },
-    { name: 'INDORE', address: '1st & 2nd Floor, 8, Footi Kothi Rd, opp. Sethi Gate Road, Gumasta Nagar, Scheme 71, Indore, Madhya Pradesh 452009' },
-    { name: 'JAMNAGAR', address: 'Shop No. FF-114, Nandanvan Stylus Complex, Ranjitsagar Rd, Nandanvan Society, Jamnagar, Gujarat 361006' },
-    { name: 'JAIPUR', address: 'Plot No. 12, Sarthi Marg, near SBI Choraha, Sector 8, Vaishali Nagar, Jaipur, Rajasthan 302021' },
-    { name: 'JETPUR', address: 'Amar Nagar Rd, Dobariya Wadi, Vekariya Nagar, Jetpur, Gujarat 360370' },
-    { name: 'KATARGAM', address: 'Shop No.1 to 3, 1st Floor, Bhavya Complex, Laxminarayan Soc Dhabholi Char Rasta, Ved Rd, Katargam, Surat, Gujarat 395004' },
-    { name: 'MARUTI CHOWK', address: 'shop no. 1-5, 1floor, panchdev shopping center, Lambe Hanuman Rd, opp. maruti gaushala, Navi Shakti Vijay Society, Panchdev Society, Mohan Nagar, Varachha, Surat, Gujarat 395006' },
-    { name: 'MEHSANA', address: 'BHAGWATI CHAMBER, Radhanpur Rd, near BHARAT PETROL PUMP, Dediyasan, Mehsana, Gujarat 384002' },
-    { name: 'MORBI', address: '2nd to 4th Floor, Balaji Complex, Shop No, 5-8, Ravapar Rd, opposite Canal Chowk, Morbi, Gujarat 363641' },
-    { name: 'NAVSARI', address: '1st floor, Grid Rd, nearby City Tower Apartment, Kachiyawadi, Kaliawadi, Navsari, Gujarat 396427' },
-    { name: 'NIKOL', address: 'Nikol Gam Rd, opp. Sardar hawl, prajapati chawl, Indrajit Society, Thakkarbapanagar, Nikol, Ahmedabad, Gujarat 382350' },
-    { name: 'RAJKOT', address: 'Opp: Ambika Park, Raiya Rd, Hanuman Madhi Chowk, Before, Rajkot, Gujarat 360007' },
-    { name: 'UDAIPUR', address: 'Plot No.8, 100 Feet Rd, opp. Shubh Kesar Garden, New Ashok Vihar, Shobhagpura, Udaipur, Rajasthan 313001' },
-    { name: 'YOGICHOWK', address: '2nd Floor and 3rd Floor, Pragati IT World, Shop No. 201 to 208 and 303 to 308, Yogi Chowk Rd, near Satyam Clinic, Yogi Chowk Ground, Punagam, Nana Varachha, Surat, Gujarat 395011' },
-  ].sort((a, b) => a.name.localeCompare(b.name));
-
-  const stores = staticStores.map(s => ({
-    ...s,
-    phone: s.phone || '',
-    image: s.image || '/images/stores/store-placeholder.png'
-  }));
+  // Prefer fetching stores from the public API (same as Home page).
+  // Keep a local fallback of `data/stores.json` if the API is unreachable.
   const [selectedIdx, setSelectedIdx] = useState(0);
   const { data: session } = useSession();
-  const [storesData, setStoresData] = useState(stores);
+  const [storesData, setStoresData] = useState([]);
   const [editOpen, setEditOpen] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [offersContent, setOffersContent] = useState(null);
   const [offerEditorOpen, setOfferEditorOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
   const modalIdx = typeof editIdx === 'number' ? editIdx : selectedIdx;
-  // Claim toast state
-  const [claimToast, setClaimToast] = useState({ show: false, text: '' });
-  const toastTimerRef = useRef(null);
-
-  const showClaimToast = (text) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setClaimToast({ show: true, text });
-    toastTimerRef.current = setTimeout(() => {
-      setClaimToast({ show: false, text: '' });
-      toastTimerRef.current = null;
-    }, 3000);
-  };
-
-  const handleClaim = (e, offer) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    const storeName = (storesData[selectedIdx]?.name || stores[selectedIdx]?.name || '').toString();
-    const msg = storeName ? `Visit our ${storeName} branch` : 'Visit our branch';
-    showClaimToast(msg);
-    // You can extend this to call any claim API or analytics here
-  };
+  const currentStore = storesData[selectedIdx] || storesData[0] || {};
 
   useEffect(() => {
     const load = async () => {
       try {
-        // Use the public stores API so the Offer page shows the same stores as the homepage "Visit Our Stores"
-        const res = await fetch('/api/stores', { cache: 'no-store' });
+        const res = await fetch('/api/stores');
         if (res.ok) {
           const j = await res.json();
-          if (j.success && Array.isArray(j.data)) {
-            // sort ascending by name, case-insensitive
-            const sorted = j.data.slice().sort((a, b) => {
-              const na = (a.name || '').toString().toLowerCase();
-              const nb = (b.name || '').toString().toLowerCase();
-              return na.localeCompare(nb);
-            }).map(s => ({
-              ...s,
-              phone: s.phone || '',
-              image: s.image || '/images/stores/store-placeholder.png'
-            }));
-            setStoresData(sorted);
-          }
+          if (j.success && Array.isArray(j.data)) return setStoresData(j.data);
         }
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        // ignore
+      }
+
+      // fallback to local data file if API fails
+      try {
+        const local = await import('../../data/stores.json');
+        if (Array.isArray(local?.default)) setStoresData(local.default);
+      } catch (e) {
+        // ignore
+      }
     };
     load();
   }, []);
@@ -104,12 +61,6 @@ export default function Offer() {
 
   return (
     <>
-      {/* Claim toast banner (styled via offer.css) */}
-      <div className={`claim-toast-container ${claimToast.show ? 'visible' : ''}`} aria-live="polite">
-        <div className="claim-toast">
-          <div className="claim-toast-text">{claimToast.text}</div>
-        </div>
-      </div>
       <OfferSignupModal openAfter={5000} />
       <div className="offer-page">
         <div className="container reviews-content">
@@ -140,14 +91,21 @@ export default function Offer() {
                 )}
               </div>
             </div>
-            <div className="store-selector-image">
-              <Image
-                src={storesData[selectedIdx]?.image || stores[selectedIdx].image}
-                alt={`${storesData[selectedIdx]?.name || stores[selectedIdx].name} store interior`}
-                width={690}
-                height={400}
-                className="store-photo"
-              />
+              <div className="store-selector-image">
+                <div style={{ width: 575, height: 450 }}>
+                  {isRemote(currentStore.imageUrl || currentStore.image) ? (
+                    <Image
+                      src={currentStore.imageUrl || currentStore.image}
+                      alt={`${currentStore.name || 'Store'} store interior`}
+                      width={575}
+                      height={450}
+                      style={{ objectFit: 'cover' }}
+                      className="store-photo"
+                    />
+                  ) : (
+                    <SkeletonLoader style={{ width: '100%', height: '100%' }} />
+                  )}
+                </div>
             </div>
           </div>
         </section>
@@ -165,9 +123,9 @@ export default function Offer() {
             <div className="offers-header">
               <Image src="/images/location.png" alt="Location icon" width={50} height={50} />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h2>{storesData[selectedIdx]?.name || stores[selectedIdx]?.name}</h2>
-                {storesData[selectedIdx]?.phone || stores[selectedIdx]?.phone ? (
-                  <div style={{ fontSize: 14, color: '#666', marginTop: 4 }}>📞 {storesData[selectedIdx]?.phone || stores[selectedIdx]?.phone}</div>
+                <h2>{currentStore.name || ''}</h2>
+                {currentStore.phone ? (
+                  <div style={{ fontSize: 14, color: '#666', marginTop: 4 }}>📞 {currentStore.phone}</div>
                 ) : null}
               </div>
             </div>
@@ -175,12 +133,12 @@ export default function Offer() {
               {(() => {
                 if (!Array.isArray(offersContent)) return null;
                 const hasStoreField = offersContent.some(o => typeof o.store === 'string');
-                const selectedStoreName = (storesData[selectedIdx]?.name || stores[selectedIdx]?.name || '').toString().toLowerCase();
+                const selectedStoreName = (currentStore.name || '').toString().toLowerCase();
                 const filteredOffers = hasStoreField ? offersContent.filter(o => (o.store || '').toString().toLowerCase() === selectedStoreName) : offersContent;
                 if (filteredOffers.length === 0) {
                   return (
                     <div style={{ padding: 30, textAlign: 'center', width: '100%' }}>
-                      <p style={{ fontSize: 18, color: '#666' }}>No offers available for {storesData[selectedIdx]?.name || stores[selectedIdx]?.name} at the moment.</p>
+                      <p style={{ fontSize: 18, color: '#666' }}>No offers available for {currentStore.name || 'this store'} at the moment.</p>
                       {session && session.user && session.user.role === 'admin' && (
                         <p style={{ color: '#333' }}>You can add offers for this store using the Add Offer button.</p>
                       )}
@@ -190,17 +148,21 @@ export default function Offer() {
 
                 return filteredOffers.map((off, i) => (
                   <div key={off.id} className={`offer-card ${i === 1 ? 'offset-up' : ''}`}>
-                    <div className="offer-card-image">
-                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
-                        <Image src={off.image} alt={off.heading} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'fill' }} />
-                      </div>
-                      {off.discount ? <div className="discount-tag">{off.discount}</div> : null}
+                  <div className="offer-card-image">
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
+                      {isRemote(off.image) ? (
+                        <Image src={off.image} alt={off.heading || 'Offer image'} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'fill' }} />
+                      ) : (
+                        <SkeletonLoader style={{ width: '100%', height: '100%' }} />
+                      )}
                     </div>
+                    {off.discount ? <div className="discount-tag">{off.discount}</div> : null}
+                  </div>
                     <div className="offer-card-content">
                       <h3>{off.heading}</h3>
                       <p>{off.subheading}</p>
                       <span className="validity-date">{off.validity}</span>
-                      <a href="#" className="claim-button" onClick={(e) => handleClaim(e, off)}>Claim Offer</a>
+                      <a href="#" className="claim-button">Claim Offer</a>
                       {session && session.user && session.user.role === 'admin' && (
                         <div style={{ marginTop: 8 }}>
                           <button onClick={() => { setEditingOffer(off); setOfferEditorOpen(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Edit</button>

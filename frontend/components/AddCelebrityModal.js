@@ -38,7 +38,7 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
       formData.append('folder', 'YARITU/celebrities');
 
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://api.cloudinary.com/v1_1/dqjegkdru/video/upload', true); // YOUR CLOUD NAME
+  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, true); // YOUR CLOUD NAME
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {

@@ -5,7 +5,7 @@ const OfferContentSchema = new mongoose.Schema({
   subheading: { type: String, default: '' },
   discount: { type: String, default: '' },
   validity: { type: String, default: '' },
-  image: { type: String, default: '/images/placeholder.png' },
+  image: { type: String, default: '' },
   store: { type: String, default: '' },
 }, { timestamps: true });
 

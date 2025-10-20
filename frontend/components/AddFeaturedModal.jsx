@@ -27,7 +27,7 @@ export default function AddFeaturedModal({ onClose, onAdd, isEditing = false, it
       fd.append('upload_preset', 'yaritu_preset');
       fd.append('folder', 'YARITU');
       
-      const res = await fetch(`https://api.cloudinary.com/v1_1/dqjegkdru/image/upload`, { method: 'POST', body: fd });
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
       
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();

@@ -80,32 +80,73 @@ export default function EditStoreModal({ open, onClose, store, idx, onSaved }) {
 
   const handleSave = async () => {
     setSaving(true);
-    // ... (rest of the handleSave logic is the same)
     try {
-      let imageBase64 = null;
-      let imageName = null;
-      if (file) {
-        imageName = file.name;
-        const reader = new FileReader();
-        const promise = new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
+      // If the store has a Mongo _id, update via the DB-backed API
+      if (store && store._id) {
+        let imageUrl = store.imageUrl || store.image || null;
+
+        // If a new file was selected, upload to Cloudinary like AddStoreModal does
+        if (file) {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('upload_preset', 'yaritu_preset');
+          fd.append('folder', 'YARITU');
+
+          const resCloud = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: fd,
+          });
+          if (!resCloud.ok) throw new Error('Cloudinary upload failed');
+          const cloudJson = await resCloud.json();
+          imageUrl = cloudJson.secure_url;
+        }
+
+        const payload = { address, phone };
+        if (imageUrl) payload.imageUrl = imageUrl;
+
+        const res = await fetch(`/api/stores/${store._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
         });
-        reader.readAsDataURL(file);
-        imageBase64 = await promise;
-      }
-  const payload = { idx: numericIdx, address, phone, imageBase64, imageName };
-      const res = await fetch('/api/admin/stores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const j = await res.json();
-      if (j.success) {
-        onSaved && onSaved(j.data);
-        onClose();
+
+        const j = await res.json().catch(() => null);
+        if (res.ok && j?.success) {
+          onSaved && onSaved(j.data);
+          onClose();
+        } else {
+          console.error('Update store (DB) failed', j);
+          alert('Save failed: ' + (j?.message || 'Unknown'));
+        }
+
       } else {
-        alert('Save failed: ' + (j.message || 'Unknown'));
+        // Fallback for file-based admin stores.json flow (keep existing behavior)
+        let imageBase64 = null;
+        let imageName = null;
+        if (file) {
+          imageName = file.name;
+          const reader = new FileReader();
+          const promise = new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+          });
+          reader.readAsDataURL(file);
+          imageBase64 = await promise;
+        }
+
+        const payload = { idx: numericIdx, address, phone, imageBase64, imageName };
+        const res = await fetch('/api/admin/stores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const j = await res.json();
+        if (j.success) {
+          onSaved && onSaved(j.data);
+          onClose();
+        } else {
+          alert('Save failed: ' + (j.message || 'Unknown'));
+        }
       }
     } catch (err) {
       console.error(err);
