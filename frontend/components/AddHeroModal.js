@@ -30,33 +30,47 @@ export default function AddHeroModal({ onClose, onAdd }) {
     }
   };
 
-  // Reusable Cloudinary upload function with progress tracking
+  // Reusable Cloudinary upload function using fetch (no fine-grained progress)
+  // Signature preserved: (file, onProgress) => Promise<string>
   const uploadToCloudinary = (file, onProgress) => {
-    return new Promise((resolve, reject) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'yaritu_preset'); // YOUR UPLOAD PRESET
-      formData.append('folder', 'YARITU/hero');
-
-      const xhr = new XMLHttpRequest();
-  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, true); // YOUR CLOUD NAME
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percentCompleted = Math.round((event.loaded * 100) / event.total);
-          onProgress(percentCompleted);
+    return new Promise(async (resolve, reject) => {
+      try {
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET || process.env.CLOUDINARY_UNSIGNED_PRESET || 'yaritu_preset';
+        if (!cloudName || !uploadPreset) {
+          return reject(new Error('Cloudinary configuration is missing. Check NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET.'));
         }
-      };
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response.secure_url);
-        } else {
-          reject(new Error(`Upload failed with status: ${xhr.status}`));
+
+        const isVideo = !!(file && file.type && file.type.startsWith('video/'));
+        const endpointType = isVideo ? 'video' : 'image';
+        const url = `https://api.cloudinary.com/v1_1/${cloudName}/${endpointType}/upload`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', uploadPreset);
+        formData.append('folder', 'YARITU/hero');
+
+        // Use fetch for the upload. Note: fetch does not provide reliable upload progress in browsers.
+        const resp = await fetch(url, { method: 'POST', body: formData });
+        if (!resp.ok) {
+          // try to parse JSON error from Cloudinary
+          let errBody = null;
+          try { errBody = await resp.json(); } catch (e) { /* ignore */ }
+          const message = errBody?.error?.message || `Upload failed with status ${resp.status}`;
+          return reject(new Error(message));
         }
-      };
-      xhr.onerror = () => reject(new Error('Network error during upload'));
-      xhr.send(formData);
+
+        const data = await resp.json().catch(() => null);
+        const secure = data?.secure_url || data?.secureUrl || data?.url;
+        if (!secure) return reject(new Error('Upload did not return a secure URL.'));
+
+        // call progress callback once to indicate completion (keeps callers compatible)
+        try { if (typeof onProgress === 'function') onProgress(100); } catch (e) {}
+
+        resolve(secure);
+      } catch (err) {
+        reject(err);
+      }
     });
   };
 
