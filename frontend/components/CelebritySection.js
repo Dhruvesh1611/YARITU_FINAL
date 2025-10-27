@@ -245,7 +245,7 @@ const CelebritySection = () => {
     <>
       <div className="celebrity-section">
         <div className="section-header">
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <h2 className="section-title">Worn by <span className="highlight">Celebrities</span></h2>
             <p className="section-subtitle">Trusted by the stars for their most important moments</p>
           </div>
@@ -376,10 +376,33 @@ const CelebritySection = () => {
             padding: 40px 20px;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        .section-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    /* Mobile tweaks: stack header vertically and center title & controls */
+    @media (max-width: 768px) {
+      .section-header {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .section-title {
+        font-size: 24px;
+      }
+      .section-subtitle {
+        font-size: 15px;
+      }
+      .admin-btn.add-new {
+        margin-left: 0 !important;
+      }
+    }
         .section-title {
             font-size: 32px;
             font-weight: 700;

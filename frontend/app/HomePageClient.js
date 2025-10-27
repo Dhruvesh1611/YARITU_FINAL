@@ -64,7 +64,7 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
     setMounted(true);
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
+  }, [trendingVideos, isTrendingLoading, isMobile]);
 
   // derive filtered hero items based on visibility flag
   const filteredHeroItems = heroItems && heroItems.length > 0
@@ -191,11 +191,12 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
     };
 
     // On mobile we want the 3rd video to be centered initially
+    // give a slightly longer delay to ensure layout & media have settled
     const initialTimeout = setTimeout(() => {
       // prefer the explicit centerImageRef (pos === 3), otherwise pick the 3rd child
       const el = centerImageRef.current || trendingContainer.querySelector('.trending-img.pos3') || trendingContainer.children[2];
       if (el) centerTrendingView(el);
-    }, 150);
+    }, 300);
 
     // When the trending container becomes visible again (re-entry), recenter to the 3rd video
     const observer = new IntersectionObserver(

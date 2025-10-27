@@ -56,6 +56,8 @@ export default function AddFeaturedModal({ onClose, onAdd, isEditing = false, it
       if (!res.ok) throw new Error(isEditing ? 'Update failed' : 'Create failed');
       
       const result = await res.json();
+      console.log('AddFeaturedModal.handleSubmit -> api result:', result);
+      console.log('AddFeaturedModal.handleSubmit -> submitted form:', form);
       
       if (isEditing) {
         if (onUpdate && result.data) onUpdate(result.data);

@@ -22,10 +22,15 @@
 .imageCard {
   width: 50%;
   height: 90%;
+  /* border-radius: 16px;
+  overflow: hidden;
+  position: absolute;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12); */
   border-radius: 16px;
   overflow: hidden;
   position: absolute;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  background-color: #f0f0f0; /* Default loading color set kiya */
 }
 
 .image {
@@ -63,28 +68,42 @@
 
 /* === ADD FEATURED BUTTON & FEATURED GRID (NEW STYLES) === */
 
+/* File: ImageSlider.module.css (Updated Section) */
+
+/* === ADD FEATURED BUTTON & FEATURED GRID (NEW STYLES) === */
+
 .addFeaturedContainer {
+  /* Position: Button ko Carousel area ke andar, right-top mein adjust kiya */
   position: absolute;
-  top: -50px; /* Slider ke upar */
-  right: 0;
+  top: 10px; /* Thoda neeche laya, header ke neeche */
+  right: 5%; /* Right side se 5% margin */
   z-index: 40;
 }
 
 .addFeaturedBtn {
-  background-color: #0a2137;
+  /* Professional Look: Gradient aur Shadow */
+  background: linear-gradient(145deg, #0a2137, #1a3650); /* Dark Blue to Darker Blue Gradient */
   color: white;
   border: none;
-  padding: 10px 20px;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: 8px;
+  padding: 8px 18px; /* Padding kam kiya */
+  font-size: 0.95rem; /* Font size thoda adjust kiya */
+  font-weight: 600; /* Thoda bold kiya */
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Soft shadow */
+  transition: all 0.3s ease; /* Smooth transition for all effects */
+  letter-spacing: 0.5px; /* Thoda space diya letters mein */
 }
 
 .addFeaturedBtn:hover {
-  background-color: #1a3650;
-  transform: translateY(-2px);
+  background: linear-gradient(145deg, #1a3650, #0a2137); /* Hover par gradient reverse kiya */
+  transform: translateY(-2px); /* Upar uthaya */
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3); /* Shadow badhaya */
+}
+
+.addFeaturedBtn:active {
+    transform: translateY(0); /* Click karne par wapas neeche */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .featuredGrid {
