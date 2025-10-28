@@ -217,8 +217,9 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                 />
                 <div className={styles.infoText}>
                   <h3>Visit Us</h3>
-                  <p>123 Wedding Street</p>
-                  <p>Fashion District, Mumbai 400001</p>
+                  
+                  <p>Pruvachi Private Limited
+301, 3rd Floor, Shantam Complex, Near Amiras Hotel, Sarthana Jakatnaka, Surat, Gujarat 395013, India</p>
                 </div>
               </div>
               <div className={styles.infoCard}>
@@ -232,8 +233,8 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                 />
                 <div className={styles.infoText}>
                   <h3>Call Us</h3>
-                  <p>+91 98765 43210</p>
-                  <p>+91 98765 43211</p>
+                  <p>+91 8401721212</p>
+                  
                 </div>
               </div>
               <div className={styles.infoCard}>
@@ -247,8 +248,8 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                 />
                 <div className={styles.infoText}>
                   <h3>Email Us</h3>
-                  <p>info@yaritu.com</p>
-                  <p>support@yaritu.com</p>
+                  <p>sales@yaritu.com</p>
+                 
                 </div>
               </div>
               <div className={styles.infoCard}>
@@ -271,7 +272,10 @@ Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                 <div className={styles.contactSocialLinks}>
                   <a href="https://www.instagram.com/yaritu.official/?hl=en" target="_blank" rel="noopener noreferrer"><img src="/images/instagram copy.png" alt="Instagram" width="40" height="40"  decoding="async" /></a>
                   <a href="https://www.facebook.com/yaritu.official/" target="_blank" rel="noopener noreferrer"><img src="/images/facebook.png" alt="Facebook" width="40" height="40"  decoding="async" /></a>
-                  <a href="sales@yaritu.com"><img src="/images/gmail.png" alt="Gmail" width="40" height="40"  decoding="async" /></a>
+                  {/* Open default mail client when clicking Gmail icon */}
+                  <a href="mailto:sales@yaritu.com?subject=Enquiry%20from%20YARITU%20Website">
+                    <img src="/images/gmail.png" alt="Gmail" width="40" height="40" decoding="async" />
+                  </a>
                 </div>
                 <p className={styles.socialCaption}>Follow us for the latest updates and exclusive offers</p>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { sanitizeWhatsAppText } from '../utils/whatsapp';
 import PropTypes from 'prop-types';
 
 // --- SVG Icon Components (Self-contained and efficient) ---
@@ -46,7 +47,7 @@ export default function WhatsAppChat({
     const handleSendMessage = () => {
         if (!message.trim()) return;
 
-        const encodedMessage = encodeURIComponent(message);
+    const encodedMessage = encodeURIComponent(sanitizeWhatsAppText(message));
         // If phoneNumber is missing, fallback to opening WhatsApp web without a number so user can choose a contact
         const target = phoneNumber ? `https://wa.me/${phoneNumber}?text=${encodedMessage}` : `https://web.whatsapp.com/send?text=${encodedMessage}`;
 

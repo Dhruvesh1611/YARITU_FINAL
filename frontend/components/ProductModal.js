@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { WHATSAPP_NUMBER } from '../lib/siteConfig';
+import { openWhatsAppWithMessage } from '../utils/whatsapp';
 import './ProductModal.css'; // CSS file ko link rehne dein
 
 const ProductModal = ({ product, onClose }) => {
@@ -127,24 +128,20 @@ const ProductModal = ({ product, onClose }) => {
               )}
             </div>
             <button className="rent-now-button" onClick={() => {
+              // Build WhatsApp message without exposing internal product IDs
               const msg = `Hi, I'm interested in renting "${product.title || product.name}"` +
                 `${product.collectionType ? ' - Type: ' + product.collectionType : ''}` +
                 `${!isJewellery && product.category ? ' - Category: ' + product.category : ''}` +
-                `${product.store ? ' - Store: ' + product.store : ''}` +
-                `${product._id ? ' - Product ID: ' + product._id : ''}`;
-              const encoded = encodeURIComponent(msg);
-              const target = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}` : `https://web.whatsapp.com/send?text=${encoded}`;
-              window.open(target, '_blank', 'noopener,noreferrer');
+                `${product.store ? ' - Store: ' + product.store : ''}`;
+              openWhatsAppWithMessage({ phone: WHATSAPP_NUMBER, message: msg });
             }}>Rent Now</button>
             <button className="enquire-button" onClick={() => {
+              // Build WhatsApp message without internal IDs
               const msg = `Hello, I have a question about "${product.title || product.name}"` +
                 `${product.collectionType ? ' - Type: ' + product.collectionType : ''}` +
                 `${!isJewellery && product.category ? ' - Category: ' + product.category : ''}` +
-                `${product.store ? ' - Store: ' + product.store : ''}` +
-                `${product._id ? ' - Product ID: ' + product._id : ''}`;
-              const encoded = encodeURIComponent(msg);
-              const target = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}` : `https://web.whatsapp.com/send?text=${encoded}`;
-              window.open(target, '_blank', 'noopener,noreferrer');
+                `${product.store ? ' - Store: ' + product.store : ''}`;
+              openWhatsAppWithMessage({ phone: WHATSAPP_NUMBER, message: msg });
             }}>Enquire on WhatsApp</button>
           </div>
         </div>
