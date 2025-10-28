@@ -8,7 +8,7 @@ import styles from './HowItWorks.module.css';
 const stepsData = [
   {
     title: 'Visit Our Showroom',
-    description: 'Browse our exquisite collection of traditional and contemporary designs. Each piecStep into your nearest Yaritu Showroom and explore our exclusive range of rental outfits for every occasion. Our team helps you find the perfect fit for your style and budget.',
+    description: 'Step into your nearest Yaritu Showroom and explore our exclusive range of rental outfits for every occasion. Our team helps you find the perfect fit for your style and budget.',
     imgSrc: '/images/step1.png',
     icon: 'location',
   },
