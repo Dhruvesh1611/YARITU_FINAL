@@ -90,7 +90,8 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
   const handleSave = async () => {
     setSaving(true);
     try {
-      let payload = { id: item?.id ?? null, heading, subheading, discount, validity };
+  // Support both `id` and Mongoose `_id` when editing so we update instead of creating
+  let payload = { id: item?.id || item?._id || null, heading, subheading, discount, validity };
       
       // *** YAHAN BADLAV KIYA GAYA HAI ***
       // Agar yeh naya offer hai (item null hai), to storeName ko payload mein jodo
@@ -301,7 +302,7 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
         <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
           
           <header style={styles.header}>
-            <h3 style={styles.title}>{item?.id ? 'Edit Offer' : 'Add New Offer'}</h3>
+            <h3 style={styles.title}>{(item?.id || item?._id) ? 'Edit Offer' : 'Add New Offer'}</h3>
             <button style={closeButtonStyle} onMouseEnter={() => setCloseHovered(true)} onMouseLeave={() => setCloseHovered(false)} onClick={onClose} aria-label="Close">
               <XMarkIcon width={24} height={24} />
             </button>
