@@ -270,19 +270,15 @@ export default function Review() {
   const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
   const [avatarUploadedUrl, setAvatarUploadedUrl] = useState('');
 
-  // Use XHR to allow progress events for unsigned uploads
-  function uploadWithProgress(file, onProgress) {
+  // Use XHR to allow progress events while uploading to our server-side upload route
+  function uploadWithProgress(file, onProgress, folder = 'YARITU') {
     return new Promise((resolve, reject) => {
-      if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET) return reject(new Error('Cloudinary env not set'));
-      const isVideo = !!(file && file.type && file.type.startsWith('video/'));
-      const endpointType = isVideo ? 'video' : 'image';
-      const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpointType}/upload`;
       const xhr = new XMLHttpRequest();
       const fd = new FormData();
-      fd.append('upload_preset', CLOUDINARY_UNSIGNED_PRESET);
       fd.append('file', file);
+      fd.append('folder', folder);
 
-      xhr.open('POST', url);
+      xhr.open('POST', '/api/upload');
       xhr.upload.onprogress = function (e) {
         if (e.lengthComputable && typeof onProgress === 'function') {
           const percent = Math.round((e.loaded / e.total) * 100);
@@ -292,10 +288,10 @@ export default function Review() {
       xhr.onload = function () {
         try {
           const res = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(res.secure_url || res.url);
+          if (xhr.status >= 200 && xhr.status < 300 && res && res.success) {
+            resolve(res.data.secure_url || res.data.url);
           } else {
-            reject(new Error(res.error?.message || 'Upload failed'));
+            reject(new Error(res?.error || res?.message || 'Upload failed'));
           }
         } catch (err) { reject(err); }
       };
@@ -304,18 +300,15 @@ export default function Review() {
     });
   }
 
-  async function uploadToCloudinary(file) {
-    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET) throw new Error('Cloudinary env not set');
-    const isVideo = !!(file && file.type && file.type.startsWith('video/'));
-    const endpointType = isVideo ? 'video' : 'image';
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpointType}/upload`;
+  // Convenience helper that uploads to our server-side upload route and returns the secure URL
+  async function uploadToCloudinary(file, folder = 'YARITU') {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_UNSIGNED_PRESET);
-    const r = await fetch(url, { method: 'POST', body: formData });
+    formData.append('folder', folder);
+    const r = await fetch('/api/upload', { method: 'POST', body: formData });
     const j = await r.json();
-    if (!r.ok) throw new Error(j.error?.message || 'Upload failed');
-    return j.secure_url;
+    if (!r.ok || !j.success) throw new Error(j?.error || j?.message || 'Upload failed');
+    return j.data.secure_url;
   }
 
   function openNew() {
@@ -425,8 +418,18 @@ export default function Review() {
       try {
         const res = await fetch('/api/review-videos');
         const j = await res.json();
-        if (res.ok && j.success && Array.isArray(j.data) && j.data.length) {
-          setVideos(j.data.map(x => ({ src: normalizeVideoUrl(x.src), thumbnail: x.thumbnail })));
+        if (res.ok && j.success && Array.isArray(j.data)) {
+          // Ensure we always display 5 slots on the page. Overlay stored items onto a 5-slot default.
+          const defaults = [
+            { src: '', thumbnail: '/images/Featured1.png' },
+            { src: '', thumbnail: '/images/reel2.png' },
+            { src: '', thumbnail: '/images/reel3.png' },
+            { src: '', thumbnail: '/images/reel4.png' },
+            { src: '', thumbnail: '/images/reel5.png' },
+          ];
+          const stored = j.data.map(x => ({ src: normalizeVideoUrl(x.src || ''), thumbnail: x.thumbnail || '' }));
+          const merged = defaults.map((d, i) => stored[i] ? { ...d, ...stored[i] } : d);
+          setVideos(merged);
         }
       } catch (e) { console.warn('Failed to load review videos', e); }
     })();
@@ -445,6 +448,22 @@ export default function Review() {
   const [thumbUploading, setThumbUploading] = useState(false);
   const [thumbUploadProgress, setThumbUploadProgress] = useState(0);
   const [thumbUploadedUrl, setThumbUploadedUrl] = useState('');
+
+  // Prevent background page from scrolling while any modal is open
+  useEffect(() => {
+    const anyModalOpen = editing !== null || (editingVideoIndex !== null && isAdmin);
+    const prevOverflow = typeof document !== 'undefined' ? document.body.style.overflow : '';
+    if (anyModalOpen && typeof document !== 'undefined') {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = prevOverflow || '';
+        document.documentElement.style.overscrollBehavior = '';
+      }
+    };
+  }, [editing, editingVideoIndex, isAdmin]);
 
   return (
     <div id="review-page-wrapper" onClick={() => setPlayingIdx(null)}>
@@ -747,6 +766,52 @@ export default function Review() {
           #review-page-wrapper .reviews-title { font-size: 28px; }
           #review-page-wrapper .review-gallery { grid-template-columns: repeat(4, 1fr); gap: 10px; }
         }
+
+        /* --- Modal styles for edit dialogs (video + testimonial) --- */
+        #review-page-wrapper .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          overscroll-behavior: contain; /* keep scroll within modal on supported browsers */
+        }
+        #review-page-wrapper .modal-card {
+          background: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          width: min(760px, 95vw);
+          max-height: calc(100vh - 40px);
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          position: relative;
+        }
+        #review-page-wrapper .desktop-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+        #review-page-wrapper .mobile-action-bar { display: none; }
+
+        @media (max-width: 640px) {
+          #review-page-wrapper .modal-card {
+            width: calc(100% - 32px);
+            padding: 16px;
+            border-radius: 10px;
+            /* Leave space for fixed action bar */
+            padding-bottom: 120px;
+            max-height: calc(100vh - 120px);
+          }
+          #review-page-wrapper .desktop-actions { display: none; }
+          #review-page-wrapper .mobile-action-bar {
+            display: block;
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            z-index: 250;
+            background: #fff;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+            padding: 12px 16px;
+          }
+          #review-page-wrapper .mobile-action-bar .action-buttons-mobile { display: flex; gap: 8px; }
+        }
       `}</style>
 
       <section id="reviews">
@@ -846,12 +911,8 @@ export default function Review() {
                         // immediate visible feedback
                         setUploadStatusMessage('Preparing upload...');
 
-                        // ensure Cloudinary env configured
-                        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET) {
-                          console.warn('Cloudinary environment variables not set');
-                          setUploadStatusMessage('Cloudinary not configured. Set NEXT_PUBLIC_CLOUDINARY_* env vars.');
-                          return;
-                        }
+                        // We'll upload via the server-side upload route (/api/upload)
+                        // Ensure your server has CLOUDINARY_API_KEY/SECRET set; client doesn't need the unsigned preset.
 
                         try {
                           // create local preview
@@ -859,20 +920,24 @@ export default function Review() {
                           const url = URL.createObjectURL(f);
                           prevPreviewRef.current = url;
                           setFilePreview(url);
-                          setFileForUpload(null); // we will upload immediately
+                          // keep the File in state so we can retry on Save if immediate upload fails
+                          setFileForUpload(f);
 
                           // start immediate upload
                           setAvatarUploading(true);
                           setAvatarUploadProgress(0);
                           setUploadStatusMessage('Uploading avatar...');
                           try {
-                            const uploaded = await uploadWithProgress(f, (p) => { setAvatarUploadProgress(p); setUploadStatusMessage(`Uploading avatar: ${p}%`); });
+                            const uploaded = await uploadWithProgress(f, (p) => { setAvatarUploadProgress(p); setUploadStatusMessage(`Uploading avatar: ${p}%`); }, 'YARITU/testimonials');
                             setAvatarUploadedUrl(uploaded);
                             setUploadStatusMessage('Avatar uploaded');
+                            // successful upload - clear the staged file
+                            setFileForUpload(null);
                           } catch (err) {
                             console.error('Avatar upload failed', err);
                             setUploadStatusMessage('Avatar upload failed: ' + (err.message || ''));
                             setAvatarUploadedUrl('');
+                            // keep fileForUpload so Save can retry
                           } finally {
                             setAvatarUploading(false);
                             setFilePreview(null);
@@ -908,8 +973,8 @@ export default function Review() {
           )}
           {/* Video Edit Modal (Admin only) */}
           {editingVideoIndex !== null && isAdmin && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90 }} onClick={() => setEditingVideoIndex(null)}>
-              <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 'min(760px, 95vw)' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-backdrop" onClick={() => setEditingVideoIndex(null)}>
+              <div className="modal-card" onClick={(e) => e.stopPropagation()}>
                 <h3 style={{ marginTop: 0 }}>Edit Review Video</h3>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1 }}>
@@ -928,21 +993,24 @@ export default function Review() {
                         try {
                           const url = URL.createObjectURL(f);
                           setVideoFilePreview(url);
-                          setVideoFileForUpload(null); // we'll upload immediately
+                          // keep file in state so we can retry if upload fails
+                          setVideoFileForUpload(f);
                           setVideoUploading(true);
                           setVideoUploadProgress(0);
                           setUploadStatusMessage('Uploading video...');
                           try {
-                            const uploaded = await uploadWithProgress(f, (p) => { setVideoUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); });
+                            const uploaded = await uploadWithProgress(f, (p) => { setVideoUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); }, 'YARITU/review-videos');
                             setVideoUploadedUrl(uploaded);
                             setUploadStatusMessage('Video uploaded');
+                            // successful upload - clear staged file
+                            setVideoFileForUpload(null);
                           } catch (err) {
                             console.error('Video upload failed', err);
                             setUploadStatusMessage('Video upload failed: ' + (err.message || ''));
                             setVideoUploadedUrl('');
+                            // keep videoFileForUpload for retry on Save
                           } finally {
                             setVideoUploading(false);
-                            setVideoFileForUpload(null);
                           }
                         } catch (err) { console.error(err); }
                       }} />
@@ -960,21 +1028,24 @@ export default function Review() {
                       try {
                         const url = URL.createObjectURL(f);
                         setThumbFilePreview(url);
-                        setThumbFileForUpload(null);
+                        // stage file for upload/retry
+                        setThumbFileForUpload(f);
                         setThumbUploading(true);
                         setThumbUploadProgress(0);
                         setUploadStatusMessage('Uploading thumbnail...');
                         try {
-                          const uploaded = await uploadWithProgress(f, (p) => { setThumbUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); });
+                          const uploaded = await uploadWithProgress(f, (p) => { setThumbUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); }, 'YARITU/review-videos');
                           setThumbUploadedUrl(uploaded);
                           setUploadStatusMessage('Thumbnail uploaded');
+                          // successful upload - clear staged file
+                          setThumbFileForUpload(null);
                         } catch (err) {
                           console.error('Thumbnail upload failed', err);
                           setUploadStatusMessage('Thumbnail upload failed: ' + (err.message || ''));
                           setThumbUploadedUrl('');
+                          // keep thumbFileForUpload for retry on Save
                         } finally {
                           setThumbUploading(false);
-                          setThumbFileForUpload(null);
                         }
                       } catch (err) { console.error(err); }
                     }} />
@@ -1033,7 +1104,7 @@ export default function Review() {
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+                <div className="desktop-actions">
                   <button onClick={() => { setEditingVideoIndex(null); }} style={{ padding: '8px 12px' }}>Cancel</button>
                   <button onClick={async () => {
                     // perform uploads (video then thumb) using uploadWithProgress and update local videos array
@@ -1044,23 +1115,35 @@ export default function Review() {
                       if (videoUploadedUrl) newSrc = videoUploadedUrl;
                       else if (videoFileForUpload) {
                         setUploadProgress(0); setUploadStatusMessage('Uploading video...');
-                        newSrc = await uploadWithProgress(videoFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); });
+                        newSrc = await uploadWithProgress(videoFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); }, 'YARITU/review-videos');
                       }
                       if (thumbUploadedUrl) newThumb = thumbUploadedUrl;
                       else if (thumbFileForUpload) {
                         setUploadProgress(0); setUploadStatusMessage('Uploading thumbnail...');
-                        newThumb = await uploadWithProgress(thumbFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); });
+                        newThumb = await uploadWithProgress(thumbFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); }, 'YARITU/review-videos');
                       }
                       // update in-memory videos array
                       const updated = videos.map((it, i) => i === editingVideoIndex ? { ...it, src: normalizeVideoUrl(newSrc), thumbnail: newThumb } : it);
                       setVideos(updated);
                       // make the freshly saved video the active one so it plays immediately
                       setPlayingIdx(editingVideoIndex);
-                      // persist to backend so it survives reload
+                      // Persist only valid items (non-empty src) to backend so it survives reload
                       try {
-                        const r = await fetch('/api/review-videos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
-                        const jr = await r.json();
-                        if (!r.ok || !jr.success) console.warn('Failed to persist review videos', jr);
+                        const payloadToPersist = updated
+                          .filter(it => it && typeof it.src === 'string' && it.src.trim() !== '')
+                          .map((it, idx) => ({ src: it.src, thumbnail: it.thumbnail || '', position: idx }));
+
+                        if (payloadToPersist.length === 0) {
+                          // Nothing valid to persist - warn and skip network call
+                          console.warn('No valid review videos to persist (all src empty). Skipping PUT.');
+                        } else {
+                          const r = await fetch('/api/review-videos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadToPersist) });
+                          const jr = await r.json();
+                          if (!r.ok || !jr.success) {
+                            console.warn('Failed to persist review videos', jr);
+                            alert('Failed to persist review videos to server. See console for details.');
+                          }
+                        }
                       } catch (err) { console.warn('Persist error', err); }
                       setUploadStatusMessage('Upload complete');
                       setTimeout(() => { setUploadStatusMessage(''); setUploadProgress(0); }, 1200);
@@ -1070,6 +1153,50 @@ export default function Review() {
                       setUploadStatusMessage('Upload failed: ' + (err.message || ''));
                     }
                   }} disabled={videoUploading || thumbUploading} style={{ padding: '8px 12px', background: (videoUploading || thumbUploading) ? '#999' : '#111', color: '#fff', cursor: (videoUploading || thumbUploading) ? 'not-allowed' : 'pointer' }}>Save</button>
+                </div>
+                {/* Mobile fixed action bar inside backdrop for stable stacking */}
+                <div className="mobile-action-bar">
+                  <div className="action-buttons-mobile">
+                    <button onClick={() => { setEditingVideoIndex(null); }} style={{ padding: '12px' }}>Cancel</button>
+                    <button onClick={async () => {
+                      try {
+                        let newSrc = videos[editingVideoIndex].src;
+                        let newThumb = videos[editingVideoIndex].thumbnail;
+                        if (videoUploadedUrl) newSrc = videoUploadedUrl;
+                        else if (videoFileForUpload) {
+                          setUploadProgress(0); setUploadStatusMessage('Uploading video...');
+                          newSrc = await uploadWithProgress(videoFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading video: ${p}%`); }, 'YARITU/review-videos');
+                        }
+                        if (thumbUploadedUrl) newThumb = thumbUploadedUrl;
+                        else if (thumbFileForUpload) {
+                          setUploadProgress(0); setUploadStatusMessage('Uploading thumbnail...');
+                          newThumb = await uploadWithProgress(thumbFileForUpload, (p) => { setUploadProgress(p); setUploadStatusMessage(`Uploading thumbnail: ${p}%`); }, 'YARITU/review-videos');
+                        }
+                        const updated = videos.map((it, i) => i === editingVideoIndex ? { ...it, src: normalizeVideoUrl(newSrc), thumbnail: newThumb } : it);
+                        setVideos(updated);
+                        setPlayingIdx(editingVideoIndex);
+                        try {
+                          const payloadToPersist = updated
+                            .filter(it => it && typeof it.src === 'string' && it.src.trim() !== '')
+                            .map((it, idx) => ({ src: it.src, thumbnail: it.thumbnail || '', position: idx }));
+                          if (payloadToPersist.length > 0) {
+                            const r = await fetch('/api/review-videos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadToPersist) });
+                            const jr = await r.json();
+                            if (!r.ok || !jr.success) {
+                              console.warn('Failed to persist review videos', jr);
+                              alert('Failed to persist review videos to server. See console for details.');
+                            }
+                          }
+                        } catch (err) { console.warn('Persist error', err); }
+                        setUploadStatusMessage('Upload complete');
+                        setTimeout(() => { setUploadStatusMessage(''); setUploadProgress(0); }, 1200);
+                        setEditingVideoIndex(null);
+                      } catch (err) {
+                        console.error('Video edit upload failed', err);
+                        setUploadStatusMessage('Upload failed: ' + (err.message || ''));
+                      }
+                    }} disabled={videoUploading || thumbUploading} style={{ padding: '12px', background: (videoUploading || thumbUploading) ? '#999' : '#111', color: '#fff', cursor: (videoUploading || thumbUploading) ? 'not-allowed' : 'pointer' }}>Save</button>
+                  </div>
                 </div>
               </div>
             </div>

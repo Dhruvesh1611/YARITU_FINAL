@@ -48,19 +48,33 @@ export default function OfferSignupModal({ openAfter = 5000 }) {
 
     const payload = { ...form, phone: phoneToSend };
 
-    fetch('/api/offers', {
+    // Send offer signup and also save phone to subscriptions so admin can see subscribed mobile numbers
+    const offerReq = fetch('/api/admin/offers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }).then(res => {
-      if (!res.ok) throw new Error('Network response was not ok');
-      return res.json();
-    }).then(json => {
-      console.log('Saved offer signup', json);
-      setSubmitted(true); // Show success message
+    }).then(res => (res.ok ? res.json() : Promise.reject(res)));
+
+    // Save phone to subscriptions (idempotent - route will skip duplicates)
+    const subReq = fetch('/api/admin/subscriptions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phoneToSend, name: form.name, email: form.email }),
+    }).then(res => (res.ok ? res.json() : Promise.reject(res)));
+
+    Promise.allSettled([offerReq, subReq]).then(results => {
+      const ok = results.some(r => r.status === 'fulfilled');
+      if (ok) {
+        console.log('Signup results', results);
+        setSubmitted(true);
+      } else {
+        console.warn('Both signup and subscription failed', results);
+        // show success UX? For now we surface a console warning; keep user on form
+        alert('Could not save your details right now. Please try again later.');
+      }
     }).catch(err => {
       console.warn('Offer signup save failed', err);
-      // You could add an error message to the user here
+      alert('Could not save your details right now. Please try again later.');
     });
   };
 

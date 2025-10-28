@@ -1,71 +1,88 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/dbConnect';
-import Offer from '../../../models/Offer';
-import { v2 as cloudinary } from 'cloudinary';
+import OfferContent from '../../../models/OfferContent';
 
-// Configure Cloudinary with your credentials
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
+// We'll keep a fixed set of 5 positions (0..4). Each document may have an optional `position` field.
+// GET: return array of length 5, filling missing positions with defaults.
 export async function GET() {
   try {
     await dbConnect();
-    const offers = await Offer.find({}).sort({ createdAt: -1 });
-    return NextResponse.json({ success: true, data: offers }, { status: 200 });
+    // fetch docs that have a position, sort by position
+    const docs = await OfferContent.find({}).sort({ position: 1, createdAt: 1 }).lean();
+
+    // build fixed 5-length array
+    const result = Array.from({ length: 5 }).map((_, i) => {
+      const found = docs.find(d => Number(d.position) === i) || docs[i];
+      if (!found) return { id: null, position: i, heading: '', subheading: '', discount: '', validity: '', image: '', store: '' };
+      return { ...found, position: Number(found.position ?? i) };
+    });
+
+    return NextResponse.json({ success: true, data: result }, { status: 200 });
   } catch (error) {
+    console.error('Error fetching offers from DB', error);
     return NextResponse.json({ success: false, error: 'Server Error' }, { status: 500 });
   }
 }
 
-// *** YEH POST FUNCTION POORA BADAL DIYA GAYA HAI ***
+// Create a new offer document (not typically used for the fixed 5 slots but supported)
 export async function POST(request) {
   try {
-    await dbConnect();
     const body = await request.json();
-
-    // Step 1: OfferEditorModal se saara data nikalein
-    const { id, heading, subheading, discount, validity, store, imageBase64 } = body;
-
-    // Step 2: Zaroori fields check karein
-    if (!heading || !subheading || !store) {
-      return NextResponse.json(
-        { success: false, error: 'Heading, subheading, and store are required' },
-        { status: 400 }
-      );
-    }
-
-    let imageUrl = ''; // Default image URL ko khaali rakhein
-
-    // Step 3: Agar nayi image aayi hai (imageBase64), to use Cloudinary par upload karein
-    if (imageBase64) {
-      const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
-        folder: 'yaritu_offers', // Cloudinary mein is naam ka folder ban jayega
-        resource_type: 'image',
-      });
-      imageUrl = uploadResponse.secure_url; // Upload hone ke baad mila hua URL
-    }
-
-    // Step 4: MongoDB mein save karne ke liye data taiyaar karein
-    const offerData = {
-      heading,
-      subheading,
-      discount,
-      validity,
-      store,
-      image: imageUrl, // Agar image hai to Cloudinary ka URL, warna khaali string
-    };
-
-    // Abhi hum sirf naya offer create kar rahe hain. Edit ka logic baad mein add hoga.
-    const newOffer = await Offer.create(offerData);
-
-    // Step 5: Naya offer frontend ko wapas bhejein
-    return NextResponse.json({ success: true, data: newOffer }, { status: 201 });
-
+    await dbConnect();
+    const created = await OfferContent.create(body);
+    return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/admin/offers-content:', error);
+    console.error('Error in POST /api/offers (DB):', error);
+    return NextResponse.json({ success: false, error: 'Server Error' }, { status: 500 });
+  }
+}
+
+// Update by id or by position (zero-based index)
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { id, position } = body;
+    if ((typeof id === 'undefined' || id === null) && typeof position !== 'number') {
+      return NextResponse.json({ success: false, error: 'Missing id or position' }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    let doc = null;
+    if (id) {
+      try {
+        doc = await OfferContent.findById(id);
+      } catch (e) {
+        doc = null;
+      }
+    }
+
+    if (!doc && typeof position === 'number') {
+      doc = await OfferContent.findOne({ position: Number(position) });
+      if (!doc) {
+        // create a new doc for this position
+        const toCreate = { position: Number(position), heading: body.category || body.heading || '', discount: body.discount || '', image: body.image || '', store: body.store || '' };
+        const created = await OfferContent.create(toCreate);
+        return NextResponse.json({ success: true, data: created }, { status: 200 });
+      }
+    }
+
+    if (!doc) return NextResponse.json({ success: false, error: 'Offer not found' }, { status: 404 });
+
+    // update allowed fields
+    const updatable = ['heading', 'subheading', 'discount', 'validity', 'image', 'store', 'position', 'category'];
+    updatable.forEach((k) => {
+      if (typeof body[k] !== 'undefined') {
+        // map category -> heading if provided
+        if (k === 'category') doc.heading = body[k];
+        else doc[k] = body[k];
+      }
+    });
+
+    await doc.save();
+    return NextResponse.json({ success: true, data: doc }, { status: 200 });
+  } catch (error) {
+    console.error('Error in PUT /api/offers (DB):', error);
     return NextResponse.json({ success: false, error: 'Server Error' }, { status: 500 });
   }
 }

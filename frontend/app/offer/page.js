@@ -20,6 +20,24 @@ export default function Offer() {
   const [offersContent, setOffersContent] = useState(null);
   const [offerEditorOpen, setOfferEditorOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
+  const [subscribePhone, setSubscribePhone] = useState('');
+  const [subscribeSubmitted, setSubscribeSubmitted] = useState(false);
+  const [subscribeLoading, setSubscribeLoading] = useState(false);
+  const [toastText, setToastText] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const showToast = (text, timeout = 3000) => {
+    setToastText(text);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), timeout);
+  };
+
+  const handleClaim = (off) => {
+    // prefer offer.store, fallback to selected store
+    const storeName = (off && (off.store || currentStore.name)) || 'this store';
+    const msg = `This offer is available at ${storeName}. You can visit the store to grab this offer.`;
+    showToast(msg, 4000);
+  };
   const modalIdx = typeof editIdx === 'number' ? editIdx : selectedIdx;
   const currentStore = storesData[selectedIdx] || storesData[0] || {};
 
@@ -92,21 +110,20 @@ export default function Offer() {
               </div>
             </div>
               <div className="store-selector-image">
-                <div style={{ width: 575, height: 450 }}>
-                  {isRemote(currentStore.imageUrl || currentStore.image) ? (
-                    <Image
-                      src={currentStore.imageUrl || currentStore.image}
-                      alt={`${currentStore.name || 'Store'} store interior`}
-                      width={575}
-                      height={450}
-                      style={{ objectFit: 'cover' }}
-                      className="store-photo"
-                    />
-                  ) : (
-                    <SkeletonLoader style={{ width: '100%', height: '100%' }} />
-                  )}
-                </div>
-            </div>
+                  <div style={{ width: '100%', height: '100%' }}>
+                    {isRemote(currentStore.imageUrl || currentStore.image) ? (
+                      <Image
+                        src={currentStore.imageUrl || currentStore.image}
+                        alt={`${currentStore.name || 'Store'} store interior`}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        className="store-photo"
+                      />
+                    ) : (
+                      <SkeletonLoader style={{ width: '100%', height: '100%' }} />
+                    )}
+                  </div>
+              </div>
           </div>
         </section>
         {editOpen && (
@@ -147,11 +164,11 @@ export default function Offer() {
                 }
 
                 return filteredOffers.map((off, i) => (
-                  <div key={off.id} className={`offer-card ${i === 1 ? 'offset-up' : ''}`}>
+                  <div key={off._id || off.id || `offer-${i}`} className={`offer-card ${i === 1 ? 'offset-up' : ''}`}>
                   <div className="offer-card-image">
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 4' }}>
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', overflow: 'hidden' }}>
                       {isRemote(off.image) ? (
-                        <Image src={off.image} alt={off.heading || 'Offer image'} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'fill' }} />
+                        <Image src={off.image} alt={off.heading || 'Offer image'} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'cover' }} />
                       ) : (
                         <SkeletonLoader style={{ width: '100%', height: '100%' }} />
                       )}
@@ -162,7 +179,7 @@ export default function Offer() {
                       <h3>{off.heading}</h3>
                       <p>{off.subheading}</p>
                       <span className="validity-date">{off.validity}</span>
-                      <a href="#" className="claim-button">Claim Offer</a>
+                      <a href="#" className="claim-button" onClick={(e) => { e.preventDefault(); handleClaim(off); }}>Claim Offer</a>
                       {session && session.user && session.user.role === 'admin' && (
                         <div style={{ marginTop: 8 }}>
                           <button onClick={() => { setEditingOffer(off); setOfferEditorOpen(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Edit</button>
@@ -200,24 +217,25 @@ export default function Offer() {
                     // Now, update the state with this new, complete object
                     setOffersContent((prev) => {
                       if (!Array.isArray(prev)) return [newOfferWithStore];
-                      
-                      const idx = prev.findIndex(p => p.id === newOfferWithStore.id);
-                      
+
+                      // find by id or _id
+                      const idx = prev.findIndex(p => (p.id && newOfferWithStore.id && p.id === newOfferWithStore.id) || (p._id && newOfferWithStore.id && p._id === newOfferWithStore.id) || (p._id && newOfferWithStore._id && p._id === newOfferWithStore._id) || (p.id && newOfferWithStore._id && p.id === newOfferWithStore._id));
+
                       // If it's a new offer, add it to the beginning of the array
                       if (idx === -1) {
                         return [newOfferWithStore, ...prev];
                       }
-                      
+
                       // If it's an existing offer (edit), replace it
                       const copy = [...prev];
-                      copy[idx] = newOfferWithStore;
+                      copy[idx] = { ...copy[idx], ...newOfferWithStore };
                       return copy;
                     });
                     
                     setOfferEditorOpen(false);
                   }}
                   onDeleted={(deletedId) => {
-                    setOffersContent((prev) => Array.isArray(prev) ? prev.filter(x => x.id !== deletedId) : prev);
+                    setOffersContent((prev) => Array.isArray(prev) ? prev.filter(x => (x.id !== deletedId && x._id !== deletedId)) : prev);
                   }}
                 />
               )}
@@ -230,10 +248,50 @@ export default function Offer() {
             <div className="newsletter-content">
               <h2>Never Miss a Deal</h2>
               <p>Subscribe to our newsletter and get exclusive offers delivered to your inbox</p>
-              <form className="subscribe-form">
-                <input type="mobile-number" placeholder="Enter your mobile number" />
-                <button type="submit">Subscribe</button>
+              <form className="subscribe-form" onSubmit={async (e) => {
+                e.preventDefault();
+                if (!subscribePhone || subscribeLoading) return;
+                setSubscribeLoading(true);
+                try {
+                  let phone = (subscribePhone || '').trim();
+                  if (phone && !phone.startsWith('+')) {
+                    phone = phone.replace(/^0+/, '').replace(/[^0-9]/g, '');
+                    phone = '+91' + phone;
+                  }
+                  const res = await fetch('/api/admin/subscriptions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone }),
+                  });
+                  if (!res.ok) throw new Error('Subscribe failed');
+                  setSubscribeSubmitted(true);
+                  setSubscribePhone('');
+                  // show toast
+                  setToastText('Thank you — you are subscribed!');
+                  setToastVisible(true);
+                  setTimeout(() => setToastVisible(false), 3000);
+                } catch (err) {
+                  console.warn('Subscribe failed', err);
+                  alert('Could not subscribe right now. Please try again later.');
+                } finally {
+                  setSubscribeLoading(false);
+                }
+              }}>
+                {subscribeSubmitted ? (
+                  <div className="subscribe-success">Thank you — you are subscribed!</div>
+                ) : (
+                  <>
+                    <input value={subscribePhone} onChange={(e) => setSubscribePhone(e.target.value)} placeholder="Enter your mobile number" inputMode="tel" />
+                    <button type="submit" disabled={subscribeLoading}>{subscribeLoading ? 'Saving…' : 'Subscribe'}</button>
+                  </>
+                )}
               </form>
+              {/* Toast (uses existing .claim-toast styles in offer.css) */}
+              <div className={`claim-toast-container ${toastVisible ? 'visible' : ''}`} aria-live="polite">
+                <div className="claim-toast">
+                  <div className="claim-toast-text">{toastText}</div>
+                </div>
+              </div>
               <small>Join 10,000+ happy subscribers and get 10% off your first purchase</small>
             </div>
           </div>

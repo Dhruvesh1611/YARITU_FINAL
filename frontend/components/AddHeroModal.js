@@ -37,8 +37,27 @@ export default function AddHeroModal({ onClose, onAdd }) {
       try {
         const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
         const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET || process.env.CLOUDINARY_UNSIGNED_PRESET || 'yaritu_preset';
+
+        // If client-side env vars are not present (e.g., not exposed on Vercel build),
+        // fallback to server-side proxy endpoint which will use server env vars.
         if (!cloudName || !uploadPreset) {
-          return reject(new Error('Cloudinary configuration is missing. Check NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET.'));
+          try {
+            const proxyForm = new FormData();
+            proxyForm.append('file', file);
+            proxyForm.append('folder', 'YARITU/hero');
+
+            const proxyResp = await fetch('/api/cloudinary/upload', { method: 'POST', body: proxyForm });
+            const proxyJson = await proxyResp.json().catch(() => null);
+            if (!proxyResp.ok || !proxyJson?.success) {
+              return reject(new Error(proxyJson?.error || 'Server-side Cloudinary upload failed'));
+            }
+            const secure = proxyJson.data?.secure_url || proxyJson.data?.secureUrl || proxyJson.data?.url;
+            if (!secure) return reject(new Error('Upload did not return a secure URL from proxy.'));
+            try { if (typeof onProgress === 'function') onProgress(100); } catch (e) {}
+            return resolve(secure);
+          } catch (err) {
+            return reject(err);
+          }
         }
 
         const isVideo = !!(file && file.type && file.type.startsWith('video/'));

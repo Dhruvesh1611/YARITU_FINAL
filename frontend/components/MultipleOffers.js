@@ -26,7 +26,7 @@ const MultipleOffers = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => (prevIndex + 1) % offersState.length);
+      setCurrentIndex(prevIndex => (prevIndex + 1) % (offersState.length || 5));
     }, 3000); // Change slide every 3 seconds
 
     return () => clearInterval(interval);
@@ -41,8 +41,20 @@ const MultipleOffers = () => {
         const res = await fetch('/api/offers', { cache: 'no-store' });
         if (res.ok) {
           const j = await res.json().catch(() => null);
-          if (j?.success && Array.isArray(j.data) && mounted && j.data.length > 0) {
-            setOffersState(j.data);
+          if (j?.success && Array.isArray(j.data) && mounted) {
+            // Normalize to exactly 5 slots. Do not add/delete — only edit the five.
+            const server = j.data;
+            const normalized = Array.from({ length: 5 }).map((_, i) => {
+              const fallback = offers[i] || { id: i + 1, image: '', discount: '', category: '' };
+              const s = server[i] || {};
+              return {
+                id: s.id || fallback.id,
+                image: s.image || s.imageUrl || s.url || fallback.image,
+                discount: s.discount || fallback.discount,
+                category: s.category || s.heading || s.store || fallback.category,
+              };
+            });
+            setOffersState(normalized);
           }
         }
       } catch (err) {
@@ -67,8 +79,9 @@ const MultipleOffers = () => {
   }, [isLoading, offersState]);
 
   const getCardStyle = (index) => {
-    const distance = (index - currentIndex + offers.length) % offers.length;
-    const isCentered = distance === 2;
+    const len = offersState.length || 5;
+    const distance = (index - currentIndex + len) % len;
+    const isCentered = distance === Math.floor(len / 2);
 
     let transform = '';
     let zIndex = 0;
@@ -81,8 +94,8 @@ const MultipleOffers = () => {
       filter = 'grayscale(0%)';
     } else {
       // Side cards
-      const side = distance < 2 ? 'left' : 'right';
-      const position = side === 'left' ? 2 - distance : distance - 2;
+      const side = distance < Math.floor(len / 2) ? 'left' : 'right';
+      const position = side === 'left' ? Math.floor(len / 2) - distance : distance - Math.floor(len / 2);
       const xOffset = position * 60; // Adjust spacing
       const scale = 1 - (position * 0.1);
       transform = `translateX(${side === 'left' ? -xOffset : xOffset}%) scale(${scale})`;
@@ -123,7 +136,7 @@ const MultipleOffers = () => {
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter') router.push('/offer'); }}
           >
-            {isRemote(offer.image) ? (
+            {offer.image ? (
               <Image
                 src={offer.image}
                 alt={`Offer ${offer.id}`}
@@ -150,8 +163,19 @@ const MultipleOffers = () => {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}>
           {offersState.map((o, i) => (
             <div key={`edit-${o.id}`} style={{ width: 120, background: '#fff', padding: 8, borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', textAlign: 'center' }}>
-              {isRemote(o.image) ? (
-                <img src={o.image} alt={o.category} style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: 6 }} />
+              {o.image ? (
+                <img
+                  src={o.image}
+                  alt={o.category}
+                  style={{
+                    width: '100%',
+                    height: 72,
+                    objectFit: 'cover',
+                    borderRadius: 6,
+                    filter: i === currentIndex ? 'grayscale(0%)' : 'grayscale(100%)',
+                    transition: 'filter 0.3s ease',
+                  }}
+                />
               ) : (
                 <div style={{ width: '100%', height: 72 }}>
                   <SkeletonLoader variant="video" style={{ width: '100%', height: 72, borderRadius: 6 }} />
@@ -168,6 +192,7 @@ const MultipleOffers = () => {
       {editingIndex !== null && (
         <EditOfferModal
           item={offersState[editingIndex]}
+          position={editingIndex}
           onClose={() => setEditingIndex(null)}
           onSave={(next) => {
             const nextOffers = [...offersState];

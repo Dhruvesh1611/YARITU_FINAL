@@ -9,6 +9,7 @@ export default function AdminClient() {
   const [tab, setTab] = useState('contacts');
   const [contacts, setContacts] = useState([]);
   const [offers, setOffers] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -16,6 +17,7 @@ export default function AdminClient() {
 
   const [contactCount, setContactCount] = useState(0);
   const [offerCount, setOfferCount] = useState(0);
+  const [subscriptionCount, setSubscriptionCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const searchParams = useSearchParams();
@@ -45,6 +47,11 @@ export default function AdminClient() {
         const j2 = await o.json();
         setOfferCount((j2.data || []).length);
       }
+      const s = await fetch('/api/admin/subscriptions', { credentials: 'include' });
+      if (s.ok) {
+        const j3 = await s.json();
+        setSubscriptionCount((j3.data || []).length);
+      }
     } catch (e) {
       // ignore
     }
@@ -64,14 +71,25 @@ export default function AdminClient() {
         const j = await res.json();
         setContacts(j.data || []);
       } else {
-        const res = await fetch('/api/admin/offers', { credentials: 'include' });
-        if (res.status === 401 || res.status === 403) {
-          setAuthError(true);
-          return;
+        if (tab === 'offers') {
+          const res = await fetch('/api/admin/offers', { credentials: 'include' });
+          if (res.status === 401 || res.status === 403) {
+            setAuthError(true);
+            return;
+          }
+          if (!res.ok) throw new Error('Failed to load offers');
+          const j = await res.json();
+          setOffers(j.data || []);
+        } else if (tab === 'subscriptions') {
+          const res = await fetch('/api/admin/subscriptions', { credentials: 'include' });
+          if (res.status === 401 || res.status === 403) {
+            setAuthError(true);
+            return;
+          }
+          if (!res.ok) throw new Error('Failed to load subscriptions');
+          const j = await res.json();
+          setSubscriptions(j.data || []);
         }
-        if (!res.ok) throw new Error('Failed to load offers');
-        const j = await res.json();
-        setOffers(j.data || []);
       }
     } catch (err) {
       console.error('Failed to load admin data', err);
@@ -123,6 +141,15 @@ export default function AdminClient() {
               }}
             >
               Offer Signups
+            </button>
+            <button
+              className={tab === 'subscriptions' ? styles.active : ''}
+              onClick={() => {
+                setTab('subscriptions');
+                router.replace('/admin?tab=subscriptions');
+              }}
+            >
+              Subscribe Mobile Numbers
             </button>
           </div>
         </div>
@@ -184,6 +211,23 @@ export default function AdminClient() {
                 <div className={styles.itemActions}>
                   <div>{new Date(o.createdAt).toLocaleString()}</div>
                   <button onClick={() => handleDelete(o._id, 'offers')}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && !authError && !loadError && tab === 'subscriptions' && (
+          <div>
+            {subscriptions.length === 0 && <p>No subscriptions yet.</p>}
+            {subscriptions.map(s => (
+              <div key={s._id} className={styles.item}>
+                <div className={styles.itemMain}>
+                  <div><strong>{s.phone || '—'}</strong> <small>{s.email || s.name}</small></div>
+                </div>
+                <div className={styles.itemActions}>
+                  <div>{new Date(s.createdAt).toLocaleString()}</div>
+                  <button onClick={() => handleDelete(s._id, 'subscriptions')}>Delete</button>
                 </div>
               </div>
             ))}

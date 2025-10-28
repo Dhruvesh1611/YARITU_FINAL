@@ -103,7 +103,8 @@
   justify-content: space-around;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  /* IMPORTANT: No transition on base state so closing is instant */
+  transition: none;
 }
 
 .category-button-container.open .dropdown-menu {
@@ -111,6 +112,8 @@
   opacity: 1;
   margin-left: 20px;
   visibility: visible;
+  /* Smooth opening only */
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 /* Hover behavior: only activate dropdown open on hover for containers that do NOT have .noHover */
@@ -121,24 +124,8 @@
   visibility: visible;
 }
 
-/* Transparent bridge between button and dropdown so moving cursor from button -> dropdown doesn't close it */
-.category-button-container:not(.noHover)::after {
-  content: '';
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  /* place the bridge just below the button area (adjust if your button height changes) */
-  top: calc(100% - 2px);
-  height: 18px;
-  background: transparent; /* invisible */
-  z-index: 4; /* below dropdown (dropdown z-index:10) but above other page backgrounds */
-  pointer-events: auto; /* so it counts as hover for the container */
-}
-
-/* Ensure the dropdown sits above the bridge so pointer can reach dropdown when it's visible */
-.category-button-container .dropdown-menu {
-  z-index: 10;
-}
+/* 💡 [FIX] GLOBAL CSS REMOVED: Desktop hover 'bridge' was causing the 'small box' issue on mobile/tablet.
+   This rule is now only inside the @media (min-width: 769px) block. */
 
 .dropdown-column h4 {
   font-weight: 700;
@@ -616,6 +603,9 @@
   }
   
   /* --- END FIX --- */
+  
+  /* When closing on mobile, make sure it is instant (no lingering) */
+  :global(.no-dd-transition) .dropdown-menu { transition: none !important; }
   
 
   .category-button-container.open .dropdown-menu,

@@ -11,35 +11,17 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Helper: unsigned Cloudinary upload (images) with XHR to report progress
-    const uploadToCloudinaryUnsigned = (cloudName, uploadPreset, file, onProgress) => {
-        return new Promise((resolve, reject) => {
-            const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('upload_preset', uploadPreset);
-            fd.append('folder', 'YARITU');
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', url, true);
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable && typeof onProgress === 'function') {
-                    const pct = Math.round((event.loaded * 100) / event.total);
-                    onProgress(pct);
-                }
-            };
-            xhr.onload = () => {
-                try {
-                    const parsed = JSON.parse(xhr.responseText);
-                    if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
-                    else reject(new Error(parsed?.error?.message || `Upload failed: ${xhr.status}`));
-                } catch (err) {
-                    reject(new Error('Failed to parse upload response'));
-                }
-            };
-            xhr.onerror = () => reject(new Error('Network error during upload'));
-            xhr.send(fd);
-        });
+    // Upload helper: send file to server-side upload route which uses Cloudinary SDK
+    const uploadToServer = async (file, onProgress) => {
+        // POST to the server-side Cloudinary upload route. The route lives at /api/cloudinary/upload
+        const fd = new FormData();
+        fd.append('file', file);
+    fd.append('folder', 'YARITU/testimonials');
+    // Use the server-side Cloudinary SDK upload route which lives at /api/upload
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json || !json.success) throw new Error((json && json.error) || 'Server upload failed');
+        return json.data; // cloudinary upload result
     };
 
     useEffect(() => {
@@ -66,12 +48,9 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
             // If a new file was selected, upload it directly to Cloudinary unsigned so client shows progress
             let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
             if (selectedFile) {
-                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-                if (!cloudName || !uploadPreset) throw new Error('Cloudinary unsigned config missing');
                 setUploadProgress(0);
-                const cloudResp = await uploadToCloudinaryUnsigned(cloudName, uploadPreset, selectedFile, (pct) => setUploadProgress(pct));
-                avatarUrlToSend = cloudResp?.secure_url || cloudResp?.secureUrl || cloudResp?.url || avatarUrlToSend;
+                const uploadResult = await uploadToServer(selectedFile, (pct) => setUploadProgress(pct));
+                avatarUrlToSend = uploadResult?.secure_url || uploadResult?.secureUrl || uploadResult?.url || avatarUrlToSend;
                 // update preview to the final URL when available
                 setPreviewAvatar(avatarUrlToSend);
             }

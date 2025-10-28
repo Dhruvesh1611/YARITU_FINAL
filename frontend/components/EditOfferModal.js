@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 
-export default function EditOfferModal({ item, onClose, onSave }) {
+export default function EditOfferModal({ item, onClose, onSave, position = null }) {
   const [category, setCategory] = useState(item?.category || '');
   const [discount, setDiscount] = useState(item?.discount || '');
   const [image, setImage] = useState(item?.image || '');
@@ -42,8 +42,37 @@ export default function EditOfferModal({ item, onClose, onSave }) {
     }
 
     // Call the parent onSave with the final data
-    onSave && onSave({ ...item, category, discount, image: finalImageUrl });
-    onClose(); // Close modal on successful save
+    // Persist change to server so edits survive reload
+      try {
+        const payload = { id: item?.id, position, category, discount, image: finalImageUrl };
+        const method = (payload.id || (typeof position === 'number')) ? 'PUT' : 'POST';
+      const res = await fetch('/api/offers', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || 'Failed to save offer');
+      }
+      const j = await res.json().catch(() => null);
+      const savedRaw = j?.data || { ...item, category, discount, image: finalImageUrl };
+      // Normalize server response to the shape the parent expects
+      const saved = {
+        id: savedRaw._id || savedRaw.id || savedRaw.id,
+        position: typeof savedRaw.position !== 'undefined' ? savedRaw.position : position,
+        category: savedRaw.category || savedRaw.heading || savedRaw.store || category || '',
+        discount: savedRaw.discount || discount || '',
+        image: savedRaw.image || savedRaw.imageUrl || savedRaw.url || finalImageUrl || '',
+        // include original raw for any other needs
+        _raw: savedRaw,
+      };
+      onSave && onSave(saved);
+      onClose();
+    } catch (err) {
+      console.error('Failed to persist offer:', err);
+      setUploadError('Failed to save offer to server. Please try again.');
+    }
   };
 
   // Reusable Cloudinary upload function with progress tracking

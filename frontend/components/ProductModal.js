@@ -61,6 +61,9 @@ const ProductModal = ({ product, onClose }) => {
 
   if (!product) return null;
 
+  // Infer jewellery vs collection: jewellery items usually have a 'store' and no category/type/occasion
+  const isJewellery = Boolean(product?.store) || (!product?.category && !product?.collectionType && !product?.occasion);
+
   return (
     <div className="product-modal-overlay" onClick={onClose}>
       <div className="product-modal-container" onClick={(e) => e.stopPropagation()}>
@@ -102,11 +105,13 @@ const ProductModal = ({ product, onClose }) => {
           <div className="product-details">
             {/* ... Product details ka JSX waise hi rahega ... */}
             <h1 className="product-title">{product.title || product.name}</h1>
-            <div className="product-meta">
-              <span><strong>Category:</strong> {product.category}</span>
-              {product.collectionType && <span><strong>Type:</strong> {product.collectionType}</span>}
-              {product.occasion && <span><strong>Occasion:</strong> {product.occasion}</span>}
-            </div>
+            {(product.collectionType || product.occasion || (!isJewellery && product.category)) && (
+              <div className="product-meta">
+                {!isJewellery && product.category && <span><strong>Category:</strong> {product.category}</span>}
+                {product.collectionType && <span><strong>Type:</strong> {product.collectionType}</span>}
+                {product.occasion && <span><strong>Occasion:</strong> {product.occasion}</span>}
+              </div>
+            )}
             <p className="product-description">{product.description || "Elegant and finely crafted attire..."}</p>
             <div className="price-container">
               {product.discountedPrice && product.discountedPrice > 0 && product.discountedPrice < product.price ? (
@@ -124,7 +129,8 @@ const ProductModal = ({ product, onClose }) => {
             <button className="rent-now-button" onClick={() => {
               const msg = `Hi, I'm interested in renting "${product.title || product.name}"` +
                 `${product.collectionType ? ' - Type: ' + product.collectionType : ''}` +
-                `${product.category ? ' - Category: ' + product.category : ''}` +
+                `${!isJewellery && product.category ? ' - Category: ' + product.category : ''}` +
+                `${product.store ? ' - Store: ' + product.store : ''}` +
                 `${product._id ? ' - Product ID: ' + product._id : ''}`;
               const encoded = encodeURIComponent(msg);
               const target = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}` : `https://web.whatsapp.com/send?text=${encoded}`;
@@ -133,7 +139,8 @@ const ProductModal = ({ product, onClose }) => {
             <button className="enquire-button" onClick={() => {
               const msg = `Hello, I have a question about "${product.title || product.name}"` +
                 `${product.collectionType ? ' - Type: ' + product.collectionType : ''}` +
-                `${product.category ? ' - Category: ' + product.category : ''}` +
+                `${!isJewellery && product.category ? ' - Category: ' + product.category : ''}` +
+                `${product.store ? ' - Store: ' + product.store : ''}` +
                 `${product._id ? ' - Product ID: ' + product._id : ''}`;
               const encoded = encodeURIComponent(msg);
               const target = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}` : `https://web.whatsapp.com/send?text=${encoded}`;

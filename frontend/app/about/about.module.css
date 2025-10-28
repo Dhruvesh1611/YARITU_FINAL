@@ -265,15 +265,17 @@
   position: relative;
   overflow: hidden;
   width: 100%;
-  height: 100%;
 }
 .storeImageInner {
   position: relative;
-  width: 580px; /* preferred design width */
-  max-width: 100%;
-  height: 450px; /* updated height to match request */
+  width: 100%;
+  /* Use an aspect-ratio similar to the home store cards so images appear consistent */
+  aspect-ratio: 230 / 180; /* ~1.28 */
+  max-width: 580px; /* preserve desktop design max width */
+  height: auto;
+  max-height: 450px; /* cap extremely tall images */
 }
-/* Next/Image generates an inner span/img when using fill — ensure it covers */
+/* Ensure images fill the container and crop like on the home page */
 .storeImageInner span, .storeImageInner img, .storeImage img {
   width: 100%;
   height: 100%;
@@ -300,12 +302,11 @@
   .aboutStoreCard, .cardReverse {
     flex-direction: column;
   }
-  /* Show image first on mobile by changing order, and increase image height */
+  /* Show image first on mobile by changing order; let inner container control aspect/height */
   .storeImage {
     order: -1;
-    height: 5
-    20px; /* increased height for better display */
     width: 100%;
+    height: auto;
   }
   /* Reduce details vertical size by lowering padding */
   .storeDetails {
@@ -351,8 +352,8 @@
   /* On smaller phones: ensure image sits above details and is taller */
   .storeImage {
     order: -1;
-    height: 520px;
     width: 100%;
+    height: auto;
   }
   .storeDetails {
     padding: 12px 14px;

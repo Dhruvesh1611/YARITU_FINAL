@@ -108,7 +108,10 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
 
       const j = await res.json();
       if (j.success) {
-        onSaved?.(j.data);
+        // Normalize id field: Mongoose returns _id, client expects id
+        const returned = j.data || {};
+        if (!returned.id && returned._id) returned.id = returned._id;
+        onSaved?.(returned);
         onClose?.();
       } else {
         alert(j.message || 'Could not save the offer.');
@@ -122,19 +125,20 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
   };
 
   const handleDelete = async () => {
-    if (!item?.id) return alert('Cannot delete: missing id');
+    const idToDelete = item?.id || item?._id;
+    if (!idToDelete) return alert('Cannot delete: missing id');
     if (!confirm('Are you sure you want to delete this offer? This action cannot be undone.')) return;
     setSaving(true);
     try {
       const res = await fetch('/api/admin/offers-content', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id }),
+        body: JSON.stringify({ id: idToDelete }),
       });
       const j = await res.json();
       if (j.success) {
         // call deletion callback if provided
-        if (typeof onDeleted === 'function') onDeleted(j.data.id);
+        if (typeof onDeleted === 'function') onDeleted(j.data.id || j.data._id || idToDelete);
         onClose?.();
       } else {
         alert(j.message || 'Could not delete item');
