@@ -92,21 +92,22 @@ const HowItWorks = () => {
   }, [isMobile]); // Dependency array me 'isMobile' add kiya gaya hai
 
   // Icon component (Isme koi change nahi hai)
-  const Icon = ({ name, size = 24 }) => {
-    const fill = '#F7C948';
-    const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', xmlns: 'http://www.w3.org/2000/svg' };
+  const Icon = ({ name, size }) => {
+    // Updated icon color as requested
+    const fill = '#FFA629';
+    const common = { width: 35, height: 35, viewBox: '0 0 24 24', fill: 'none', xmlns: 'http://www.w3.org/2000/svg' };
     switch (name) {
       case 'gem': return ( <svg {...common}><path d="M12 2l3 6 6 1-6 4-3 7-3-7-6-4 6-1 3-6z" fill={fill} /><path d="M12 2l-2 4-4 1 4 2 2 5 2-5 4-2-4-1-2-4z" fill="#FCEABB" opacity="0.1" /></svg> );
       case 'location': return ( <svg {...common}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z" fill={fill} /></svg> );
       case 'hanger':
-        return (
-          <svg {...common}>
-            <path d="M12 3v3" stroke={fill} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M20 13a8 8 0 0 0-16 0v1h16v-1z" stroke={fill} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        );
+        // Use the provided hanger image (kept as image per your request).
+        // Place the file at public/images/hanger.png so Next.js can serve it.
+        return <Image src="/images/hanger.png" alt="hanger" width={40} height={40} />;
       case 'star': return ( <svg {...common}><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill={fill} /></svg> );
-      case 'return': return ( <svg {...common}><path d="M20 7v6h-6" stroke={fill} strokeWidth="1.5" /><path d="M20 13a7 7 0 1 1-7-7H4" stroke={fill} strokeWidth="1.5" /></svg> );
+      case 'return':
+        // Use the provided return image (kept as image per your request).
+        // Place the file at public/images/return.png so Next.js can serve it.
+        return <Image src="/images/return.png" alt="return" width={35} height={35} />;
       default: return null;
     }
   };

@@ -21,6 +21,10 @@ const StoreSchema = new mongoose.Schema({
   mapQuery: {
     type: String,
   },
+  phone: {
+    type: String,
+    required: false,
+  },
 });
 
 export default mongoose.models.Store || mongoose.model('Store', StoreSchema);

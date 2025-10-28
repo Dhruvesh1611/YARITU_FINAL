@@ -8,6 +8,7 @@ import SkeletonLoader from '../../components/SkeletonLoader';
 import { useSession } from 'next-auth/react';
 import EditStoreModal from '../../components/EditStoreModal';
 import OfferEditorModal from '../../components/OfferEditorModal';
+import { buildGoogleMapsUrl } from '../../utils/maps';
 
 export default function Offer() {
   // Prefer fetching stores from the public API (same as Home page).
@@ -40,28 +41,48 @@ export default function Offer() {
   };
   const modalIdx = typeof editIdx === 'number' ? editIdx : selectedIdx;
   const currentStore = storesData[selectedIdx] || storesData[0] || {};
+  const buildTelHref = (p) => {
+    if (!p) return '';
+    const s = String(p).trim();
+    const cleaned = (s.startsWith('+') ? '+' : '') + s.replace(/[^0-9]/g, '');
+    return cleaned || '';
+  };
+  const currentAddress = currentStore?.address || '';
+  const mapHref = buildGoogleMapsUrl(currentStore?.mapQuery || currentAddress) || '';
+  const telHref = buildTelHref(currentStore?.phone || '');
+  // centralize fetching logic so other handlers can refresh the list after edits
+  const sortStoresByName = (arr) => {
+    if (!Array.isArray(arr)) return arr;
+    return arr.slice().sort((a, b) => {
+      const na = (a?.name || '').toString().trim();
+      const nb = (b?.name || '').toString().trim();
+      return na.localeCompare(nb, undefined, { sensitivity: 'base', numeric: true });
+    });
+  };
+
+  const fetchStores = async () => {
+    try {
+      const res = await fetch('/api/stores');
+      if (res.ok) {
+        const j = await res.json();
+        if (j.success && Array.isArray(j.data)) return setStoresData(sortStoresByName(j.data));
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // fallback to local data file if API fails
+    try {
+      const local = await import('../../data/stores.json');
+      if (Array.isArray(local?.default)) setStoresData(sortStoresByName(local.default));
+    } catch (e) {
+      // ignore
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch('/api/stores');
-        if (res.ok) {
-          const j = await res.json();
-          if (j.success && Array.isArray(j.data)) return setStoresData(j.data);
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      // fallback to local data file if API fails
-      try {
-        const local = await import('../../data/stores.json');
-        if (Array.isArray(local?.default)) setStoresData(local.default);
-      } catch (e) {
-        // ignore
-      }
-    };
-    load();
+    // call it once on mount
+    fetchStores();
   }, []);
 
   useEffect(() => {
@@ -102,8 +123,8 @@ export default function Offer() {
 
               <div className="selected-store-info">
                 <h3>{storesData[selectedIdx]?.name}</h3>
-                <p className="store-address">{storesData[selectedIdx]?.address}</p>
-                <p className="store-phone">📞 {storesData[selectedIdx]?.phone}</p>
+                <p className="store-address">{mapHref ? <a href={mapHref} target="_blank" rel="noopener noreferrer">{storesData[selectedIdx]?.address}</a> : storesData[selectedIdx]?.address}</p>
+                <p className="store-phone">📞 {telHref ? <a href={`tel:${telHref}`}>{storesData[selectedIdx]?.phone}</a> : storesData[selectedIdx]?.phone}</p>
                 {session && session.user && session.user.role === 'admin' && (
                   <button onClick={() => { setEditIdx(selectedIdx); setEditOpen(true); }} style={{ marginTop: 8 }}>Edit Store</button>
                 )}
@@ -112,13 +133,25 @@ export default function Offer() {
               <div className="store-selector-image">
                   <div style={{ width: '100%', height: '100%' }}>
                     {isRemote(currentStore.imageUrl || currentStore.image) ? (
-                      <Image
-                        src={currentStore.imageUrl || currentStore.image}
-                        alt={`${currentStore.name || 'Store'} store interior`}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        className="store-photo"
-                      />
+                      mapHref ? (
+                        <a href={mapHref} target="_blank" rel="noopener noreferrer">
+                          <Image
+                            src={currentStore.imageUrl || currentStore.image}
+                            alt={`${currentStore.name || 'Store'} store interior`}
+                            fill
+                            style={{ objectFit: 'cover' }}
+                            className="store-photo"
+                          />
+                        </a>
+                      ) : (
+                        <Image
+                          src={currentStore.imageUrl || currentStore.image}
+                          alt={`${currentStore.name || 'Store'} store interior`}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          className="store-photo"
+                        />
+                      )
                     ) : (
                       <SkeletonLoader style={{ width: '100%', height: '100%' }} />
                     )}
@@ -132,7 +165,12 @@ export default function Offer() {
             onClose={() => setEditOpen(false)}
             store={storesData[modalIdx]}
             idx={modalIdx}
-            onSaved={(updated) => setStoresData((p) => p.map((x, i) => i === modalIdx ? updated : x))}
+            onSaved={async (updated) => {
+              // update local copy immediately
+              setStoresData((p) => p.map((x, i) => i === modalIdx ? updated : x));
+              // then refresh from the authoritative source to avoid DB/file mismatches
+              try { await fetchStores(); } catch (e) { /* ignore */ }
+            }}
           />
         )}
         <section id="offers" className="offers-section section-padding">
@@ -141,9 +179,6 @@ export default function Offer() {
               <Image src="/images/location.png" alt="Location icon" width={50} height={50} />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <h2>{currentStore.name || ''}</h2>
-                {currentStore.phone ? (
-                  <div style={{ fontSize: 14, color: '#666', marginTop: 4 }}>📞 {currentStore.phone}</div>
-                ) : null}
               </div>
             </div>
             <div className="offers-grid">
@@ -204,6 +239,24 @@ export default function Offer() {
                   open={offerEditorOpen}
                   item={editingOffer}
                   storeName={storesData[selectedIdx]?.name}
+                  storeId={storesData[selectedIdx]?._id || storesData[selectedIdx]?.id}
+                  storePhone={storesData[selectedIdx]?.phone}
+                  onStoreUpdated={async (updatedStore) => {
+                    if (!updatedStore) return;
+                    setStoresData((prev) => {
+                      if (!Array.isArray(prev)) return prev;
+                      return prev.map(s => {
+                        const sid = s._id || s.id || s._id?.toString?.();
+                        const updatedId = updatedStore._id || updatedStore.id;
+                        if (!sid || !updatedId) return s;
+                        try {
+                          if (sid.toString() === updatedId.toString()) return { ...s, ...updatedStore };
+                        } catch (e) { /* ignore comparison errors */ }
+                        return s;
+                      });
+                    });
+                    try { await fetchStores(); } catch (e) { /* ignore */ }
+                  }}
                   onClose={() => setOfferEditorOpen(false)}
                   
                   // *** YAHAN BADLAV KIYA GAYA HAI ***

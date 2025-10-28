@@ -14,6 +14,27 @@ export default function AboutStoresClient() {
   const [error, setError] = useState('');
   const [editingStore, setEditingStore] = useState(null);
 
+  const sortStoresByName = (arr) => {
+    if (!Array.isArray(arr)) return arr;
+    return arr.slice().sort((a, b) => {
+      const na = (a?.name || a?.city || '').toString().trim();
+      const nb = (b?.name || b?.city || '').toString().trim();
+      return na.localeCompare(nb, undefined, { sensitivity: 'base', numeric: true });
+    });
+  };
+
+  const makeTelHref = (p) => {
+    if (!p) return '';
+    try {
+      const s = p.toString().trim();
+      // Keep leading + if present, otherwise keep digits only
+      const cleaned = (s.startsWith('+') ? '+' : '') + s.replace(/[^0-9]/g, '');
+      return cleaned || '';
+    } catch (e) {
+      return p;
+    }
+  };
+
 
   useEffect(() => {
     let isMounted = true;
@@ -22,8 +43,8 @@ export default function AboutStoresClient() {
       try {
         const res = await fetch('/api/stores', { cache: 'no-store' });
         const j = await res.json();
-        if (!res.ok || !j.success) throw new Error(j.error || j.message || 'Failed to load stores');
-        if (isMounted) setStores(Array.isArray(j.data) ? j.data : []);
+  if (!res.ok || !j.success) throw new Error(j.error || j.message || 'Failed to load stores');
+  if (isMounted) setStores(sortStoresByName(Array.isArray(j.data) ? j.data : []));
       } catch (e) {
         console.error(e);
         if (isMounted) setError(e.message || 'Failed to load stores');
@@ -36,7 +57,10 @@ export default function AboutStoresClient() {
   }, []);
 
   const onSaved = (updated) => {
-    setStores(prev => prev.map(s => (s._id === updated._id ? updated : s)));
+    setStores(prev => {
+      const updatedList = prev.map(s => (s._id === updated._id ? updated : s));
+      return sortStoresByName(updatedList);
+    });
   };
 
   if (loading) {
@@ -58,6 +82,7 @@ export default function AboutStoresClient() {
           const name = store.name || store.city || 'Store';
           const address = store.address || '';
           const phone = store.phone || '';
+          const telHref = makeTelHref(phone);
           const mapHref = buildGoogleMapsUrl(store.mapQuery || address);
           const images = Array.isArray(store.images) && store.images.length
             ? store.images
@@ -66,8 +91,16 @@ export default function AboutStoresClient() {
             <div key={store._id || index} className={`${styles.aboutStoreCard} ${index % 2 !== 0 ? styles.cardReverse : ''}`}>
               <div className={styles.storeDetails}>
                 <h3>{name}</h3>
-                {address ? <p className={styles.address}>{address}</p> : null}
-                {phone ? <p className={styles.phone}>{phone}</p> : null}
+                {address ? (
+                  <p className={styles.address}>
+                    <a href={mapHref} target="_blank" rel="noopener noreferrer">{address}</a>
+                  </p>
+                ) : null}
+                {phone ? (
+                  <p className={styles.phone}>
+                    <a href={telHref ? `tel:${telHref}` : `tel:${phone}`} aria-label={`Call ${name}`}>{phone}</a>
+                  </p>
+                ) : null}
                 <a href={mapHref} target="_blank" rel="noopener noreferrer" className={styles.storeButton}>Get Directions</a>
                 
               </div>

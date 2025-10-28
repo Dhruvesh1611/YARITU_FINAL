@@ -19,7 +19,7 @@ const animationStyles = `
   }
 `;
 
-export default function OfferEditorModal({ open, item, onClose, onSaved, onDeleted, storeName }) {
+export default function OfferEditorModal({ open, item, onClose, onSaved, onDeleted, storeName, storeId, storePhone, onStoreUpdated }) {
   const [heading, setHeading] = useState('');
   const [subheading, setSubheading] = useState('');
   const [discount, setDiscount] = useState('');
@@ -27,6 +27,9 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
   const [imagePreview, setImagePreview] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [toastText, setToastText] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
 
   // State to manage hover effects
   const [isCloseHovered, setCloseHovered] = useState(false);
@@ -40,6 +43,8 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
     setValidity(item?.validity || '');
     setImagePreview(item?.image || '');
     setSelectedFile(null);
+    // Prefill phone only when editing an existing offer; hide on new-offer flow
+    setPhone(item?.phone ?? '');
   }, [item]);
 
   const handleEscape = useCallback((event) => {
@@ -113,6 +118,51 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
         if (!returned.id && returned._id) returned.id = returned._id;
         onSaved?.(returned);
         onClose?.();
+
+  // If editing an existing offer and admin entered a phone and a storeId prop exists, update that store's phone
+  if (item && phone && storeId) {
+          (async () => {
+            try {
+              const r = await fetch(`/api/stores/${storeId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone }),
+              });
+                if (r.ok) {
+                  const json = await r.json().catch(() => null);
+                  if (json && json.success && json.data) {
+                    // Notify parent to update its local store list so UI reflects the change immediately
+                    try {
+                      onStoreUpdated && onStoreUpdated(json.data);
+                    } catch (e) {
+                      // silent
+                    }
+                    // show success toast
+                    setToastText('Store contact updated');
+                    setToastVisible(true);
+                    setTimeout(() => setToastVisible(false), 3000);
+                  } else {
+                    const err = (json && (json.error || json.message)) || 'Unknown error';
+                    console.warn('Failed to update store phone', err);
+                    setToastText('Failed to update store contact');
+                    setToastVisible(true);
+                    setTimeout(() => setToastVisible(false), 3000);
+                  }
+                } else {
+                  const err = await r.json().catch(() => ({}));
+                  console.warn('Failed to update store phone', err);
+                  setToastText('Failed to update store contact');
+                  setToastVisible(true);
+                  setTimeout(() => setToastVisible(false), 3000);
+                }
+            } catch (err) {
+              console.warn('Failed to update store phone', err);
+                setToastText('Failed to update store contact');
+                setToastVisible(true);
+                setTimeout(() => setToastVisible(false), 3000);
+            }
+          })();
+        }
       } else {
         alert(j.message || 'Could not save the offer.');
       }
@@ -288,6 +338,7 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
                     <input id="file-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
                 </div>
             </div>
+           
           </main>
 
           <footer style={styles.footer}>
@@ -324,6 +375,15 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
             </div>
           </footer>
           
+          {/* Inline toast inside modal (top-right) */}
+          {toastVisible && (
+            <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 400 }}>
+              <div style={{ background: '#111827', color: '#fff', padding: '8px 12px', borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.15)' }}>
+                {toastText}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </>
