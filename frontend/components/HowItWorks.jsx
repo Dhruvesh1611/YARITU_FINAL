@@ -10,13 +10,13 @@ const stepsData = [
     title: 'Visit Our Showroom',
     description: 'Browse our exquisite collection of traditional and contemporary designs. Each piecStep into your nearest Yaritu Showroom and explore our exclusive range of rental outfits for every occasion. Our team helps you find the perfect fit for your style and budget.',
     imgSrc: '/images/step1.png',
-    icon: 'gem',
+    icon: 'location',
   },
   {
     title: 'Select Your Outfit',
     description: 'Choose from our wide collection of designer lehengas, sherwanis, gowns, suits and more. Try them on to find your dream look for weddings, parties, or special events.',
     imgSrc: '/images/step2.png',
-    icon: 'location',
+    icon: 'hanger',
   },
   {
     title: 'Shine at Your Function',
@@ -98,6 +98,13 @@ const HowItWorks = () => {
     switch (name) {
       case 'gem': return ( <svg {...common}><path d="M12 2l3 6 6 1-6 4-3 7-3-7-6-4 6-1 3-6z" fill={fill} /><path d="M12 2l-2 4-4 1 4 2 2 5 2-5 4-2-4-1-2-4z" fill="#FCEABB" opacity="0.1" /></svg> );
       case 'location': return ( <svg {...common}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z" fill={fill} /></svg> );
+      case 'hanger':
+        return (
+          <svg {...common}>
+            <path d="M12 3v3" stroke={fill} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M20 13a8 8 0 0 0-16 0v1h16v-1z" stroke={fill} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        );
       case 'star': return ( <svg {...common}><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill={fill} /></svg> );
       case 'return': return ( <svg {...common}><path d="M20 7v6h-6" stroke={fill} strokeWidth="1.5" /><path d="M20 13a7 7 0 1 1-7-7H4" stroke={fill} strokeWidth="1.5" /></svg> );
       default: return null;

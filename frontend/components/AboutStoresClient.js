@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import StoreImageGalleryClient from './StoreImageGalleryClient';
 import EditStoreImagesModal from './EditStoreImagesModal';
 import styles from '../app/about/about.module.css';
+import { buildGoogleMapsUrl } from '../utils/maps';
 
 export default function AboutStoresClient() {
   const { data: session } = useSession();
@@ -57,7 +58,7 @@ export default function AboutStoresClient() {
           const name = store.name || store.city || 'Store';
           const address = store.address || '';
           const phone = store.phone || '';
-          const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.mapQuery || address)}`;
+          const mapHref = buildGoogleMapsUrl(store.mapQuery || address);
           const images = Array.isArray(store.images) && store.images.length
             ? store.images
             : (store.imageUrl ? [store.imageUrl] : []);

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { buildGoogleMapsUrl } from '../utils/maps';
 import { useSession } from 'next-auth/react';
 
 export default function StoreCard({ store, index, onUpdate, onDelete }) {
@@ -37,9 +38,8 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
   }, []);
 
   const openMap = () => {
-    if (!store?.mapQuery) return;
-    const query = encodeURIComponent(store.mapQuery);
-    const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    const url = buildGoogleMapsUrl(store?.mapQuery || store?.address || '');
+    if (!url) return;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -167,6 +167,19 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
     }
   };
 
+  // Render store name with explicit break opportunities after commas and spaces
+  const renderWrappedName = (name) => {
+    if (!name) return null;
+    // Split and keep separators (spaces and commas)
+    const parts = name.split(/(\s+|,)/g);
+    return parts.map((p, idx) => {
+      if (p === ',') return <React.Fragment key={idx}>,<wbr/></React.Fragment>;
+      // keep whitespace as-is so browser can wrap on spaces
+      if (/^\s+$/.test(p)) return p;
+      return <React.Fragment key={idx}>{p}</React.Fragment>;
+    });
+  };
+
   return (
     <>
       <div
@@ -187,7 +200,7 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
           <Image src={store.imageUrl || "/images/store_1.png"} alt={store.name} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: 'cover' }} loading="lazy" />
         </div>
         <div className="store-name-overlay">
-          <span>{store.name}</span>
+          <span className="store-name-text">{renderWrappedName(store.name)}</span>
         </div>
       </div>
 
