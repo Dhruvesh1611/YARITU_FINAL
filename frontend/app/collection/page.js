@@ -253,61 +253,39 @@ const handleJewelleryClick = () => {
     scrollToCollectionTitle();
 };
 
-// 🌟🌟🌟 EDITED FIX: handleCategoryTap - Two-Step Tap Logic Refined 🌟🌟🌟
+// 🌟🌟🌟 FINAL EDITED FIX: handleCategoryTap 🌟🌟🌟
 const handleCategoryTap = (category) => {
+    
+    // Safety check: Always exit Jewellery Mode when clicking a clothing category
     setJewelleryMode(false); 
 
+    // Mobile logic (<= 768px)
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
         
-        // 💡 [FIX 1] Agar yeh dropdown pehle se khula hai (SECOND TAP)
+        // Agar yeh dropdown pehle se hi khula hai (i.e., Second Tap)
         if (openDropdown === category) {
             
-            // Dropdown ko instantly close karo (without lingering transition)
-            try {
-                // Temporarily disable dropdown transitions to avoid the 'small box' glitch
-                document.documentElement.classList.add('no-dd-transition');
-            } catch (_) {}
-
-            // Force-hide any visible dropdown menus immediately (inline), so there's no visual remnant
-            if (dropdownsContainerRef.current) {
-                try {
-                    const menus = dropdownsContainerRef.current.querySelectorAll(`.${styles['dropdown-menu']}`);
-                    menus.forEach(m => { m.style.display = 'none'; });
-                } catch (_) {}
-            }
-
+            // Step 2: Dropdown ko close karo aur Collection load karke scroll karo
             setOpenDropdown(null);
-
+            
+            // Collection load logic
             setActiveCategory(category);
             setActiveType(null);
             setActiveSubcategory(null);
             setActiveOccasion(null);
 
-            // Ensure DOM updates apply before scrolling (double RAF)
-            if (typeof window !== 'undefined') {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        scrollToCollectionTitle();
-                        // Remove the temporary no-transition flag after close completes
-                        setTimeout(() => {
-                            try { document.documentElement.classList.remove('no-dd-transition'); } catch (_) {}
-                        }, 240);
-                    });
-                });
-            } else {
-                scrollToCollectionTitle();
-            }
+            scrollToCollectionTitle();
             return;
         }
         
-        // Agar koi aur dropdown khula hai, toh pehle usse band karo
+        // Agar koi aur dropdown khula hai, toh use pehle band karo
         if (openDropdown && openDropdown !== category) {
              setOpenDropdown(null);
         }
 
-        // First tap: Naya dropdown kholo
+        // Step 1: Naya dropdown kholo (First Tap)
         
-        // Clear any inline 'display:none' for smooth opening
+        // Clear any lingering inline 'display:none' for smooth opening (Safety)
         if (dropdownsContainerRef.current) {
             try {
                 const menus = dropdownsContainerRef.current.querySelectorAll(`.${styles['dropdown-menu']}`);
@@ -317,19 +295,18 @@ const handleCategoryTap = (category) => {
         
         setOpenDropdown(category);
         
-        // Active filters ko reset karo (lekin current category active rahegi)
+        // Active filters ko reset karo (lekin main category active rahegi)
         setActiveType(null);
         setActiveSubcategory(null);
         setActiveOccasion(null);
         
-        return;
+        return; 
     }
     
-    // Desktop: Fallback
+    // Desktop: Fallback (single click will run handleCategoryClick)
     handleCategoryClick(category);
 };
-// 🌟🌟🌟 END EDITED FIX 🌟🌟🌟
-
+// 🌟🌟🌟 END FINAL EDITED FIX 🌟🌟🌟
 
 const handleTypeClick = (category, type, subcategory = null) => {
     setJewelleryMode(false);
