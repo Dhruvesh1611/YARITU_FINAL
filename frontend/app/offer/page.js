@@ -201,7 +201,7 @@ export default function Offer() {
                 return filteredOffers.map((off, i) => (
                   <div key={off._id || off.id || `offer-${i}`} className={`offer-card ${i === 1 ? 'offset-up' : ''}`}>
                   <div className="offer-card-image">
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', overflow: 'hidden' }}>
+                    <div >
                       {isRemote(off.image) ? (
                         <Image src={off.image} alt={off.heading || 'Offer image'} fill sizes="(max-width: 600px) 100vw, (max-width: 992px) 50vw, 33vw" style={{ objectFit: 'cover' }} />
                       ) : (
