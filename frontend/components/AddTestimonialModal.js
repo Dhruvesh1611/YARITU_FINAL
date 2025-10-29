@@ -11,17 +11,35 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Upload helper: send file to server-side upload route which uses Cloudinary SDK
-    const uploadToServer = async (file, onProgress) => {
-        // POST to the server-side Cloudinary upload route. The route lives at /api/cloudinary/upload
-        const fd = new FormData();
-        fd.append('file', file);
-    fd.append('folder', 'YARITU/testimonials');
-    // Use the server-side Cloudinary SDK upload route which lives at /api/upload
-    const res = await fetch('/api/upload', { method: 'POST', body: fd });
-        const json = await res.json().catch(() => null);
-        if (!res.ok || !json || !json.success) throw new Error((json && json.error) || 'Server upload failed');
-        return json.data; // cloudinary upload result
+    // Helper: unsigned Cloudinary upload (images) with XHR to report progress
+    const uploadToCloudinaryUnsigned = (cloudName, uploadPreset, file, onProgress) => {
+        return new Promise((resolve, reject) => {
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', uploadPreset);
+            fd.append('folder', 'YARITU');
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && typeof onProgress === 'function') {
+                    const pct = Math.round((event.loaded * 100) / event.total);
+                    onProgress(pct);
+                }
+            };
+            xhr.onload = () => {
+                try {
+                    const parsed = JSON.parse(xhr.responseText);
+                    if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
+                    else reject(new Error(parsed?.error?.message || `Upload failed: ${xhr.status}`));
+                } catch (err) {
+                    reject(new Error('Failed to parse upload response'));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during upload'));
+            xhr.send(fd);
+        });
     };
 
     useEffect(() => {
@@ -43,53 +61,70 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
     };
 
     const handleUpdate = async () => {
+        // 💡 FIX 1: Client-side validation added
+        if (!name.trim()) {
+            alert('Error: Customer Name is required.');
+            return;
+        }
+        if (!quote.trim()) {
+            alert('Error: Review content is required.');
+            return;
+        }
+        
         setLoading(true);
         try {
             // If a new file was selected, upload it directly to Cloudinary unsigned so client shows progress
             let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
             if (selectedFile) {
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
+                if (!cloudName || !uploadPreset) throw new Error('Cloudinary unsigned config missing');
                 setUploadProgress(0);
-                const uploadResult = await uploadToServer(selectedFile, (pct) => setUploadProgress(pct));
-                avatarUrlToSend = uploadResult?.secure_url || uploadResult?.secureUrl || uploadResult?.url || avatarUrlToSend;
+                const cloudResp = await uploadToCloudinaryUnsigned(cloudName, uploadPreset, selectedFile, (pct) => setUploadProgress(pct));
+                avatarUrlToSend = cloudResp?.secure_url || cloudResp?.secureUrl || cloudResp?.url || avatarUrlToSend;
                 // update preview to the final URL when available
                 setPreviewAvatar(avatarUrlToSend);
             }
+            
+            let res, json;
+            
             // If item exists -> update (PUT), else create new (POST)
             if (item && (item._id || item.id)) {
-                const res = await fetch(`/api/testimonials/${item._id || item.id}`, {
+                res = await fetch(`/api/testimonials/${item._id || item.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend, location }),
                 });
-                const json = await res.json().catch(() => null);
-                if (res.ok && json && (json.success || json.data)) {
-                    onUpdated && onUpdated(json.data || json);
-                    onClose && onClose();
-                } else {
-                    console.error('Update failed', json);
-                    alert('Failed to update testimonial');
-                }
             } else {
                 console.debug('Creating testimonial payload', { name, quote, rating, avatarUrl: avatarUrlToSend, location });
-                const res = await fetch('/api/testimonials', {
+                res = await fetch('/api/testimonials', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend, location }),
                 });
-                const json = await res.json().catch(() => null);
-                console.debug('Create response', res.status, json);
-                if (res.ok && json && json.success) {
-                    const created = json.data || json;
-                    onAdded && onAdded(created);
-                    onClose && onClose();
-                } else {
-                    console.error('Create failed', json);
-                    alert('Failed to create testimonial');
+            }
+            
+            // 💡 FIX 2: Better error reporting for server failures (400, 500 etc)
+            json = await res.json().catch(() => null);
+            
+            if (res.ok && json && (json.success || json.data)) {
+                // onUpdated and onAdded are called here based on context
+                onUpdated && onUpdated(json.data || json); 
+                onAdded && onAdded(json.data || json);     
+                onClose && onClose();
+            } else {
+                let errorMessage = 'Failed to save testimonial.';
+                if (json && json.error) {
+                    errorMessage += ` Server error: ${json.error}`;
+                } else if (res.status >= 400) {
+                    errorMessage += ` HTTP Error: ${res.status}. Please check required fields (Name/Review).`;
                 }
+                console.error('Save failed:', res.status, json);
+                alert(errorMessage);
             }
         } catch (err) {
             console.error(err);
-            alert('Failed to update testimonial: ' + (err?.message || ''));
+            alert('Failed to save testimonial: ' + (err?.message || 'A network error occurred.'));
         } finally {
             setLoading(false);
             setUploadProgress(0);

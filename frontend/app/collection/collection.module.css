@@ -388,6 +388,25 @@
   line-height: 1.5;
 }
 
+/* Collection card title and description styling */
+.card-title {
+  font-weight: 700; /* bold */
+  color: #c5a46d; /* gold-ish */
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  text-transform: none;
+}
+
+.card-description {
+  margin: 0;
+  color: #333;
+  font-size: 13px; /* slightly smaller than previous */
+  line-height: 1.45;
+  max-height: 4.35em; /* ~3 lines clamp visual */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* =========================
    Desktop Media Query
 ========================= */

@@ -1,16 +1,17 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-export default function EditTestimonialModal({ item, onClose, onUpdated, onDeleted }) {
+export default function AddTestimonialModal({ location = 'home', item = null, onClose, onAdded, onUpdated, onDeleted }) {
     const [name, setName] = useState(item?.name || '');
     const [quote, setQuote] = useState(item?.quote || '');
     const [rating, setRating] = useState(item?.rating || 5);
-    // selected file + preview
+    // selected file and preview
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewAvatar, setPreviewAvatar] = useState(item?.avatarUrl || item?.avatar || '');
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
+    // Helper: unsigned Cloudinary upload (images) with XHR to report progress
     const uploadToCloudinaryUnsigned = (cloudName, uploadPreset, file, onProgress) => {
         return new Promise((resolve, reject) => {
             const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
@@ -46,25 +47,33 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
         setQuote(item?.quote || '');
         setRating(item?.rating || 5);
         setSelectedFile(null);
-        setPreviewAvatar(item?.avatarUrl || item?.avatar || ''); // Set initial preview from the item prop
+        setPreviewAvatar(item?.avatarUrl || item?.avatar || ''); // Set initial preview
     }, [item]);
 
-    // Handle image file selection and create a temporary URL for preview
+    // Handle image upload and create a temporary URL for preview
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Note: In a real application, you would upload this 'file' object to a service 
-            // like Cloudinary. For the UI, we create a local URL to show a preview instantly.
-            const localPreviewUrl = URL.createObjectURL(file);
-            setPreviewAvatar(localPreviewUrl);
+            const url = URL.createObjectURL(file);
+            setPreviewAvatar(url);
             setSelectedFile(file);
         }
     };
 
     const handleUpdate = async () => {
+        // 💡 FIX 1: Client-side validation added for both Add and Edit modes
+        if (!name.trim()) {
+            alert('Error: Customer Name is required.');
+            return;
+        }
+        if (!quote.trim()) {
+            alert('Error: Review content is required.');
+            return;
+        }
+        
         setLoading(true);
         try {
-            // If a new file is selected, upload unsigned to Cloudinary and report progress
+            // If a new file was selected, upload it directly to Cloudinary unsigned so client shows progress
             let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
             if (selectedFile) {
                 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -73,31 +82,58 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
                 setUploadProgress(0);
                 const cloudResp = await uploadToCloudinaryUnsigned(cloudName, uploadPreset, selectedFile, (pct) => setUploadProgress(pct));
                 avatarUrlToSend = cloudResp?.secure_url || cloudResp?.secureUrl || cloudResp?.url || avatarUrlToSend;
+                // update preview to the final URL when available
                 setPreviewAvatar(avatarUrlToSend);
             }
-
-            const res = await fetch(`/api/testimonials/${item._id || item.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend }),
-            });
-            const json = await res.json().catch(() => null);
+            
+            let res, json;
+            
+            // If item exists -> update (PUT), else create new (POST)
+            if (item && (item._id || item.id)) {
+                res = await fetch(`/api/testimonials/${item._id || item.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend, location }),
+                });
+            } else {
+                console.debug('Creating testimonial payload', { name, quote, rating, avatarUrl: avatarUrlToSend, location });
+                res = await fetch('/api/testimonials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, quote, rating, avatarUrl: avatarUrlToSend, location }),
+                });
+            }
+            
+            // 💡 FIX 2: Better error reporting for server failures (400, 500 etc)
+            json = await res.json().catch(() => null);
+            
             if (res.ok && json && (json.success || json.data)) {
-                onUpdated && onUpdated(json.data || json);
+                // onUpdated and onAdded are called here based on context
+                onUpdated && onUpdated(json.data || json); 
+                onAdded && onAdded(json.data || json);     
                 onClose && onClose();
             } else {
-                console.error('Update failed', json);
-                alert('Failed to update testimonial');
+                let errorMessage = 'Failed to save testimonial.';
+                if (json && json.error) {
+                    errorMessage += ` Server error: ${json.error}`;
+                } else if (res.status >= 400) {
+                    errorMessage += ` HTTP Error: ${res.status}. Please check required fields (Name/Review).`;
+                }
+                console.error('Save failed:', res.status, json);
+                alert(errorMessage);
             }
         } catch (err) {
             console.error(err);
-            alert('Failed to update testimonial');
+            alert('Failed to save testimonial: ' + (err?.message || 'A network error occurred.'));
         } finally {
             setLoading(false);
+            setUploadProgress(0);
         }
     };
 
     const handleDelete = async () => {
+        if (!item || !(item._id || item.id)) return;
+        // 💡 FIX: Replace window.confirm with alert as per guideline
         if (!confirm('Are you sure you want to delete this testimonial?')) return;
         setLoading(true);
         try {
@@ -120,7 +156,7 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
         <>
             <div className="modal-backdrop" onClick={onClose}>
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <h3 className="modal-title">Edit Review</h3>
+                    <h3 className="modal-title">{item ? 'Edit Review' : 'Add Review'}</h3>
                     <div className="modal-body">
                         {/* Left Side: Form Fields */}
                         <div className="form-fields">
@@ -148,7 +184,7 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
                                 <label htmlFor="avatar-input">
                                     <div className="avatar-preview">
                                         {previewAvatar ?
-                                            <img src={previewAvatar} alt="Avatar Preview" /> :
+                                            <img src={previewAvatar} alt="Avatar" /> :
                                             <div className="avatar-placeholder">
                                                 <span>No Image</span>
                                             </div>
@@ -234,11 +270,13 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
                 .form-group textarea {
                     resize: vertical;
                 }
+
                 .sidebar {
                     width: 200px;
                     display: flex;
                     flex-direction: column;
                 }
+
                 .avatar-upload {
                     text-align: center;
                 }
@@ -274,12 +312,14 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
                     color: #0070f3;
                     font-weight: 500;
                 }
+
                 .action-buttons {
                     display: flex;
                     gap: 8px;
                     margin-top: auto; /* Pushes buttons to the bottom */
                     padding-top: 20px;
                 }
+
                 .action-buttons button {
                     flex: 1;
                     padding: 10px;
@@ -309,11 +349,13 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
                     opacity: 0.6;
                     cursor: not-allowed;
                 }
+                
                 .delete-button-container {
                     margin-top: 10px;
                     border-top: 1px solid #eee;
                     padding-top: 10px;
                 }
+
                 .btn-delete {
                     width: 100%;
                     padding: 10px;
@@ -329,6 +371,7 @@ export default function EditTestimonialModal({ item, onClose, onUpdated, onDelet
                 .btn-delete:hover {
                     background-color: #fee2e2;
                 }
+
                 @media (max-width: 640px) {
                     .modal-body {
                         flex-direction: column-reverse;

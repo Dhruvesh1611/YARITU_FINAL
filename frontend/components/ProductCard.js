@@ -65,7 +65,8 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
                 )}
             </div>
             <div className={styles['card-info']}>
-                <p>{title}<br />{description}</p>
+                <p className={styles['card-title']}>{title}</p>
+                {description ? <p className={styles['card-description']}>{description}</p> : null}
                 {isAdmin && (
                     <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
                         <button onClick={() => onEdit(product)} style={{ padding: '6px 8px' }}>Edit</button>
