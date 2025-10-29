@@ -184,7 +184,11 @@
 .image-uploader img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* Show full image in admin preview so admin can see the entire upload.
+     Use `contain` here to avoid unexpected cropping in the modal preview.
+     The frontend listing/product card can still use cover when rendering to users. */
+  object-fit: contain;
+  background-color: var(--light-gray);
   border-radius: 8px;
 }
 .upload-placeholder {

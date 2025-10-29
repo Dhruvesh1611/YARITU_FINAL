@@ -336,7 +336,6 @@ const openEditor = (category) => {
 const getBreadcrumbs = () => {
     if (jewelleryMode) {
         const store = (selectedStoreFilter || '').toString().trim();
-        // Show "ALL STORES" when no specific store is selected
         return store ? store.toUpperCase() : 'ALL STORES';
     }
     const cat = activeCategory || 'ALL';
@@ -349,7 +348,6 @@ const getBreadcrumbs = () => {
     if (activeOccasion) {
         return `${cat} > RENT BY OCCASION > ${activeOccasion}`.toUpperCase();
     }
-    // When ALL category is active in collection, show "ALL COLLECTION"
     if ((cat || '').toUpperCase() === 'ALL') return 'ALL COLLECTION';
     return cat.toUpperCase();
 };

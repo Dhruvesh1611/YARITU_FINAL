@@ -103,7 +103,7 @@
   justify-content: space-around;
   opacity: 0;
   visibility: hidden;
-  /* IMPORTANT: No transition on base state so closing is instant */
+  /* FIX: Transition removed for instant closing */
   transition: none;
 }
 
@@ -124,8 +124,7 @@
   visibility: visible;
 }
 
-/* 💡 [FIX] GLOBAL CSS REMOVED: Desktop hover 'bridge' was causing the 'small box' issue on mobile/tablet.
-   This rule is now only inside the @media (min-width: 769px) block. */
+/* 💡 GLOBAL CSS REMOVED: Desktop hover 'bridge' was moved to min-width: 769px. */
 
 .dropdown-column h4 {
   font-weight: 700;
@@ -232,9 +231,7 @@
   transition: transform 0.2s ease;
 }
 
-.categoryButton:hover {
-  transform: translateY(-2px);
-}
+/* 💡 GLOBAL FIX: Conflicting .categoryButton:hover rule HAS BEEN REMOVED from global scope. */
 
 /* utility to disable hover transform */
 .noHover {
@@ -404,9 +401,6 @@
     transition: transform 160ms ease;
   }
   
-  /* --- YEH HAI NAYA FIX --- */
-  /* Saare "hover" rules ko is desktop media query ke andar daal diya */
-  
   /* Desktop: allow hover to push content down... */
   .category-buttons:has(.category-button-container:not(.noHover):hover) + .collection-content {
     transform: translateY(120px);
@@ -419,9 +413,14 @@
     margin-left: 20px;
     visibility: visible;
   }
+  
+  /* YEH DESKTOP HOVER HAI */
+  .categoryButton:hover {
+    transform: translateY(-2px);
+  }
 
   /* Transparent bridge between button and dropdown so moving cursor from button -> dropdown doesn't close it */
-  .category-button-container:not(.noHover)::after {
+  .category-button-container:not(.noHover)::after { /* <--- MAKE SURE THIS IS HERE */
     content: '';
     position: absolute;
     left: 8px;
@@ -570,11 +569,13 @@
     overflow: hidden;
   }
   
+  /* 💡 FINAL FIX: Override ALL hover styles on small screens */
   .category-button:hover {
-    transform: none; 
-    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3); 
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); 
+    transform: none !important; /* Forcefully remove button elevation on hover */
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3) !important; /* Default shadow rakhein */
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important; /* Default background rakhein */
   }
+
 
   .category-button .btn-text { position: relative; z-index: 2; color: white; }
   .category-button .btn-glow,
