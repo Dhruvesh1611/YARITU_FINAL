@@ -592,11 +592,13 @@
     background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important; /* Default background rakhein */
   }
 
-  /* Extra safety: disable dropdown display triggered by :hover on small devices */
-  .category-button-container:not(.noHover):hover .dropdown-menu {
-    display: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
+  /* Ensure the open class always shows the dropdown on touch devices.
+     Some mobile browsers briefly apply :hover on touch which can interfere
+     with display; forcing .open to win solves the issue. */
+  .category-button-container.open .dropdown-menu {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 
 
