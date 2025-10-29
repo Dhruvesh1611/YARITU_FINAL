@@ -372,11 +372,33 @@ const handleSaveCollection = (savedData, metaData) => {
         })();
         return;
     }
-    if (savedData && savedData.isPending) {
+    // Helper: append a cache-busting query param to image URLs so edited images show immediately
+    const appendCacheBuster = (doc) => {
+        if (!doc || typeof doc !== 'object') return doc;
+        const copy = { ...doc };
+        const ts = Date.now();
+        const maybeAppend = (val) => {
+            if (typeof val !== 'string' || !val) return val;
+            if (val.startsWith('blob:')) return val;
+            if (val.includes('?t=')) return val;
+            // If URL already has other query params, append with &
+            return val.includes('?') ? `${val}&t=${ts}` : `${val}?t=${ts}`;
+        };
+        ['mainImage', 'imageUrl', 'thumbnail', 'mainImage2', 'mainImage2Url'].forEach(k => {
+            if (copy[k]) copy[k] = maybeAppend(copy[k]);
+        });
+        if (Array.isArray(copy.otherImages)) {
+            copy.otherImages = copy.otherImages.map(i => maybeAppend(i));
+        }
+        return copy;
+    };
+    // Ensure image URLs are cache-busted so the UI shows the new image immediately
+    const savedWithCache = appendCacheBuster(savedData);
+    if (savedWithCache && savedWithCache.isPending) {
         setCollections(prev => {
-            const exists = (prev || []).some(c => (c.productId && savedData.productId && c.productId === savedData.productId) || c._id === savedData._id);
+            const exists = (prev || []).some(c => (c.productId && savedWithCache.productId && c.productId === savedWithCache.productId) || c._id === savedWithCache._id);
             if (exists) return prev;
-            const updated = [savedData, ...(prev || [])];
+            const updated = [savedWithCache, ...(prev || [])];
             try { localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(updated)); } catch (_) {}
             return updated;
         });
@@ -385,17 +407,18 @@ const handleSaveCollection = (savedData, metaData) => {
     setCollections(prev => {
         const list = prev ? [...prev] : [];
         const matchIndex = list.findIndex(c => {
-            if (c._id && c._id.toString().startsWith('pending-') && savedData.productId && c.productId && c.productId === savedData.productId) return true;
-            if (c.productId && savedData.productId && c.productId === savedData.productId) return true;
+            if (c._id && c._id.toString().startsWith('pending-') && savedWithCache.productId && c.productId && c.productId === savedWithCache.productId) return true;
+            if (c.productId && savedWithCache.productId && c.productId === savedWithCache.productId) return true;
             return false;
         });
         if (matchIndex !== -1) {
-            list.splice(matchIndex, 1, savedData);
+            list.splice(matchIndex, 1, savedWithCache);
             const updated = [list[matchIndex], ...list.slice(0, matchIndex), ...list.slice(matchIndex + 1)];
+            try { localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(updated)); } catch (_) {}
             return updated;
         }
-        const filtered = list.filter(c => c._id !== savedData._id);
-        const updated = [savedData, ...filtered];
+        const filtered = list.filter(c => c._id !== savedWithCache._id);
+        const updated = [savedWithCache, ...filtered];
         try { localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(updated)); } catch (_) {}
         return updated;
     });
@@ -419,8 +442,21 @@ return (
 
 
 {/* MEN button */}
-<div className={`${styles['category-button-container']} ${openDropdown === 'MEN' ? styles.open : ''}`}>
-<button onClick={() => handleCategoryTap('MEN')} className={styles.categoryButton}>MEN</button>
+<div
+    className={`${styles['category-button-container']} ${openDropdown === 'MEN' ? styles.open : ''}`}
+    onClick={(e) => {
+            // Only handle container tap on small screens to avoid duplicate desktop hover behavior
+            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                // If the click originated inside the dropdown menu (e.g. user tapped a filter link),
+                // ignore here so the link's own handler runs without this toggling the menu.
+                const menu = e.currentTarget.querySelector(`.${styles['dropdown-menu']}`);
+                if (menu && menu.contains(e.target)) return;
+                e.stopPropagation();
+                handleCategoryTap('MEN');
+            }
+    }}
+>
+    <button onClick={() => handleCategoryTap('MEN')} className={styles.categoryButton}>MEN</button>
 <div className={styles['dropdown-menu']}>
     {isAdmin && (
         <div style={{ position: 'absolute', right: 12, top: 8 }}>
@@ -460,8 +496,18 @@ return (
 </div>
 
 {/* WOMEN button */}
-<div className={`${styles['category-button-container']} ${openDropdown === 'WOMEN' ? styles.open : ''}`}>
-<button onClick={() => handleCategoryTap('WOMEN')} className={styles.categoryButton}>WOMEN</button>
+<div
+    className={`${styles['category-button-container']} ${openDropdown === 'WOMEN' ? styles.open : ''}`}
+    onClick={(e) => {
+            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                const menu = e.currentTarget.querySelector(`.${styles['dropdown-menu']}`);
+                if (menu && menu.contains(e.target)) return;
+                e.stopPropagation();
+                handleCategoryTap('WOMEN');
+            }
+    }}
+>
+    <button onClick={() => handleCategoryTap('WOMEN')} className={styles.categoryButton}>WOMEN</button>
 <div className={styles['dropdown-menu']}>
     {isAdmin && (
         <div style={{ position: 'absolute', right: 12, top: 8 }}>
@@ -501,8 +547,18 @@ return (
 </div>
 
 {/* CHILDREN button */}
-<div className={`${styles['category-button-container']} ${openDropdown === 'CHILDREN' ? styles.open : ''}`}>
-<button onClick={() => handleCategoryTap('CHILDREN')} className={styles.categoryButton}>CHILDREN</button>
+<div
+    className={`${styles['category-button-container']} ${openDropdown === 'CHILDREN' ? styles.open : ''}`}
+    onClick={(e) => {
+            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                const menu = e.currentTarget.querySelector(`.${styles['dropdown-menu']}`);
+                if (menu && menu.contains(e.target)) return;
+                e.stopPropagation();
+                handleCategoryTap('CHILDREN');
+            }
+    }}
+>
+    <button onClick={() => handleCategoryTap('CHILDREN')} className={styles.categoryButton}>CHILDREN</button>
 <div className={styles['dropdown-menu']}>
     {isAdmin && (
         <div style={{ position: 'absolute', right: 12, top: 8 }}>

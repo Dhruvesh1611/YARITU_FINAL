@@ -116,13 +116,10 @@
   transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-/* Hover behavior: only activate dropdown open on hover for containers that do NOT have .noHover */
-.category-button-container:not(.noHover):hover .dropdown-menu {
-  display: flex;
-  opacity: 1;
-  margin-left: 20px;
-  visibility: visible;
-}
+/* NOTE: hover-trigger for dropdown-menu is intentionally scoped to desktop only.
+   The desktop :hover rule is placed inside the @media (min-width: 769px) block
+   further below. Removing the global hover rule prevents mobile browsers from
+   triggering the dropdown via :hover. */
 
 /* 💡 GLOBAL CSS REMOVED: Desktop hover 'bridge' was moved to min-width: 769px. */
 
@@ -593,6 +590,13 @@
     transform: none !important; /* Forcefully remove button elevation on hover */
     box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3) !important; /* Default shadow rakhein */
     background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important; /* Default background rakhein */
+  }
+
+  /* Extra safety: disable dropdown display triggered by :hover on small devices */
+  .category-button-container:not(.noHover):hover .dropdown-menu {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 
 

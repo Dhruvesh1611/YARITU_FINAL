@@ -18,6 +18,12 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
         }
     }, [product.mainImage, product.mainImage2, product.image]);
 
+    // Ensure currentImage follows product prop updates (so edited images show immediately)
+    useEffect(() => {
+        const firstImage = product.thumbnail || product.mainImage || product.image || '';
+        setCurrentImage(firstImage);
+    }, [product.thumbnail, product.mainImage, product.image, product._id, product.id]);
+
     let imageUrl = null;
     if (typeof currentImage === 'string' && currentImage.length > 0) {
         imageUrl = currentImage;
