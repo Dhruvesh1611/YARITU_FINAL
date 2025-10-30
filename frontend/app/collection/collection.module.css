@@ -389,7 +389,7 @@
 }
 
 .card-info {
-  padding: 24px 12px;
+  padding: 24px 12px 0px 0px;
   font-size: 16px;
   line-height: 1.5;
 }
@@ -397,7 +397,7 @@
 /* Collection card title and description styling */
 .card-title {
   font-weight: 700; /* bold */
-  color: #c5a46d; /* gold-ish */
+  color: #000000; /* gold-ish */
   margin: 0 0 8px 0;
   font-size: 17px;
   text-transform: none;
