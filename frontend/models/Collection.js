@@ -12,6 +12,7 @@ const CollectionSchema = new mongoose.Schema({
   mainImage2: { type: String },
   otherImages: { type: [String], default: [] },
   price: { type: Number },
+  mrp: { type: Number },
   discountedPrice: { type: Number },
   status: { type: String, enum: ['Available','Out of Stock','Available for Rent'], default: 'Available' },
   isFeatured: { type: Boolean, default: false },

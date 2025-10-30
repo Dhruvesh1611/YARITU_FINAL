@@ -54,8 +54,9 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     occasion: (initial?.occasion || '').toString().toUpperCase(),
   collectionGroup: (initial?.collectionGroup || '').toString().toUpperCase(),
     collectionType: (initial?.collectionType || '').toString().toUpperCase(),
-    price: initial?.price || '',
-    discountedPrice: initial?.discountedPrice || '',
+  price: initial?.price || '',
+  discountedPrice: initial?.discountedPrice || '',
+  mrp: initial?.mrp || '',
     status: initial?.status || 'Available',
     isFeatured: !!initial?.isFeatured,
     tags: (initial?.tags || []).join(', '),
@@ -105,7 +106,17 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
 
   // --- Effects ---
   // Reset dependent fields when category changes
+  // Only reset dependent fields when the category actually changes after mount.
+  // Previously this effect ran on mount and cleared occasion/collectionType for edits.
+  const prevCategoryRef = useRef(state.category);
   useEffect(() => {
+    // If the category is the same as the previous value (mount), do nothing.
+    if (prevCategoryRef.current === state.category) {
+      prevCategoryRef.current = state.category;
+      return;
+    }
+    // Category changed -> reset dependent fields
+    prevCategoryRef.current = state.category;
     dispatch({ type: 'RESET_DEPENDENT_FIELDS' });
   }, [state.category]);
 
@@ -179,20 +190,46 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   };
 
   const handleOtherImagesChange = (event) => {
-    const files = Array.from(event.target.files);
+    const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    const newFiles = [...otherImagesFiles, ...files].slice(0, 5);
-    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+    // Validate file sizes and limit to 5 total images
+    const filteredFiles = [];
+    let tooLarge = false;
+    for (const f of files) {
+      if (f.size > 5 * 1024 * 1024) { // 5MB per file
+        tooLarge = true;
+        continue; // skip too large files
+      }
+      if (f instanceof File) filteredFiles.push(f);
+    }
 
-    // Clean up old blob URLs
-    otherImagesPreview.forEach(p => {
-        if (p.startsWith('blob:')) {
-          URL.revokeObjectURL(p);
-        }
-    });
+    if (tooLarge) {
+      setErrors(prev => ({ ...prev, otherImages: 'One or more images exceed 5MB and were skipped.' }));
+    } else if (errors.otherImages) {
+      setErrors(prev => ({ ...prev, otherImages: null }));
+    }
 
-    setOtherImagesFiles(newFiles);
+    // Combine with existing files but keep only File objects and limit to 5
+    const combinedFiles = [...otherImagesFiles, ...filteredFiles].filter(f => f instanceof File).slice(0, 5);
+
+    // Build previews: keep existing non-blob previews (likely urls) and add blob URLs for File objects
+    const existingUrlPreviews = otherImagesPreview.filter(p => typeof p === 'string' && !p.startsWith('blob:'));
+    // Revoke old blob previews to avoid leaks
+    otherImagesPreview.forEach(p => { if (p && p.startsWith('blob:')) { try { URL.revokeObjectURL(p); } catch (e) {} } });
+
+    const filePreviews = combinedFiles.map(file => {
+      try {
+        return URL.createObjectURL(file);
+      } catch (e) {
+        console.error('Failed to create preview for file', e);
+        return null;
+      }
+    }).filter(Boolean);
+
+    const newPreviews = [...existingUrlPreviews, ...filePreviews].slice(0, 5);
+
+    setOtherImagesFiles(combinedFiles);
     setOtherImagesPreview(newPreviews);
   };
 
@@ -279,15 +316,21 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
       formData.append('mainImage2Url', existingMainImage2);
     }
 
+    // Append any new File objects for other images
     if (otherImagesFiles.length > 0) {
-        otherImagesFiles.forEach(file => {
-            formData.append('otherImages', file);
-        });
-    } else if (Array.isArray(existingOtherImages) && existingOtherImages.length) {
-        existingOtherImages.forEach(imgUrl => {
-            formData.append('otherImagesUrls[]', imgUrl);
-        })
+      otherImagesFiles.forEach(file => {
+        if (file instanceof File) {
+          formData.append('otherImages', file);
+        }
+      });
     }
+
+    // Append remaining existing image URLs (non-blob previews) so removed images are not re-sent.
+    // We derive these from `otherImagesPreview` which is kept in sync when removing images.
+    const existingUrlPreviews = (otherImagesPreview || []).filter(p => typeof p === 'string' && !p.startsWith('blob:'));
+    existingUrlPreviews.forEach(imgUrl => {
+      formData.append('otherImagesUrls[]', imgUrl);
+    });
     
     try {
       const url = isEditMode ? `/api/collections/${initial._id}` : '/api/collections';
@@ -440,6 +483,13 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
               <div className="form-group">
                 <label htmlFor="discountedPrice">Discounted Price</label>
                 <input type="number" id="discountedPrice" name="discountedPrice" value={state.discountedPrice} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="mrp">MRP (Market Retail Price)</label>
+                <input type="number" id="mrp" name="mrp" value={state.mrp} onChange={handleChange} />
               </div>
             </div>
 

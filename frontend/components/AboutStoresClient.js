@@ -98,7 +98,10 @@ export default function AboutStoresClient() {
                 ) : null}
                 {phone ? (
                   <p className={styles.phone}>
-                    <a href={telHref ? `tel:${telHref}` : `tel:${phone}`} aria-label={`Call ${name}`}>{phone}</a>
+                    <a href={telHref ? `tel:${telHref}` : `tel:${phone}`} aria-label={`Call ${name}`}>
+                      <span className={styles.phoneIcon} aria-hidden="true">📞</span>
+                      <span className={styles.phoneText}>{phone}</span>
+                    </a>
                   </p>
                 ) : null}
                 <a href={mapHref} target="_blank" rel="noopener noreferrer" className={styles.storeButton}>Get Directions</a>

@@ -127,6 +127,15 @@ const ProductModal = ({ product, onClose }) => {
                 ) : null
               )}
             </div>
+            {/* Show MRP in the detailed modal view */}
+            {product.mrp ? (
+              <div className="mrp-modal">MRP: ₹{Number(product.mrp).toLocaleString()} {(() => {
+                const n = Number(product.mrp);
+                if (isNaN(n)) return '';
+                if (Math.abs(n) >= 1000) return `(${(n/1000).toFixed(1)}K)`;
+                return '';
+              })()}</div>
+            ) : null}
             <button className="rent-now-button" onClick={() => {
               // Build WhatsApp message without exposing internal product IDs
               const msg = `Hi, I'm interested in renting "${product.title || product.name}"` +

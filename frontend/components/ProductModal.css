@@ -177,6 +177,13 @@
   text-decoration: line-through;
 }
 
+/* MRP shown in modal (smaller, muted) */
+.mrp-modal {
+  font-size: 0.95rem;
+  color: var(--pm-text-light);
+  margin-bottom: 16px;
+}
+
 .rent-now-button, .enquire-button {
   font-family: var(--pm-font-body);
   width: 100%;

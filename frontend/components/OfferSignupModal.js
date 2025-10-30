@@ -89,7 +89,7 @@ export default function OfferSignupModal({ openAfter = 5000 }) {
           {/* Left brand image fills the whole left panel */}
           <div className="offer-modal-brand-img">
             <Image
-              src="/images/hero3.png"
+              src="/images/offer_card.png"
               alt="Yaritu brand"
               fill
               sizes="(max-width: 880px) 100vw, 50vw"

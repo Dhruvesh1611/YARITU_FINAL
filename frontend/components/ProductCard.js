@@ -72,6 +72,34 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
             </div>
             <div className={styles['card-info']}>
                 <p className={styles['card-title']}>{title}</p>
+                {/* Price display: show discountedPrice if present and lower than price, otherwise show price */}
+                {/* Price display: show current price with 'rent' label and MRP underneath if present */}
+                {(() => {
+                    // Determine displayed prices
+                    const hasDiscount = product.discountedPrice && Number(product.discountedPrice) > 0 && product.price && Number(product.discountedPrice) < Number(product.price);
+                    const currentPrice = hasDiscount ? Number(product.discountedPrice) : (product.price ? Number(product.price) : null);
+
+                    // If nothing to show but MRP exists, we'll still render the price container with MRP
+                    const shouldRender = currentPrice !== null || product.mrp;
+                    if (!shouldRender) return null;
+
+                    return (
+                        <div className={styles['price-container']}>
+                            <span className={styles['rent-label']}>Rent :</span>
+                            {currentPrice !== null ? (
+                                <span className={styles['current-price']}>₹{currentPrice.toLocaleString()}</span>
+                            ) : (
+                                <span className={styles['current-price']}>—</span>
+                            )}
+
+                            {/* Original price intentionally hidden on grid; shown only in detailed modal */}
+
+                            {product.mrp ? (
+                                <span className={styles['mrp-inline']}>({formatMrp(product.mrp)} MRP)</span>
+                            ) : null}
+                        </div>
+                    );
+                })()}
                 {showDescription && description ? <p className={styles['card-description']}>{description}</p> : null}
                 {isAdmin && (
                     <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
@@ -82,6 +110,19 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
             </div>
         </article>
     );
+}
+
+// small helper to format MRP as '39.0K' when large, else show full rupee format
+function formatMrp(value) {
+    if (!value && value !== 0) return '';
+    const n = Number(value);
+    if (isNaN(n)) return value;
+    if (Math.abs(n) >= 1000) {
+        // show one decimal place in thousands (e.g., 39000 => 39.0K)
+        const k = (n / 1000);
+        return `${k.toFixed(1)}K`;
+    }
+    return `₹${n.toLocaleString()}`;
 }
 
 // No document-side effects: spinner uses inline SVG animation so server-rendering is safe.

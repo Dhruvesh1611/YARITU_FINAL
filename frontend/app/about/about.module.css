@@ -251,6 +251,37 @@
   color: var(--color-primary);
   margin: 0 0 24px;
 }
+/* Phone link: align icon and text */
+.phone a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit; /* keep the .phone color */
+  text-decoration: none;
+}
+.phone a:hover {
+  text-decoration: underline;
+}
+.phoneIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Match the offer page phone color (gold) so the emoji icon looks the same */
+  color: #c5a46d;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  font-size: 18px; /* ensure emoji scales correctly */
+  line-height: 1;
+}
+.phoneIcon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.phoneText {
+  display: inline-block;
+}
 .storeButton {
   background-color: #25384d;
   color: #ffffff;
