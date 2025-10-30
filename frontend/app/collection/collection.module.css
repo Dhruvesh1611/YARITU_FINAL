@@ -424,8 +424,8 @@
 .current-price {
   font-weight: 700;
   font-size: 16px;
-  /* Use a warm gold accent to stand out from black text and match the modal theme */
-  color: #c5a46d; /* gold */
+  /* Use dark blue for the rent amount per request */
+  color: #0b3d91; /* dark blue */
   -webkit-font-smoothing: antialiased;
 }
 
