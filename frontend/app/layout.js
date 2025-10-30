@@ -1,6 +1,7 @@
 // app/layout.js
 
 import { Poppins, Playfair_Display, Poiret_One, Cinzel, Source_Serif_4 } from 'next/font/google';
+import { Suspense } from 'react';
 import Header from '../components/Header'; // <-- Dekhein, ab hum original Header.js use kar rahe hain
 import Footer from '../components/Footer';
 import Providers from '../components/Providers'; // <-- Naya Providers component import kiya
@@ -59,8 +60,12 @@ gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false${proc
             placeholder="Type your message..."
           />
 
-          {/* Analytics client component sends page_view events on navigation */}
-          <Analytics />
+          {/* Analytics client component sends page_view events on navigation
+              Wrap in Suspense to avoid CSR-bailout errors during prerendering (Next.js requirement).
+          */}
+          <Suspense fallback={null}>
+            <Analytics />
+          </Suspense>
         </Providers>
       </body>
     </html>
