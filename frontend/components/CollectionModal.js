@@ -103,7 +103,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   async function uploadToCloudinary(file) {
     try {
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+      const uploadPreset = process.env.NEXT_PUBLIC_UNSIGNED_UPLOAD_PRESET;
       if (!cloudName || !uploadPreset) throw new Error('Cloudinary not configured (set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET)');
       const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
       const fd = new FormData();
