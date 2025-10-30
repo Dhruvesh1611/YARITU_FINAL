@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import styles from '../app/collection/collection.module.css';
 
-export default function ProductCard({ product, isAdmin, onProductClick, onEdit, onDelete }) {
+export default function ProductCard({ product, isAdmin, onProductClick, onEdit, onDelete, showDescription = true }) {
     const [currentImage, setCurrentImage] = useState(product.thumbnail || product.mainImage || product.image);
 
     useEffect(() => {
@@ -72,7 +72,7 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
             </div>
             <div className={styles['card-info']}>
                 <p className={styles['card-title']}>{title}</p>
-                {description ? <p className={styles['card-description']}>{description}</p> : null}
+                {showDescription && description ? <p className={styles['card-description']}>{description}</p> : null}
                 {isAdmin && (
                     <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
                         <button onClick={() => onEdit(product)} style={{ padding: '6px 8px' }}>Edit</button>

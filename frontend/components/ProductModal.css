@@ -76,7 +76,6 @@
 
 .main-image-container {
   width: 100%;
-  aspect-ratio: 1 / 1.1;
   border-radius: 6px;
   overflow: hidden;
   background-color: #f0f0f0;
@@ -86,6 +85,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Show the top of the image in the modal so the subject isn't clipped at the top */
+  object-position: top center;
   transition: transform 0.3s ease;
 }
 .main-image-container:hover .main-image {

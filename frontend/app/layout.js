@@ -4,6 +4,8 @@ import { Poppins, Playfair_Display, Poiret_One, Cinzel, Source_Serif_4 } from 'n
 import Header from '../components/Header'; // <-- Dekhein, ab hum original Header.js use kar rahe hain
 import Footer from '../components/Footer';
 import Providers from '../components/Providers'; // <-- Naya Providers component import kiya
+import Script from 'next/script';
+import Analytics from '../components/Analytics';
 import './globals.css';
 import WhatsAppChat from '../components/WhatsAppChat';
 import { WHATSAPP_NUMBER } from '../lib/siteConfig';
@@ -27,6 +29,23 @@ export default function RootLayout({ children, session }) {
     <html lang="en" className={`${poppins.variable} ${playfair.variable} ${poiret.variable} ${cinzel.variable} ${sourceSerif4.variable}`}>
       <body>
         {/* Providers ab sirf {children} ko wrap kar rahe hain */}
+        {/* Google Analytics: set NEXT_PUBLIC_GA_ID in your environment to enable. */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);} 
+window.gtag = gtag;
+gtag('js', new Date());
+gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false${process.env.NEXT_PUBLIC_GA_DEBUG ? ', debug_mode: true' : ''} });`}
+            </Script>
+          </>
+        )}
+
         <Providers session={session}>
           <Header /> {/* <-- Header ab Providers ke bahar hai */}
           <main>
@@ -39,6 +58,9 @@ export default function RootLayout({ children, session }) {
             headerCaption="We'll reply shortly!"
             placeholder="Type your message..."
           />
+
+          {/* Analytics client component sends page_view events on navigation */}
+          <Analytics />
         </Providers>
       </body>
     </html>

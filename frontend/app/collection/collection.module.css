@@ -264,6 +264,15 @@
   margin-bottom: 22px;
 }
 
+/* Small count text shown under subtitle (e.g., "50 items") */
+.collection-count {
+  font-size: 14px;
+  color: #666;
+  margin-top: -6px; /* pull it closer to subtitle */
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
 /* =========================
    Store Filter Select (Jewellery Mode)
 ========================= */
@@ -390,7 +399,7 @@
   font-weight: 700; /* bold */
   color: #c5a46d; /* gold-ish */
   margin: 0 0 8px 0;
-  font-size: 16px;
+  font-size: 17px;
   text-transform: none;
 }
 

@@ -609,7 +609,21 @@ return (
 
         <h2 ref={collectionTitleRef} className={styles['collection-title']}>{jewelleryMode ? 'Jewellery Collection' : 'Royal Collection'}</h2>
 
-        <p className={styles['collection-subtitle']}>Explore our finest selection.</p>
+                <p className={styles['collection-subtitle']}>Explore our finest selection.</p>
+                {/* Count for current view */}
+                <p className={styles['collection-count']}>{(() => {
+                    // If in jewellery mode, show jewellery items count
+                    if (jewelleryMode) return `${jewelleryItems.length || 0} items`;
+                    // Otherwise show count for the active category (ALL or specific)
+                    const cat = (activeCategory || 'ALL').toString().toUpperCase();
+                    if (cat === 'ALL') return `${collections.length || 0} items`;
+                    // Count collections where category matches
+                    const cnt = (collections || []).filter(p => ((p.category || '').toString().toUpperCase() === cat)).length;
+                    return `${cnt} items`;
+                })()}</p>
+        {jewelleryMode && (
+            <p style={{ marginTop: -10, color: '#666', fontSize: 14, fontWeight: 700 }}>Only available in Ahmedabad ( Nikol, Gota ), Surat (Yogi Chowk ), Indore, Udaipur, Jaipur</p>
+        )}
     </>
 )}
 
@@ -621,15 +635,6 @@ return (
 
     {jewelleryMode && (
         <>
-            <select
-                value={selectedStoreFilter}
-                onChange={(e) => setSelectedStoreFilter(e.target.value)}
-                className={styles.storeFilterSelect}
-                style={{ marginRight: 8 }}
-            >
-                <option value="">All Stores</option>
-                {storesList.map(s => <option key={s._id || s.name} value={s.name}>{s.name}</option>)}
-            </select>
             {isAdmin && (
                 <button onClick={() => { setEditingCollection(null); setShowJewelleryModal(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Add New Jewellery</button>
             )}
@@ -643,6 +648,7 @@ return (
         key={item._id || item.id}
         product={item}
         isAdmin={isAdmin}
+        showDescription={false}
         onProductClick={handleProductClick}
         onEdit={(p) => {
             if (jewelleryMode) {

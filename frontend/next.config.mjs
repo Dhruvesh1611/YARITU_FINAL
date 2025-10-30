@@ -18,4 +18,18 @@ const nextConfig = {
     },
 };
 
-export default nextConfig;
+// Enable @next/bundle-analyzer when the ANALYZE env var is set to 'true'
+// This keeps the normal config untouched and only wraps it for analysis builds.
+let exported = nextConfig;
+try {
+    // dynamic import so this file still works if the package isn't installed
+    const bundleAnalyzerPkg = await import('@next/bundle-analyzer');
+    const bundleAnalyzer = bundleAnalyzerPkg.default || bundleAnalyzerPkg;
+    const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === 'true' });
+    exported = withBundleAnalyzer(nextConfig);
+} catch (e) {
+    // If bundle analyzer isn't installed or import fails, just export the base config.
+    // We intentionally swallow the error here because analysis is optional.
+}
+
+export default exported;
