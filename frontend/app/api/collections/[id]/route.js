@@ -39,7 +39,17 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const { fields, files } = await parseForm(request);
+    // Support JSON-based submissions where client uploads images to Cloudinary directly
+    const contentType = (request.headers.get('content-type') || '').toLowerCase();
+    let fields = {};
+    let files = {};
+    if (contentType.includes('application/json')) {
+      fields = await request.json();
+    } else {
+      const parsed = await parseForm(request);
+      fields = parsed.fields || {};
+      files = parsed.files || {};
+    }
 
     if (fields.newOptions && typeof fields.newOptions === 'object') {
       const entries = Object.entries(fields.newOptions);
@@ -51,41 +61,43 @@ export async function PUT(request, { params }) {
 
     const updateData = { ...fields, updatedAt: new Date() };
     
-    if (files.mainImage) {
-        const mainImageFile = files.mainImage;
-        const result = await processImage(mainImageFile);
-        if (result) {
-            updateData.mainImage = result.secure_url;
-        }
-    } else if (fields.imageUrl) {
-        updateData.mainImage = fields.imageUrl;
+  if (files.mainImage) {
+    const mainImageFile = files.mainImage;
+    const result = await processImage(mainImageFile);
+    if (result) {
+      updateData.mainImage = result.secure_url;
     }
+  } else if (fields.imageUrl) {
+    updateData.mainImage = fields.imageUrl;
+  }
 
-    if (files.mainImage2) {
-        const mainImage2File = files.mainImage2;
-        const result = await processImage(mainImage2File);
-        if (result) {
-            updateData.mainImage2 = result.secure_url;
-        }
-    } else if (fields.mainImage2Url) {
-        updateData.mainImage2 = fields.mainImage2Url;
+  if (files.mainImage2) {
+    const mainImage2File = files.mainImage2;
+    const result = await processImage(mainImage2File);
+    if (result) {
+      updateData.mainImage2 = result.secure_url;
     }
+  } else if (fields.mainImage2Url) {
+    updateData.mainImage2 = fields.mainImage2Url;
+  }
 
-    let otherImageUrls = [];
-    if (fields['otherImagesUrls[]']) {
-        otherImageUrls = Array.isArray(fields['otherImagesUrls[]']) ? fields['otherImagesUrls[]'] : [fields['otherImagesUrls[]']];
-    }
+  let otherImageUrls = [];
+  if (fields['otherImages'] && Array.isArray(fields['otherImages'])) {
+    otherImageUrls = fields['otherImages'];
+  } else if (fields['otherImagesUrls[]']) {
+    otherImageUrls = Array.isArray(fields['otherImagesUrls[]']) ? fields['otherImagesUrls[]'] : [fields['otherImagesUrls[]']];
+  }
 
-    if (files.otherImages) {
-        const otherImageFiles = Array.isArray(files.otherImages) ? files.otherImages : [files.otherImages];
-        for (const file of otherImageFiles) {
-            const result = await processImage(file);
-            if (result) {
-                otherImageUrls.push(result.secure_url);
-            }
-        }
+  if (files.otherImages) {
+    const otherImageFiles = Array.isArray(files.otherImages) ? files.otherImages : [files.otherImages];
+    for (const file of otherImageFiles) {
+      const result = await processImage(file);
+      if (result) {
+        otherImageUrls.push(result.secure_url);
+      }
     }
-    updateData.otherImages = otherImageUrls;
+  }
+  updateData.otherImages = otherImageUrls;
 
     await dbConnect();
     const updated = await Collection.findByIdAndUpdate(id, updateData, { new: true });

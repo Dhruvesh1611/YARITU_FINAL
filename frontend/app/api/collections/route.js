@@ -33,7 +33,17 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const { fields, files } = await parseForm(request);
+      // Support JSON-based submissions (front-end uploads images directly to Cloudinary and sends URLs)
+      const contentType = (request.headers.get('content-type') || '').toLowerCase();
+      let fields = {};
+      let files = {};
+      if (contentType.includes('application/json')) {
+        fields = await request.json();
+      } else {
+        const parsed = await parseForm(request);
+        fields = parsed.fields || {};
+        files = parsed.files || {};
+      }
     
     // Meta options ko collect karne ka logic (yeh sahi hai)
     const collectNewOptions = async () => {

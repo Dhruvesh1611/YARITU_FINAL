@@ -69,11 +69,14 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   const existingOtherImages = initial?.otherImages || initial?.otherImageUrls || initial?.otherImageUrls || [];
 
   const [mainImagePreview, setMainImagePreview] = useState(existingMainImage || '');
+  // When using direct-to-Cloudinary uploads we'll store the uploaded URL here.
   const [mainImageFile, setMainImageFile] = useState(null);
   const [mainImage2Preview, setMainImage2Preview] = useState(existingMainImage2 || '');
   const [mainImage2File, setMainImage2File] = useState(null);
+  // otherImagesPreview will now hold uploaded image URLs (or existing URLs)
   const [otherImagesPreview, setOtherImagesPreview] = useState(Array.isArray(existingOtherImages) ? existingOtherImages : []);
-  const [otherImagesFiles, setOtherImagesFiles] = useState([]);
+  // track uploading state for other images
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
@@ -83,26 +86,41 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
 
   const handleRemoveOtherImage = (index) => {
     const newPreviews = [...otherImagesPreview];
-    const newFiles = [...otherImagesFiles];
-
-    // Revoke blob URL if it exists
+    // Revoke blob URL if it exists (safety) then remove the URL from preview list
     const removedPreview = newPreviews[index];
-    if (removedPreview.startsWith('blob:')) {
+    try {
+      if (removedPreview && removedPreview.startsWith && removedPreview.startsWith('blob:')) {
         URL.revokeObjectURL(removedPreview);
+      }
+    } catch (e) {
+      // ignore
     }
-
     newPreviews.splice(index, 1);
-    
-    // This is a simplification. If you need to map previews to files, a more complex state shape is needed
-    // For now, we assume the file is at the same index if it was just added.
-    // A more robust solution would be to store an array of objects like { preview, file }
-    if (index < newFiles.length) {
-        newFiles.splice(index, 1);
-    }
-
     setOtherImagesPreview(newPreviews);
-    setOtherImagesFiles(newFiles);
   };
+
+  // Upload helper: unsigned Cloudinary upload using client-side preset
+  async function uploadToCloudinary(file) {
+    try {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+      if (!cloudName || !uploadPreset) throw new Error('Cloudinary not configured (set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET)');
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', uploadPreset);
+      const res = await fetch(url, { method: 'POST', body: fd });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Cloudinary upload failed');
+      }
+      const json = await res.json();
+      return json.secure_url || json.url || null;
+    } catch (err) {
+      console.error('uploadToCloudinary error', err);
+      throw err;
+    }
+  }
 
   // --- Effects ---
   // Reset dependent fields when category changes
@@ -161,10 +179,16 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
 
     setMainImageFile(file);
-    if (mainImagePreview.startsWith('blob:')) {
-      URL.revokeObjectURL(mainImagePreview);
-    }
-    setMainImagePreview(URL.createObjectURL(file));
+    // upload immediately to Cloudinary using unsigned preset
+    uploadToCloudinary(file).then(url => {
+      if (url) {
+        setMainImagePreview(url);
+        setErrors(prev => ({ ...prev, mainImage: null }));
+      }
+    }).catch(err => {
+      console.error('Main image upload failed', err);
+      setErrors(prev => ({ ...prev, mainImage: 'Failed to upload image. Please try again.' }));
+    });
     if (errors.mainImage) {
       setErrors(prev => ({ ...prev, mainImage: null }));
     }
@@ -180,10 +204,15 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
 
     setMainImage2File(file);
-    if (mainImage2Preview.startsWith('blob:')) {
-      URL.revokeObjectURL(mainImage2Preview);
-    }
-    setMainImage2Preview(URL.createObjectURL(file));
+    uploadToCloudinary(file).then(url => {
+      if (url) {
+        setMainImage2Preview(url);
+        setErrors(prev => ({ ...prev, mainImage2: null }));
+      }
+    }).catch(err => {
+      console.error('Main image2 upload failed', err);
+      setErrors(prev => ({ ...prev, mainImage2: 'Failed to upload image. Please try again.' }));
+    });
     if (errors.mainImage2) {
       setErrors(prev => ({ ...prev, mainImage2: null }));
     }
@@ -210,27 +239,19 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
       setErrors(prev => ({ ...prev, otherImages: null }));
     }
 
-    // Combine with existing files but keep only File objects and limit to 5
-    const combinedFiles = [...otherImagesFiles, ...filteredFiles].filter(f => f instanceof File).slice(0, 5);
+    // We'll upload selected files to Cloudinary immediately and keep their URLs in otherImagesPreview
+    const allowedCount = Math.max(0, 5 - otherImagesPreview.length);
+    const toUpload = filteredFiles.slice(0, allowedCount);
+    if (toUpload.length === 0) return;
 
-    // Build previews: keep existing non-blob previews (likely urls) and add blob URLs for File objects
-    const existingUrlPreviews = otherImagesPreview.filter(p => typeof p === 'string' && !p.startsWith('blob:'));
-    // Revoke old blob previews to avoid leaks
-    otherImagesPreview.forEach(p => { if (p && p.startsWith('blob:')) { try { URL.revokeObjectURL(p); } catch (e) {} } });
-
-    const filePreviews = combinedFiles.map(file => {
-      try {
-        return URL.createObjectURL(file);
-      } catch (e) {
-        console.error('Failed to create preview for file', e);
-        return null;
-      }
-    }).filter(Boolean);
-
-    const newPreviews = [...existingUrlPreviews, ...filePreviews].slice(0, 5);
-
-    setOtherImagesFiles(combinedFiles);
-    setOtherImagesPreview(newPreviews);
+    setUploadingImages(true);
+    Promise.all(toUpload.map(f => uploadToCloudinary(f).catch(e => { console.error('upload failed', e); return null; })))
+      .then(urls => {
+        const successful = (urls || []).filter(Boolean);
+        const combined = [...otherImagesPreview, ...successful].slice(0, 5);
+        setOtherImagesPreview(combined);
+      })
+      .finally(() => setUploadingImages(false));
   };
 
   const validateForm = () => {
@@ -285,59 +306,39 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     if (!validateForm()) return;
 
     setLoading(true);
-    const formData = new FormData();
+    // Build JSON payload sending image URLs (we've uploaded images directly to Cloudinary)
+    const payload = {};
+    Object.keys(state).forEach(key => { payload[key] = state[key]; });
 
-    // Append all fields from state
-    Object.keys(state).forEach(key => {
-        // We handle 'other' fields separately
-        if (key !== 'otherOccasion' && key !== 'otherCollectionType') {
-            formData.append(key, state[key]);
-        }
-    });
-
-    // Final normalized values
     const finalOccasion = (state.occasion || '').toString().toUpperCase();
-    formData.set('occasion', finalOccasion);
+    payload.occasion = finalOccasion;
 
     const finalCollectionType = (state.collectionType || '').toString().toUpperCase();
-    formData.set('collectionType', finalCollectionType);
+    payload.collectionType = finalCollectionType;
 
-    // Append image file if it's new
-    if (mainImageFile) {
-      formData.append('mainImage', mainImageFile);
-    } else if (existingMainImage) {
-      // Keep old image URL so the server can reuse it
-      formData.append('imageUrl', existingMainImage);
-    }
+    // Map main images: prefer preview (uploaded URL) or existing URL
+    const mainImageUrlToSend = mainImagePreview || existingMainImage || '';
+    const mainImage2UrlToSend = mainImage2Preview || existingMainImage2 || '';
+    payload.imageUrl = mainImageUrlToSend;
+    if (mainImage2UrlToSend) payload.mainImage2Url = mainImage2UrlToSend;
 
-    if (mainImage2File) {
-      formData.append('mainImage2', mainImage2File);
-    } else if (existingMainImage2) {
-      formData.append('mainImage2Url', existingMainImage2);
-    }
-
-    // Append any new File objects for other images
-    if (otherImagesFiles.length > 0) {
-      otherImagesFiles.forEach(file => {
-        if (file instanceof File) {
-          formData.append('otherImages', file);
-        }
-      });
-    }
-
-    // Append remaining existing image URLs (non-blob previews) so removed images are not re-sent.
-    // We derive these from `otherImagesPreview` which is kept in sync when removing images.
-    const existingUrlPreviews = (otherImagesPreview || []).filter(p => typeof p === 'string' && !p.startsWith('blob:'));
-    existingUrlPreviews.forEach(imgUrl => {
-      formData.append('otherImagesUrls[]', imgUrl);
-    });
+    // Other images: otherImagesPreview already contains uploaded or existing URLs
+    payload.otherImages = Array.isArray(otherImagesPreview) ? otherImagesPreview : [];
     
     try {
       const url = isEditMode ? `/api/collections/${initial._id}` : '/api/collections';
       const method = isEditMode ? 'PUT' : 'POST';
 
-      const res = await fetch(url, { method, body: formData });
-      const result = await res.json();
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
+      // handle non-JSON error responses gracefully (e.g., 413/html from hosting)
+      const text = await res.text();
+      let result;
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch (e) {
+        result = { success: false, error: text || res.statusText };
+      }
 
       if (res.ok && result.success) {
         // After saving, re-fetch meta-options so parent UI can refresh filter lists immediately
