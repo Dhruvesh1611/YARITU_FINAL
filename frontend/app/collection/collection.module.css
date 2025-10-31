@@ -377,15 +377,45 @@
   background-color: var(--secondary-bg);
   border: 1px solid var(--brand-accent);
   padding: 1px;
+  border: 1px solid #f3aa5c;
   width: 300px;
+}
+
+/* Image wrapper ensures the zoomed image is clipped to card bounds */
+.product-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 349px;
+  overflow: hidden; /* keep zoom contained */
+  border-radius: 6px;
 }
 
 .product-image {
   width: 100%;
-  height: 349px;
+  height: 100%;
   object-fit: cover;
   border: 1px solid #e1c28c;
   box-shadow: 0px 4px 4px 3px rgba(0, 0, 0, 0.16);
+  display: block;
+  /* transform origin and scale are driven by CSS variables set by JS for a cursor-follow zoom */
+  transform-origin: var(--ox, 50%) var(--oy, 50%);
+  transform: scale(var(--scale, 1));
+  transition: transform 360ms cubic-bezier(.2,.9,.2,1), filter 360ms ease;
+  will-change: transform;
+}
+
+/* Hover / focus effects: smoothly scale image while keeping it inside the card */
+.product-image-wrapper {
+  /* sensible defaults for the CSS variables */
+  --scale: 1;
+  --ox: 50%;
+  --oy: 50%;
+}
+
+.product-card:hover .product-image,
+.product-card:focus-within .product-image {
+  /* fallback for non-JS environments: raise scale via CSS variable */
+  --scale: 1.06;
 }
 
 .card-info {
@@ -543,7 +573,7 @@
   }
 
   .product-card { width: 100%; }
-  .product-image { height: 300px; }
+  .product-image-wrapper { height: 300px; }
 
   @media (max-width: 900px) {
     .product-grid.grid-view {
@@ -553,7 +583,7 @@
       padding: 0 15px;
     }
 
-    .product-image { height: 349px; }
+    .product-image-wrapper { height: 349px; }
   }
 }
 
@@ -737,7 +767,7 @@
 
   .product-card { width: 100%; }
 
-  .product-image {
+  .product-image-wrapper {
     height: auto;
     aspect-ratio: 3 / 4;
   }

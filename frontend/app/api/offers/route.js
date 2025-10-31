@@ -7,17 +7,11 @@ import OfferContent from '../../../models/OfferContent';
 export async function GET() {
   try {
     await dbConnect();
-    // fetch docs that have a position, sort by position
+    // Return all offer documents (so public users see offers tied to stores).
+    // Previously this endpoint returned a fixed 5-length array; returning the
+    // actual documents makes store-based filtering on the client reliable.
     const docs = await OfferContent.find({}).sort({ position: 1, createdAt: 1 }).lean();
-
-    // build fixed 5-length array
-    const result = Array.from({ length: 5 }).map((_, i) => {
-      const found = docs.find(d => Number(d.position) === i) || docs[i];
-      if (!found) return { id: null, position: i, heading: '', subheading: '', discount: '', validity: '', image: '', store: '' };
-      return { ...found, position: Number(found.position ?? i) };
-    });
-
-    return NextResponse.json({ success: true, data: result }, { status: 200 });
+    return NextResponse.json({ success: true, data: docs }, { status: 200 });
   } catch (error) {
     console.error('Error fetching offers from DB', error);
     return NextResponse.json({ success: false, error: 'Server Error' }, { status: 500 });

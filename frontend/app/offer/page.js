@@ -86,17 +86,34 @@ export default function Offer() {
   }, []);
 
   useEffect(() => {
-    const loadOffers = async () => {
+    // Only fetch offers from the public API. No local/static fallback.
+    const loadPublicOffers = async () => {
       try {
-        const res = await fetch('/api/admin/offers-content');
+        const res = await fetch('/api/offers');
         if (res.ok) {
-          const j = await res.json();
-          if (j.success && Array.isArray(j.data)) setOffersContent(j.data);
+          const j = await res.json().catch(() => null);
+          if (j?.success && Array.isArray(j.data)) setOffersContent(j.data);
         }
       } catch (e) { /* ignore */ }
     };
-    loadOffers();
-  }, []);
+    loadPublicOffers();
+  }, [session]);
+
+  // If the current session is an admin, fetch the admin offers content and prefer that
+  // (admin payload may contain extra fields useful for editing). This runs when session changes.
+  useEffect(() => {
+    const tryLoadAdminOffers = async () => {
+      if (!session || !session.user || session.user.role !== 'admin') return;
+      try {
+        const res = await fetch('/api/admin/offers-content');
+        if (res.ok) {
+          const j = await res.json().catch(() => null);
+          if (j?.success && Array.isArray(j.data)) setOffersContent(j.data);
+        }
+      } catch (e) { /* ignore */ }
+    };
+    tryLoadAdminOffers();
+  }, [session]);
 
   return (
     <>

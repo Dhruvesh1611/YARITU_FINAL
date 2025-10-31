@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import styles from '../app/collection/collection.module.css';
 
@@ -63,9 +63,52 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
     const description = product.description || '';
     const allImages = [product.mainImage, product.mainImage2, ...(product.otherImages || [])].filter(Boolean);
 
+    const wrapperRef = useRef(null);
+    const rafRef = useRef(null);
+    const supportsHover = useRef(true);
+
+    useEffect(() => {
+        // Detect if the device supports hover; disable the follow-cursor effect on touch devices
+        if (typeof window !== 'undefined' && window.matchMedia) {
+            supportsHover.current = window.matchMedia('(hover: hover)').matches;
+        }
+        return () => {
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        };
+    }, []);
+
+    const handleMouseMove = (e) => {
+        if (!supportsHover.current) return;
+        if (!wrapperRef.current) return;
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            wrapperRef.current.style.setProperty('--ox', `${Math.min(100, Math.max(0, x))}%`);
+            wrapperRef.current.style.setProperty('--oy', `${Math.min(100, Math.max(0, y))}%`);
+            wrapperRef.current.style.setProperty('--scale', '1.08');
+        });
+    };
+
+    const handleMouseLeave = () => {
+        if (!wrapperRef.current) return;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        wrapperRef.current.style.setProperty('--scale', '1');
+        wrapperRef.current.style.setProperty('--ox', '50%');
+        wrapperRef.current.style.setProperty('--oy', '50%');
+    };
+
+    const handleMouseEnter = (e) => {
+        if (!supportsHover.current) return;
+        if (!wrapperRef.current) return;
+        // ensure we start with a slightly increased scale
+        wrapperRef.current.style.setProperty('--scale', '1.06');
+    };
+
     return (
-        <article className={styles['product-card']}>
-            <div className={styles['product-image-wrapper']} style={{ position: 'relative' }}>
+        <article className={styles['product-card']} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') onProductClick && onProductClick({ ...product, image: imageUrl, name: title, images: allImages }); }} onClick={() => onProductClick && onProductClick({ ...product, image: imageUrl, name: title, images: allImages })}>
+            <div ref={wrapperRef} className={styles['product-image-wrapper']} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onMouseEnter={handleMouseEnter}>
                 {imageUrl ? (
                     <>
                         <Image
@@ -78,7 +121,7 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
                             // disabled in dev via next.config, so requesting a higher-quality Cloudinary
                             // variant ensures the thumbnail is crisp on high-DPR screens.
                             loading="lazy"
-                            onClick={() => onProductClick({ ...product, image: imageUrl, name: title, images: allImages })}
+                            // click is handled on the card so the entire card is clickable
                         />
                         {imagePending && (
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.35)' }}>

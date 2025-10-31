@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { WHATSAPP_NUMBER } from '../lib/siteConfig';
 import { openWhatsAppWithMessage } from '../utils/whatsapp';
@@ -29,6 +29,49 @@ const ProductModal = ({ product, onClose }) => {
   const finalGallery = galleryImages.length > 0 ? galleryImages : ['/placeholder.png'];
 
   const [activeImage, setActiveImage] = useState(finalGallery[0]);
+
+  // Refs and RAF for cursor-follow zoom on the main image
+  const mainWrapperRef = useRef(null);
+  const rafRef = useRef(null);
+  const supportsHover = useRef(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      supportsHover.current = window.matchMedia('(hover: hover)').matches;
+    }
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  const handleMainMouseMove = (e) => {
+    if (!supportsHover.current) return;
+    if (!mainWrapperRef.current) return;
+    const rect = mainWrapperRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      mainWrapperRef.current.style.setProperty('--ox', `${Math.min(100, Math.max(0, x))}%`);
+      mainWrapperRef.current.style.setProperty('--oy', `${Math.min(100, Math.max(0, y))}%`);
+      // stronger magnification for fine detail inspection
+      mainWrapperRef.current.style.setProperty('--scale', '3');
+    });
+  };
+
+  const handleMainMouseLeave = () => {
+    if (!mainWrapperRef.current) return;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    mainWrapperRef.current.style.setProperty('--scale', '1');
+    mainWrapperRef.current.style.setProperty('--ox', '50%');
+    mainWrapperRef.current.style.setProperty('--oy', '50%');
+  };
+
+  const handleMainMouseEnter = () => {
+    if (!supportsHover.current || !mainWrapperRef.current) return;
+    // initial hover scale before pointer movement
+    mainWrapperRef.current.style.setProperty('--scale', '2.2');
+  };
 
   // Effect to set active image and lock body scroll
   useEffect(() => {
@@ -73,8 +116,8 @@ const ProductModal = ({ product, onClose }) => {
         <button className="close-button" onClick={onClose}>&times;</button>
         
         <div className="product-modal-content">
-          <div className="image-gallery">
-            <div className="main-image-container">
+            <div className="image-gallery">
+            <div className="main-image-container" ref={mainWrapperRef} onMouseMove={handleMainMouseMove} onMouseLeave={handleMainMouseLeave} onMouseEnter={handleMainMouseEnter}>
               {activeImage && (
                 <Image
                   key={activeImage}

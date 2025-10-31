@@ -1,21 +1,3 @@
 [
-  {
-    "id": 1,
-    "heading": "LIFE",
-    "subheading": "",
-    "discount": "UP TO 60% OFF",
-    "validity": "",
-    "image": "https://res.cloudinary.com/dhpptrf0n/image/upload/v1761565317/YARITU/offers/blq1dgj1xkkx9ujrl3ki.png",
-    "category": ""
-  },
-  {
-    "id": 2
-  },
-  {
-    "id": 3,
-    "position": 2,
-    "category": "LIFE",
-    "discount": "UP TO 60% OFF",
-    "image": "https://res.cloudinary.com/dhpptrf0n/image/upload/v1761565974/YARITU/offers/p6f5yqllah9yocina6vm.jpg"
-  }
+  
 ]

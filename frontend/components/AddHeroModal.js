@@ -10,10 +10,20 @@ export default function AddHeroModal({ onClose, onAdd }) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState(null);
+  // debug state: store server response after creating a hero image
+  const [debugSaved, setDebugSaved] = useState(null);
 
   const handleUpload = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+
+    // Client-side size limit check (10 MB)
+    const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+    if (file.size > MAX_BYTES) {
+      setUploadError('Upload failed: the selected file is larger than the 10 MB limit. Please compress or resize the image to be under 10 MB and try again.');
+      setUploadProgress(0);
+      return;
+    }
 
     setUploading(true);
     setUploadProgress(0);
@@ -38,8 +48,7 @@ export default function AddHeroModal({ onClose, onAdd }) {
         const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
         const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET || process.env.CLOUDINARY_UNSIGNED_PRESET || 'yaritu_preset';
 
-        // If client-side env vars are not present (e.g., not exposed on Vercel build),
-        // fallback to server-side proxy endpoint which will use server env vars.
+        // If we don't have client env vars (e.g. not exposed), fallback to proxy (no fine-grained progress)
         if (!cloudName || !uploadPreset) {
           try {
             const proxyForm = new FormData();
@@ -69,24 +78,37 @@ export default function AddHeroModal({ onClose, onAdd }) {
         formData.append('upload_preset', uploadPreset);
         formData.append('folder', 'YARITU/hero');
 
-        // Use fetch for the upload. Note: fetch does not provide reliable upload progress in browsers.
-        const resp = await fetch(url, { method: 'POST', body: formData });
-        if (!resp.ok) {
-          // try to parse JSON error from Cloudinary
-          let errBody = null;
-          try { errBody = await resp.json(); } catch (e) { /* ignore */ }
-          const message = errBody?.error?.message || `Upload failed with status ${resp.status}`;
-          return reject(new Error(message));
-        }
+        // Use XHR so we can report upload progress back to the caller
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
 
-        const data = await resp.json().catch(() => null);
-        const secure = data?.secure_url || data?.secureUrl || data?.url;
-        if (!secure) return reject(new Error('Upload did not return a secure URL.'));
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && typeof onProgress === 'function') {
+            try {
+              onProgress(Math.round((event.loaded * 100) / event.total));
+            } catch (e) {}
+          }
+        };
 
-        // call progress callback once to indicate completion (keeps callers compatible)
-        try { if (typeof onProgress === 'function') onProgress(100); } catch (e) {}
+        xhr.onload = () => {
+          try {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const parsed = JSON.parse(xhr.responseText);
+              const secure = parsed?.secure_url || parsed?.secureUrl || parsed?.url;
+              if (!secure) return reject(new Error('Upload did not return a secure URL.'));
+              try { if (typeof onProgress === 'function') onProgress(100); } catch (e) {}
+              return resolve(secure);
+            }
+            let parsed = null;
+            try { parsed = JSON.parse(xhr.responseText); } catch (e) {}
+            return reject(new Error(parsed?.error?.message || `Upload failed with status ${xhr.status}`));
+          } catch (err) {
+            return reject(err);
+          }
+        };
 
-        resolve(secure);
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(formData);
       } catch (err) {
         reject(err);
       }
@@ -100,8 +122,11 @@ export default function AddHeroModal({ onClose, onAdd }) {
       const res = await fetch('/api/hero', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       if (!res.ok) throw new Error('Create failed');
       const json = await res.json().catch(() => null);
+      // expose the server response for debugging so admin can verify the saved imageUrl
+      setDebugSaved(json?.data || json || { success: true });
+      console.info('AddHeroModal - create response:', json);
       if (onAdd && json?.data) onAdd(json.data);
-      onClose();
+      // intentionally do NOT auto-close the modal so the admin can copy/verify the returned URL
     } catch (err) {
       console.error(err);
       alert('Create failed. Check console for details.');
@@ -174,6 +199,36 @@ export default function AddHeroModal({ onClose, onAdd }) {
                 {saving ? 'Adding...' : 'Add'}
               </button>
             </div>
+            {/* Debug panel shown after a successful create to help verify saved Cloudinary URL */}
+            {debugSaved && (
+              <div style={{ marginTop: 14, padding: 12, borderRadius: 8, background: '#f7f7f9', border: '1px solid #e6e6ea' }}>
+                <div style={{ fontSize: 13, marginBottom: 8, color: '#222', fontWeight: 600 }}>Saved hero item (debug)</div>
+                <div style={{ fontSize: 13, marginBottom: 8 }}>
+                  <div style={{ marginBottom: 6 }}><strong>imageUrl:</strong></div>
+                  <div style={{ wordBreak: 'break-all' }}>{debugSaved.imageUrl || debugSaved.image || debugSaved.url || JSON.stringify(debugSaved)}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const url = debugSaved.imageUrl || debugSaved.image || debugSaved.url || '';
+                        navigator.clipboard.writeText(url || JSON.stringify(debugSaved));
+                        alert('Copied to clipboard');
+                      } catch (e) {
+                        alert('Copy failed — check console');
+                      }
+                    }}
+                    style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}
+                  >
+                    Copy URL
+                  </button>
+                  <button type="button" onClick={() => { setDebugSaved(null); onClose(); }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #ccc', background: '#111', color: '#fff', cursor: 'pointer' }}>
+                    Done & Close
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         </div>
       </div>
@@ -230,6 +285,7 @@ export default function AddHeroModal({ onClose, onAdd }) {
         }
         .uploadButton.disabled { cursor: not-allowed; background-color: #e0e0e0; opacity: 0.7; }
         .uploadButton:not(.disabled):hover { background-color: #e0e0e0; }
+          /* uploadModeBadge removed — UI now validates file size client-side */
         .progressContainer {
             width: 100%; background-color: #e0e0e0; border-radius: 4px;
             margin-top: 12px; height: 20px; overflow: hidden;

@@ -377,9 +377,11 @@
 }
 .offer-page .offers-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    /* Fixed card width requested: 392px. Use auto-fit so multiple cards
+       fill rows but each card keeps the exact width. Left-align the grid. */
+    grid-template-columns: repeat(auto-fit, minmax(392px, 392px));
     gap: 32px;
-    justify-content: center;
+    justify-content: start; /* left-align cards inside the container */
     /* align items to the top so cards line up horizontally */
     align-items: start;
 }
@@ -841,9 +843,23 @@
 
 /* Offer local utilities */
 .offer-page .page-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 20px;
+        /* Narrow the page container so content remains centered and doesn't
+             span the full browser width like a stretched layout. Match admin width. */
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 20px;
+}
+
+/* Slightly increase container width on very large screens while keeping
+     the cards visually consistent */
+@media (min-width: 1400px) {
+    .offer-page .page-container { max-width: 1280px; }
+    /* On very narrow viewports that can't fit 392px, allow cards to become fluid */
+}
+
+/* Small screens: let cards shrink and become full-width on mobile */
+@media (max-width: 420px) {
+    .offer-page .offers-grid { grid-template-columns: 1fr; justify-content: start; }
 }
 .offer-page .section-padding {
     padding-top: 60px;

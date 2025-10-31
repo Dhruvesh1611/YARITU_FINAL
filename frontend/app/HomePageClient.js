@@ -80,7 +80,11 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
         const res = await fetch('/api/hero', { cache: 'no-store' });
         if (res.ok) {
           const j = await res.json().catch(() => null);
-          if (j?.success && Array.isArray(j.data) && mounted) setHeroItems(j.data);
+          if (j?.success && Array.isArray(j.data) && mounted) {
+            setHeroItems(j.data);
+            // debug log so we can inspect what was returned on deployed site
+            console.info('HomePageClient: fetched hero items', j.data);
+          }
         }
       } catch (err) {
         // ignore and show empty state
