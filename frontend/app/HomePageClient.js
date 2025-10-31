@@ -38,6 +38,7 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
   const [stores, setStores] = useState(initialStores || []);
   const [isStoresLoading, setIsStoresLoading] = useState(!(initialStores && initialStores.length > 0));
   const [heroItems, setHeroItems] = useState(initialHeroItems || []);
+  const [isHeroLoading, setIsHeroLoading] = useState(!(initialHeroItems && initialHeroItems.length > 0));
   const [trendingVideos, setTrendingVideos] = useState(initialTrendingVideos || []);
   const [isTrendingLoading, setIsTrendingLoading] = useState(true);
 
@@ -65,6 +66,32 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
   }, [trendingVideos, isTrendingLoading, isMobile]);
+
+  // Fetch hero items on the client if we didn't receive them from the server
+  useEffect(() => {
+    let mounted = true;
+    const loadHero = async () => {
+      if (initialHeroItems && initialHeroItems.length > 0) {
+        setIsHeroLoading(false);
+        return;
+      }
+      setIsHeroLoading(true);
+      try {
+        const res = await fetch('/api/hero', { cache: 'no-store' });
+        if (res.ok) {
+          const j = await res.json().catch(() => null);
+          if (j?.success && Array.isArray(j.data) && mounted) setHeroItems(j.data);
+        }
+      } catch (err) {
+        // ignore and show empty state
+      } finally {
+        if (mounted) setIsHeroLoading(false);
+      }
+    };
+
+    loadHero();
+    return () => { mounted = false; };
+  }, [initialHeroItems]);
 
   // derive filtered hero items based on visibility flag
   const filteredHeroItems = heroItems && heroItems.length > 0
