@@ -377,7 +377,7 @@
   background-color: var(--secondary-bg);
   border: 1px solid var(--brand-accent);
   padding: 1px;
-  border: 1px solid #f3aa5c;
+  /* border: 1px solid #f3aa5c; */
   width: 300px;
 }
 

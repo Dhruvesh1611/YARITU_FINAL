@@ -81,16 +81,30 @@
   background-color: #f0f0f0;
 }
 
+/* Cursor-follow zoom: use CSS variables for origin and scale. JS will update
+   --ox / --oy (percent) and --scale. Fallback :hover provides a simple zoom
+   for non-JS environments. */
+.main-image-container {
+  --scale: 1;
+  --ox: 50%;
+  --oy: 50%;
+}
+
 .main-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Show the top of the image in the modal so the subject isn't clipped at the top */
-  object-position: top center;
-  transition: transform 0.3s ease;
+  object-position: var(--ox, 50%) var(--oy, 50%);
+  transform-origin: var(--ox, 50%) var(--oy, 50%);
+  transform: scale(var(--scale, 1));
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1), object-position 220ms ease;
 }
-.main-image-container:hover .main-image {
-  transform: scale(1.05);
+
+/* Fallback hover for non-JS or touchless browsers */
+.main-image-container:hover .main-image,
+.main-image-container:focus-within .main-image {
+  /* fallback hover scale for non-JS environments */
+  --scale: 2.6;
 }
 
 .thumbnail-container {
