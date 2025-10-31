@@ -141,6 +141,32 @@ export async function POST(request) {
     // have a URL. This prevents saving empty strings or undefined which
     // trigger Mongoose `required` validation.
     const newCollectionData = { ...fields };
+    // Normalize 'occasion' so server accepts both string and array inputs.
+    // Frontend may send: ["HALDI","SANGEET"] or a single string or a JSON string.
+    if (fields.occasion !== undefined) {
+      let occ = fields.occasion;
+      // If it's a JSON string, parse it
+      if (typeof occ === 'string') {
+        try {
+          const parsed = JSON.parse(occ);
+          occ = parsed;
+        } catch (e) {
+          // not JSON — try to split comma-separated values
+          if (occ.includes(',')) {
+            occ = occ.split(',').map(s => s.trim()).filter(Boolean);
+          } else {
+            // single string value, keep as-is
+            occ = occ.trim();
+          }
+        }
+      }
+      // If it's an array ensure all values are trimmed strings
+      if (Array.isArray(occ)) {
+        newCollectionData.occasion = occ.map(v => (v && typeof v === 'string' ? v.trim() : v)).filter(Boolean);
+      } else if (typeof occ === 'string') {
+        newCollectionData.occasion = occ;
+      }
+    }
     if (imageUrl) newCollectionData.mainImage = imageUrl;
     if (imageUrl2) newCollectionData.mainImage2 = imageUrl2;
     if (otherImageUrls && otherImageUrls.length) newCollectionData.otherImages = otherImageUrls;

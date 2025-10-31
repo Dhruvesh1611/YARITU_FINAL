@@ -32,7 +32,8 @@ function formReducer(state, action) {
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
     case 'RESET_DEPENDENT_FIELDS':
-      return { ...state, occasion: '', collectionType: '', collectionGroup: '' };
+      // occasion is now an array when multiple selections are allowed
+      return { ...state, occasion: [], collectionType: '', collectionGroup: '' };
     case 'LOAD_INITIAL':
       return { ...action.payload };
     default:
@@ -51,7 +52,10 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     description: initial?.description || '',
     productId: initial?.productId || '',
     category: (initial?.category || 'MEN').toString().toUpperCase(),
-    occasion: (initial?.occasion || '').toString().toUpperCase(),
+    // `occasion` now supports multiple selections (array of UPPERCASE strings)
+    occasion: initial?.occasion ? (
+      Array.isArray(initial?.occasion) ? initial?.occasion.map(o => o.toString().toUpperCase()) : [initial?.occasion.toString().toUpperCase()]
+    ) : [],
   collectionGroup: (initial?.collectionGroup || '').toString().toUpperCase(),
     collectionType: (initial?.collectionType || '').toString().toUpperCase(),
   price: initial?.price || '',
@@ -77,6 +81,13 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   const [otherImagesPreview, setOtherImagesPreview] = useState(Array.isArray(existingOtherImages) ? existingOtherImages : []);
   // track uploading state for other images
   const [uploadingImages, setUploadingImages] = useState(false);
+  // Track upload progress and uploading state for main/main2/other images
+  const [mainImageUploading, setMainImageUploading] = useState(false);
+  const [mainImageUploadProgress, setMainImageUploadProgress] = useState(0);
+  const [mainImage2Uploading, setMainImage2Uploading] = useState(false);
+  const [mainImage2UploadProgress, setMainImage2UploadProgress] = useState(0);
+  // Array of progress numbers for currently uploading other images
+  const [otherUploadsProgress, setOtherUploadsProgress] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
@@ -100,26 +111,42 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   };
 
   // Upload helper: unsigned Cloudinary upload using client-side preset
-  async function uploadToCloudinary(file) {
-    try {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-      if (!cloudName || !uploadPreset) throw new Error('Cloudinary not configured (set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET)');
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('upload_preset', uploadPreset);
-      const res = await fetch(url, { method: 'POST', body: fd });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Cloudinary upload failed');
+  // Accepts optional onProgress callback which receives a number 0-100
+  function uploadToCloudinary(file, onProgress) {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
+    if (!cloudName || !uploadPreset) return Promise.reject(new Error('Cloudinary not configured (set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET)'));
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+    return new Promise((resolve, reject) => {
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', uploadPreset);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          const pct = Math.round((e.loaded / e.total) * 100);
+          if (typeof onProgress === 'function') onProgress(pct);
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const json = JSON.parse(xhr.responseText);
+              resolve(json.secure_url || json.url || null);
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            reject(new Error(xhr.responseText || 'Upload failed'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.send(fd);
+      } catch (err) {
+        reject(err);
       }
-      const json = await res.json();
-      return json.secure_url || json.url || null;
-    } catch (err) {
-      console.error('uploadToCloudinary error', err);
-      throw err;
-    }
+    });
   }
 
   // --- Effects ---
@@ -169,6 +196,21 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
   };
 
+  // Toggle handler for multi-select occasion checkboxes
+  const handleOccasionToggle = (e) => {
+    const { value, checked } = e.target;
+    const cur = Array.isArray(state.occasion) ? [...state.occasion] : [];
+    const val = value.toString().toUpperCase();
+    if (checked) {
+      if (!cur.includes(val)) cur.push(val);
+    } else {
+      const idx = cur.indexOf(val);
+      if (idx !== -1) cur.splice(idx, 1);
+    }
+    dispatch({ type: 'SET_FIELD', field: 'occasion', value: cur });
+    if (errors.occasion) setErrors(prev => ({ ...prev, occasion: null }));
+  };
+
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -179,16 +221,24 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
 
     setMainImageFile(file);
-    // upload immediately to Cloudinary using unsigned preset
-    uploadToCloudinary(file).then(url => {
-      if (url) {
-        setMainImagePreview(url);
-        setErrors(prev => ({ ...prev, mainImage: null }));
-      }
-    }).catch(err => {
-      console.error('Main image upload failed', err);
-      setErrors(prev => ({ ...prev, mainImage: 'Failed to upload image. Please try again.' }));
-    });
+    // upload immediately to Cloudinary using unsigned preset with progress
+    setMainImageUploading(true);
+    setMainImageUploadProgress(0);
+    uploadToCloudinary(file, (pct) => setMainImageUploadProgress(pct))
+      .then(url => {
+        if (url) {
+          setMainImagePreview(url);
+          setErrors(prev => ({ ...prev, mainImage: null }));
+        }
+      })
+      .catch(err => {
+        console.error('Main image upload failed', err);
+        setErrors(prev => ({ ...prev, mainImage: 'Failed to upload image. Please try again.' }));
+      })
+      .finally(() => {
+        setMainImageUploading(false);
+        setMainImageUploadProgress(100);
+      });
     if (errors.mainImage) {
       setErrors(prev => ({ ...prev, mainImage: null }));
     }
@@ -204,15 +254,23 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
 
     setMainImage2File(file);
-    uploadToCloudinary(file).then(url => {
-      if (url) {
-        setMainImage2Preview(url);
-        setErrors(prev => ({ ...prev, mainImage2: null }));
-      }
-    }).catch(err => {
-      console.error('Main image2 upload failed', err);
-      setErrors(prev => ({ ...prev, mainImage2: 'Failed to upload image. Please try again.' }));
-    });
+    setMainImage2Uploading(true);
+    setMainImage2UploadProgress(0);
+    uploadToCloudinary(file, (pct) => setMainImage2UploadProgress(pct))
+      .then(url => {
+        if (url) {
+          setMainImage2Preview(url);
+          setErrors(prev => ({ ...prev, mainImage2: null }));
+        }
+      })
+      .catch(err => {
+        console.error('Main image2 upload failed', err);
+        setErrors(prev => ({ ...prev, mainImage2: 'Failed to upload image. Please try again.' }));
+      })
+      .finally(() => {
+        setMainImage2Uploading(false);
+        setMainImage2UploadProgress(100);
+      });
     if (errors.mainImage2) {
       setErrors(prev => ({ ...prev, mainImage2: null }));
     }
@@ -244,14 +302,41 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     const toUpload = filteredFiles.slice(0, allowedCount);
     if (toUpload.length === 0) return;
 
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
+    if (!cloudName || !uploadPreset) {
+      setErrors(prev => ({ ...prev, otherImages: 'Cloudinary not configured.' }));
+      return;
+    }
+
     setUploadingImages(true);
-    Promise.all(toUpload.map(f => uploadToCloudinary(f).catch(e => { console.error('upload failed', e); return null; })))
+    const baseIndex = otherImagesPreview.length;
+    // Initialize progress slots for the new uploads
+    setOtherUploadsProgress(prev => {
+      const copy = [...prev];
+      for (let i = 0; i < toUpload.length; i++) copy.push(0);
+      return copy;
+    });
+
+    const uploadPromises = toUpload.map((f, idx) => uploadToCloudinary(f, (pct) => {
+      setOtherUploadsProgress(prev => {
+        const copy = [...prev];
+        copy[baseIndex + idx] = pct;
+        return copy;
+      });
+    }).catch(e => { console.error('upload failed', e); return null; }));
+
+    Promise.all(uploadPromises)
       .then(urls => {
         const successful = (urls || []).filter(Boolean);
         const combined = [...otherImagesPreview, ...successful].slice(0, 5);
         setOtherImagesPreview(combined);
       })
-      .finally(() => setUploadingImages(false));
+      .finally(() => {
+        setUploadingImages(false);
+        // clear per-file progress after short delay
+        setTimeout(() => setOtherUploadsProgress([]), 500);
+      });
   };
 
   const validateForm = () => {
@@ -280,7 +365,8 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
         newErrors.collectionGroup = 'Please select a collection (BOYS or GIRLS).';
       }
     } else {
-      if (!state.occasion || !state.occasion.toString().trim()) {
+      const hasOccasion = Array.isArray(state.occasion) ? state.occasion.length > 0 : (state.occasion && state.occasion.toString().trim());
+      if (!hasOccasion) {
         missing.push('Occasion');
         newErrors.occasion = 'Occasion is required.';
       }
@@ -310,8 +396,14 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     const payload = {};
     Object.keys(state).forEach(key => { payload[key] = state[key]; });
 
-    const finalOccasion = (state.occasion || '').toString().toUpperCase();
-    payload.occasion = finalOccasion;
+    // Send occasion as array when multiple selected, or string when single
+    let payloadOccasion;
+    if (Array.isArray(state.occasion)) {
+      payloadOccasion = state.occasion.length === 1 ? state.occasion[0] : state.occasion;
+    } else {
+      payloadOccasion = state.occasion;
+    }
+    payload.occasion = payloadOccasion;
 
     const finalCollectionType = (state.collectionType || '').toString().toUpperCase();
     payload.collectionType = finalCollectionType;
@@ -440,15 +532,20 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
             {state.category !== 'CHILDREN' ? (
               <>
                 <div className="form-group">
-                    <label htmlFor="occasion">Occasion</label>
-                    <select id="occasion" name="occasion" value={state.occasion} onChange={handleChange}>
-                      <option value="">SELECT OCCASION</option>
-                      {/* If the current value isn't in the known list, show it so editors see the saved value */}
-                      {state.occasion && state.occasion !== '' && !categoryOptions.occasions.includes(state.occasion) && (
-                        <option key={state.occasion} value={state.occasion}>{state.occasion}</option>
-                      )}
-                      {categoryOptions.occasions.map(occ => <option key={occ} value={occ}>{occ}</option>)}
-                    </select>
+                    <label>Occasion (select one or more)</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                      {categoryOptions.occasions.map(occ => {
+                        const u = occ.toString().toUpperCase();
+                        const checked = Array.isArray(state.occasion) ? state.occasion.includes(u) : state.occasion === u;
+                        return (
+                          <label key={u} style={{ fontSize: 14 }}>
+                            <input type="checkbox" name="occasion" value={u} checked={checked} onChange={handleOccasionToggle} style={{ marginRight: 8 }} />
+                            {u}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {errors.occasion && <span className="error-text">{errors.occasion}</span>}
                 </div>
               </>
             ) : (
@@ -521,6 +618,15 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
                 )}
               </div>
               {errors.mainImage && <span className="error-text">{errors.mainImage}</span>}
+              {/* Main image progress bar */}
+              {(mainImageUploading || (mainImageUploadProgress > 0 && mainImageUploadProgress < 100)) && (
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ height: 8, background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ width: `${mainImageUploadProgress}%`, height: '100%', background: '#4caf50', transition: 'width 200ms' }} />
+                  </div>
+                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{mainImageUploadProgress}%</div>
+                </div>
+              )}
             </div>
             
             <div className="form-group">
@@ -531,6 +637,15 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
                             <img src={src} alt={`other preview ${i+1}`} />
                             <button type="button" onClick={() => handleRemoveOtherImage(i)} className="remove-image-btn">&times;</button>
                         </div>
+                    ))}
+                    {/* Progress bars for currently uploading other images */}
+                    {otherUploadsProgress.map((p, idx) => (
+                      <div key={`uploading-${idx}`} style={{ width: 120, marginRight: 8, display: 'inline-block' }}>
+                        <div style={{ height: 6, background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
+                          <div style={{ width: `${p}%`, height: '100%', background: '#2196f3', transition: 'width 200ms' }} />
+                        </div>
+                        <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>{p}%</div>
+                      </div>
                     ))}
                     {otherImagesPreview.length < 5 && (
                         <div className="image-uploader-small" onClick={() => otherFilesInputRef.current?.click()}>
@@ -543,7 +658,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
              {errors.form && <div className="error-box">{errors.form}</div>}
             <div className="modal-actions">
               <button type="button" onClick={onClose} className="btn btn-secondary" disabled={loading}>Cancel</button>
-              <button type="button" onClick={handleSave} className="btn btn-primary" disabled={loading}>
+              <button type="button" onClick={handleSave} className="btn btn-primary" disabled={loading || mainImageUploading || mainImage2Uploading || uploadingImages}>
                 {loading ? (
                     <span className="spinner"></span>
                 ) : (

@@ -76,7 +76,15 @@ useEffect(() => {
         const t = activeType.toUpperCase();
         products = products.filter(p => ((p.collectionType || p.type || '').toUpperCase() === t) || ((p.description||'').toUpperCase().includes(t)) || ((p.title||p.name||'').toUpperCase().includes(t)));
     } else if (activeOccasion) {
-        products = products.filter(p => (p.occasion || '').toUpperCase() === activeOccasion.toUpperCase());
+        const wanted = activeOccasion.toString().toUpperCase();
+        products = products.filter(p => {
+            const occ = p.occasion;
+            if (!occ) return false;
+            if (Array.isArray(occ)) {
+                return occ.some(o => (o || '').toString().toUpperCase() === wanted);
+            }
+            return (occ || '').toString().toUpperCase() === wanted;
+        });
     }
 
 setFilteredProducts(products);

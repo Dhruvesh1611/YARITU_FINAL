@@ -5,7 +5,9 @@ const CollectionSchema = new mongoose.Schema({
   description: { type: String },
   productId: { type: String, unique: true, required: true },
   category: { type: String, enum: ['Men','Women','Children'], required: true },
-  occasion: { type: String },
+  // Allow multiple occasions (array of strings). Previously this was a String
+  // which caused errors when the frontend sent multiple selections.
+  occasion: { type: [String] },
   collectionType: { type: String },
   childCategory: { type: String },
   mainImage: { type: String, required: true },
@@ -35,7 +37,17 @@ function toTitleCase(val) {
 
 CollectionSchema.pre('validate', function (next) {
   if (this.category) this.category = toTitleCase(this.category.trim());
-  if (this.occasion) this.occasion = toTitleCase(this.occasion.trim());
+  // Normalize occasion: support both string and array inputs. Convert all values
+  // to title case and trim whitespace.
+  if (this.occasion) {
+    if (Array.isArray(this.occasion)) {
+      this.occasion = this.occasion
+        .map(v => (v && typeof v === 'string' ? toTitleCase(v.trim()) : v))
+        .filter(Boolean);
+    } else if (typeof this.occasion === 'string') {
+      this.occasion = toTitleCase(this.occasion.trim());
+    }
+  }
   if (this.collectionType) this.collectionType = toTitleCase(this.collectionType.trim());
   if (this.childCategory) this.childCategory = toTitleCase(this.childCategory.trim());
   if (this.productId && typeof this.productId === 'string') this.productId = this.productId.trim();

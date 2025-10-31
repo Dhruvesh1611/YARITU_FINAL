@@ -31,6 +31,31 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
         imageUrl = currentImage.url;
     }
 
+    // If the image is hosted on Cloudinary, request a higher-quality
+    // delivery variant to avoid blurry thumbnails (especially on high-DPR displays).
+    const enhanceCloudinaryUrl = (url, preferredWidth = 800) => {
+        try {
+            if (!url || typeof url !== 'string') return url;
+            const cloudinaryHost = 'res.cloudinary.com';
+            const u = new URL(url);
+            if (!u.hostname.includes(cloudinaryHost)) return url;
+            // Insert quality/format/width transformation after '/upload/'
+            // Example: https://res.cloudinary.com/demo/image/upload/v123/...jpg
+            // becomes https://res.cloudinary.com/demo/image/upload/q_auto:best,f_auto,w_800/v123/...jpg
+            const parts = u.pathname.split('/upload/');
+            if (parts.length < 2) return url;
+            const before = parts[0];
+            const after = parts[1];
+            const transform = `q_auto:best,f_auto,w_${preferredWidth}`;
+            const newPath = `${before}/upload/${transform}/${after}`;
+            return `${u.protocol}//${u.host}${newPath}`;
+        } catch (e) {
+            return url;
+        }
+    };
+
+    const displayUrl = imageUrl ? enhanceCloudinaryUrl(imageUrl, 800) : null;
+
     const isPending = !!product.isPending;
     const imagePending = !!product.imagePending;
 
@@ -44,12 +69,14 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
                 {imageUrl ? (
                     <>
                         <Image
-                            src={imageUrl}
+                            src={displayUrl || imageUrl}
                             alt={title || 'Collection item'}
                             className={styles['product-image']}
                             width={300}
                             height={349}
-                            unoptimized={true}
+                            // we rely on Cloudinary-delivered image quality; keep Next's optimization
+                            // disabled in dev via next.config, so requesting a higher-quality Cloudinary
+                            // variant ensures the thumbnail is crisp on high-DPR screens.
                             loading="lazy"
                             onClick={() => onProductClick({ ...product, image: imageUrl, name: title, images: allImages })}
                         />

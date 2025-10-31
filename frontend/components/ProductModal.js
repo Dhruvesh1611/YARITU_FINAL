@@ -63,7 +63,8 @@ const ProductModal = ({ product, onClose }) => {
   if (!product) return null;
 
   // Infer jewellery vs collection: jewellery items usually have a 'store' and no category/type/occasion
-  const isJewellery = Boolean(product?.store) || (!product?.category && !product?.collectionType && !product?.occasion);
+  const hasOccasion = Array.isArray(product?.occasion) ? product.occasion.length > 0 : Boolean(product?.occasion);
+  const isJewellery = Boolean(product?.store) || (!product?.category && !product?.collectionType && !hasOccasion);
 
   return (
     <div className="product-modal-overlay" onClick={onClose}>
@@ -110,7 +111,12 @@ const ProductModal = ({ product, onClose }) => {
               <div className="product-meta">
                 {!isJewellery && product.category && <span><strong>Category:</strong> {product.category}</span>}
                 {product.collectionType && <span><strong>Type:</strong> {product.collectionType}</span>}
-                {product.occasion && <span><strong>Occasion:</strong> {product.occasion}</span>}
+                {hasOccasion && (
+                  <span>
+                    <strong>Occasion:</strong>{' '}
+                    {Array.isArray(product.occasion) ? product.occasion.join(', ') : product.occasion}
+                  </span>
+                )}
               </div>
             )}
             <p className="product-description">{product.description || "Elegant and finely crafted attire..."}</p>
