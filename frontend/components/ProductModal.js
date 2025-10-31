@@ -65,6 +65,7 @@ const ProductModal = ({ product, onClose }) => {
   // Infer jewellery vs collection: jewellery items usually have a 'store' and no category/type/occasion
   const hasOccasion = Array.isArray(product?.occasion) ? product.occasion.length > 0 : Boolean(product?.occasion);
   const isJewellery = Boolean(product?.store) || (!product?.category && !product?.collectionType && !hasOccasion);
+  const isAvailable = (product?.status || '').toString().toLowerCase() === 'available';
 
   return (
     <div className="product-modal-overlay" onClick={onClose}>
@@ -106,7 +107,13 @@ const ProductModal = ({ product, onClose }) => {
 
           <div className="product-details">
             {/* ... Product details ka JSX waise hi rahega ... */}
-            <h1 className="product-title">{product.title || product.name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h1 className="product-title" style={{ margin: 0 }}>{product.title || product.name}</h1>
+              {/* Status badge: show Available / Not available */}
+              <div className={`product-status-badge ${isAvailable ? 'available' : 'unavailable'}`} style={{ fontSize: 14, padding: '6px 10px', borderRadius: 6, fontWeight: 700 }}>
+                {isAvailable ? 'Available' : 'Out Of Stock'}
+              </div>
+            </div>
             {(product.collectionType || product.occasion || (!isJewellery && product.category)) && (
               <div className="product-meta">
                 {!isJewellery && product.category && <span><strong>Category:</strong> {product.category}</span>}

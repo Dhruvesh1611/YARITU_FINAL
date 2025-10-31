@@ -613,7 +613,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
                 ) : (
                   <div className="upload-placeholder">
                     <span>Click to Upload</span>
-                    <small>PNG, JPG, WEBP up to 5MB</small>
+                    <small>SVG,PNG, JPG, WEBP up to 5MB</small>
                   </div>
                 )}
               </div>

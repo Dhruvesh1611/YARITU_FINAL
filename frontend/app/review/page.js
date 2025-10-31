@@ -272,43 +272,58 @@ export default function Review() {
 
   // Use XHR to allow progress events while uploading to our server-side upload route
   function uploadWithProgress(file, onProgress, folder = 'YARITU') {
+    // Direct unsigned upload to Cloudinary so we avoid sending large files through our server
+    // Requires NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET in env
     return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', folder);
+      try {
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
+        const unsignedPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET || '';
+        if (!cloudName || !unsignedPreset) return reject(new Error('Cloudinary public env vars not configured'));
 
-      xhr.open('POST', '/api/upload');
-      xhr.upload.onprogress = function (e) {
-        if (e.lengthComputable && typeof onProgress === 'function') {
-          const percent = Math.round((e.loaded / e.total) * 100);
-          onProgress(percent);
+        const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+        const xhr = new XMLHttpRequest();
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', unsignedPreset);
+        fd.append('folder', folder);
+
+        // If this is a video, inform Cloudinary to treat it as video
+        if ((file.type || '').startsWith('video/')) {
+          fd.append('resource_type', 'video');
         }
-      };
-      xhr.onload = function () {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300 && res && res.success) {
-            resolve(res.data.secure_url || res.data.url);
-          } else {
-            reject(new Error(res?.error || res?.message || 'Upload failed'));
+
+        xhr.open('POST', url);
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable && typeof onProgress === 'function') {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            onProgress(percent);
           }
-        } catch (err) { reject(err); }
-      };
-      xhr.onerror = function () { reject(new Error('Network error during upload')); };
-      xhr.send(fd);
+        };
+        xhr.onload = function () {
+          try {
+            const ct = xhr.getResponseHeader('content-type') || '';
+            const responseText = xhr.responseText || '';
+            const res = ct.includes('application/json') ? JSON.parse(responseText) : { error: responseText };
+            if (xhr.status >= 200 && xhr.status < 300 && res) {
+              // Cloudinary returns secure_url
+              resolve(res.secure_url || res.secureUrl || res.url || res.secureUrl);
+            } else {
+              reject(new Error(res?.error?.message || res?.error || res?.message || `Upload failed (${xhr.status})`));
+            }
+          } catch (err) { reject(err); }
+        };
+        xhr.onerror = function () { reject(new Error('Network error during upload to Cloudinary')); };
+        xhr.send(fd);
+      } catch (err) { reject(err); }
     });
   }
 
   // Convenience helper that uploads to our server-side upload route and returns the secure URL
+  // Simple convenience wrapper that uploads directly to Cloudinary (unsigned)
   async function uploadToCloudinary(file, folder = 'YARITU') {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', folder);
-    const r = await fetch('/api/upload', { method: 'POST', body: formData });
-    const j = await r.json();
-    if (!r.ok || !j.success) throw new Error(j?.error || j?.message || 'Upload failed');
-    return j.data.secure_url;
+    // Reuse uploadWithProgress but without a progress callback
+    const result = await uploadWithProgress(file, () => {}, folder);
+    return result;
   }
 
   function openNew() {

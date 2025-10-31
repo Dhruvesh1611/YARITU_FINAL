@@ -5,7 +5,7 @@ import styles from './JewelleryModal.module.css'; // CSS Module ko import karein
 export default function JewelleryModal({ initial = null, onClose, onSaved, stores = [] }) {
   const isEdit = Boolean(initial && initial._id);
   const [name, setName] = useState(initial?.name || '');
-  const [store, setStore] = useState(initial?.store || (stores[0]?.name || ''));
+  // store selection removed — we no longer show a store dropdown in the modal
   const [price, setPrice] = useState(initial?.price || '');
   const [discountedPrice, setDiscountedPrice] = useState(initial?.discountedPrice || '');
   const [status, setStatus] = useState(initial?.status || 'Available');
@@ -79,7 +79,6 @@ export default function JewelleryModal({ initial = null, onClose, onSaved, store
 
       const payload = { 
         name, 
-        store, 
         price: Number(price) || 0, 
         discountedPrice: Number(discountedPrice) || 0, 
         status, 
@@ -114,12 +113,6 @@ export default function JewelleryModal({ initial = null, onClose, onSaved, store
         </div>
 
         <div className={styles.grid2}>
-          <div className={styles.formGroup}>
-            <label htmlFor="store">Store</label>
-            <select id="store" className={styles.select} value={store} onChange={(e) => setStore(e.target.value)}>
-              {stores.map(s => <option key={s._id || s.name} value={s.name}>{s.name}</option>)}
-            </select>
-          </div>
           <div className={styles.formGroup}>
             <label htmlFor="status">Status</label>
             <select id="status" className={styles.select} value={status} onChange={(e) => setStatus(e.target.value)}>
