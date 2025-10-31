@@ -23,7 +23,12 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
   const [heading, setHeading] = useState('');
   const [subheading, setSubheading] = useState('');
   const [discount, setDiscount] = useState('');
-  const [validity, setValidity] = useState('');
+  // We'll split validity into day/month/year inputs for better control
+  const [validityDay, setValidityDay] = useState('1');
+  const [validityMonth, setValidityMonth] = useState('January');
+  // year should start with '20' and allow two more digits
+  const [validityYear, setValidityYear] = useState('20');
+  const [validityRaw, setValidityRaw] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -40,7 +45,27 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
     setHeading(item?.heading || '');
     setSubheading(item?.subheading || '');
     setDiscount(item?.discount || '');
-    setValidity(item?.validity || '');
+    // parse existing validity string like 'Ends December 15, 2025' or 'Dec 15, 2025'
+    const val = item?.validity || '';
+    setValidityRaw(val || '');
+    try {
+      const m = /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/.exec(val);
+      if (m) {
+        const mm = m[1];
+        const dd = String(Number(m[2]));
+        const yy = String(m[3]);
+        setValidityMonth(mm);
+        setValidityDay(dd);
+        setValidityYear(yy);
+      } else {
+        // fallback to defaults
+        setValidityDay('1');
+        setValidityMonth('January');
+        setValidityYear('20');
+      }
+    } catch (e) {
+      setValidityDay('1'); setValidityMonth('January'); setValidityYear('20');
+    }
     setImagePreview(item?.image || '');
     setSelectedFile(null);
     // Prefill phone only when editing an existing offer; hide on new-offer flow
@@ -91,7 +116,15 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
     setSaving(true);
     try {
   // Support both `id` and Mongoose `_id` when editing so we update instead of creating
-  let payload = { id: item?.id || item?._id || null, heading, subheading, discount, validity };
+  // assemble validity into a readable string
+  const assembledValidity = validityMonth && validityDay && validityYear ? `Ends ${validityMonth} ${validityDay}, ${validityYear}` : (validityRaw || '');
+
+  // normalize discount: if it's digits only, convert to 'NN% OFF'
+  let normalizedDiscount = discount;
+  const onlyDigits = (discount || '').toString().trim().match(/^\d{1,3}$/);
+  if (onlyDigits) normalizedDiscount = `${onlyDigits[0]}% OFF`;
+
+  let payload = { id: item?.id || item?._id || null, heading, subheading, discount: normalizedDiscount, validity: assembledValidity };
       
       // *** YAHAN BADLAV KIYA GAYA HAI ***
       // Agar yeh naya offer hai (item null hai), to storeName ko payload mein jodo
@@ -321,12 +354,56 @@ export default function OfferEditorModal({ open, item, onClose, onSaved, onDelet
 
             <div style={styles.formGroup}>
               <label htmlFor="discount" style={styles.label}>Discount Text</label>
-              <input id="discount" value={discount} onChange={(e) => setDiscount(e.target.value)} style={styles.input} placeholder="e.g., 25% OFF" />
+              {/* Editable discount: show numeric editing and format to 'NN% OFF' on blur */}
+              <input
+                id="discount"
+                value={discount}
+                onChange={(e) => {
+                  // allow typing numbers or full text; keep what user types
+                  const v = e.target.value;
+                  setDiscount(v);
+                }}
+                onBlur={() => {
+                  // if the user entered only digits, format to 'NN% OFF'
+                  const digits = (discount || '').toString().trim().match(/^\d{1,3}$/);
+                  if (digits) setDiscount(`${digits[0]}% OFF`);
+                }}
+                style={styles.input}
+                placeholder="e.g., 25 or 25% OFF"
+              />
             </div>
 
             <div style={styles.formGroup}>
-              <label htmlFor="validity" style={styles.label}>Validity</label>
-              <input id="validity" value={validity} onChange={(e) => setValidity(e.target.value)} style={styles.input} placeholder="e.g., Until Oct 31st" />
+              <label style={styles.label}>Validity (Ends)</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select value={validityDay} onChange={(e) => setValidityDay(e.target.value)} style={{ ...styles.input, padding: '8px' }}>
+                  {Array.from({ length: 31 }).map((_, i) => {
+                    const d = String(i + 1);
+                    return <option key={d} value={d}>{d}</option>;
+                  })}
+                </select>
+                <select value={validityMonth} onChange={(e) => setValidityMonth(e.target.value)} style={{ ...styles.input, padding: '8px' }}>
+                  {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <input
+                  value={validityYear}
+                  onChange={(e) => {
+                    // keep only digits and max length 4; if user starts without 20, allow but enforce maxlength
+                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                    const trimmed = raw.slice(0, 4);
+                    // if user clears, ensure at least '20' remains as prefix when they begin typing next
+                    setValidityYear(trimmed || '20');
+                  }}
+                  onFocus={(e) => {
+                    // if default is '20' and user focuses, keep it so they can type the rest
+                    if (!validityYear) setValidityYear('20');
+                  }}
+                  style={{ ...styles.input, width: 100 }}
+                  maxLength={4}
+                />
+              </div>
             </div>
             
             <div style={{...styles.formGroup, ...styles.formGroupFull}}>
