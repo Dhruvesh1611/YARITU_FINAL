@@ -1,10 +1,10 @@
-// Returns true when the given URL is a remote resource (http(s) or Cloudinary URL)
+// Returns true when the given URL is a remote resource (http(s)).
+// Formerly also accepted Cloudinary-hosted URLs by checking a build-time env var;
+// that env var has been removed during the S3 migration. Keep the check simple.
 export default function isRemote(url) {
 	if (!url) return false;
 	try {
 		if (typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'))) return true;
-		const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
-		if (cloudName && typeof url === 'string' && url.includes(cloudName)) return true;
 	} catch (e) {
 		// ignore errors and treat as not remote
 	}

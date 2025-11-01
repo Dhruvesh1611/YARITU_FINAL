@@ -1,7 +1,7 @@
 // lib/parseForm.js
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const bucketName = process.env.AWS_BUCKET_NAME;
+const bucketName = process.env.AWS_S3_BUCKET_NAME;
 const region = process.env.AWS_REGION;
 const s3Client = new S3Client({
   region,
@@ -12,7 +12,7 @@ const s3Client = new S3Client({
 });
 
 function buildS3Url(bucket, region, key) {
-  if (!region || region === 'us-east-1') return `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`;
+  // Use the exact public URL format required by the migration
   return `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
 }
 
@@ -58,8 +58,9 @@ export const processImage = async (file) => {
     const ab = await file.arrayBuffer();
     const buffer = Buffer.from(ab);
 
-    const filename = file.name ? file.name.replace(/\s+/g, '_') : `${Date.now()}`;
-    const key = `YARITU/${Date.now()}-${filename}`;
+  // store files at bucket root with a timestamp-prefix, per migration requirements
+  const filename = file.name ? file.name.replace(/\s+/g, '_') : `${Date.now()}`;
+  const key = `${Date.now()}-${filename}`;
 
     const putParams = {
       Bucket: bucketName,

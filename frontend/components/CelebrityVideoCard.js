@@ -24,7 +24,7 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
     setUploadError(null);
 
     try {
-      const secureUrl = await uploadToCloudinary(file, setUploadProgress);
+      const secureUrl = await uploadToS3(file, setUploadProgress);
       setForm((p) => ({ ...p, videoUrl: secureUrl }));
     } catch (err) {
       console.error(err);
@@ -34,11 +34,12 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
     }
   };
   
-  const uploadToCloudinary = (file, onProgress) => {
+  const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('folder', 'YARITU/celebrity');
+      // folder is optional and ignored by server which stores at bucket root
+      // formData.append('folder', 'YARITU/celebrity');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);

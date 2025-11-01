@@ -30,7 +30,7 @@ export default function AddHeroModal({ onClose, onAdd }) {
     setUploadError(null);
 
     try {
-      const secureUrl = await uploadToCloudinary(file, setUploadProgress);
+      const secureUrl = await uploadToS3(file, setUploadProgress);
       setForm((p) => ({ ...p, imageUrl: secureUrl }));
     } catch (err) {
       console.error(err);
@@ -40,15 +40,17 @@ export default function AddHeroModal({ onClose, onAdd }) {
     }
   };
 
-  // Reusable Cloudinary upload function using fetch (no fine-grained progress)
-  // Signature preserved: (file, onProgress) => Promise<string>
-  const uploadToCloudinary = (file, onProgress) => {
+  // Reusable upload helper that sends file to our server upload route which
+  // stores the file in S3 and returns a public URL.
+  // Signature: (file, onProgress) => Promise<string>
+  const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
       try {
         const url = '/api/upload';
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('folder', 'YARITU/hero');
+        // server now stores files at bucket root; folder is ignored by server
+        // formData.append('folder', 'YARITU/hero');
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url, true);

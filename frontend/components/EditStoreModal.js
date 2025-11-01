@@ -85,7 +85,7 @@ export default function EditStoreModal({ open, onClose, store, idx, onSaved }) {
       if (store && store._id) {
         let imageUrl = store.imageUrl || store.image || null;
 
-        // If a new file was selected, upload to Cloudinary like AddStoreModal does
+  // If a new file was selected, upload to our server which stores the file in S3
         if (file) {
           const fd = new FormData();
           fd.append('file', file);

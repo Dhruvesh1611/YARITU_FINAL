@@ -12,12 +12,14 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
     const [uploadProgress, setUploadProgress] = useState(0);
 
     // Helper: upload image to our server-side S3 upload endpoint with XHR progress
-    const uploadToCloudinaryUnsigned = (file, onProgress) => {
+    // kept "Unsigned" naming for compatibility with progress-oriented usage
+    const uploadToS3Unsigned = (file, onProgress) => {
         return new Promise((resolve, reject) => {
             const url = '/api/upload';
             const fd = new FormData();
             fd.append('file', file);
-            fd.append('folder', 'YARITU/testimonials');
+            // folder optional; server stores at bucket root
+            // fd.append('folder', 'YARITU/testimonials');
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', url, true);
@@ -72,11 +74,11 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
         
         setLoading(true);
         try {
-            // If a new file was selected, upload it directly to Cloudinary unsigned so client shows progress
+            // If a new file was selected, upload it directly to the server (S3) so client shows progress
             let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
                 if (selectedFile) {
                 setUploadProgress(0);
-                const cloudResp = await uploadToCloudinaryUnsigned(selectedFile, (pct) => setUploadProgress(pct));
+                const cloudResp = await uploadToS3Unsigned(selectedFile, (pct) => setUploadProgress(pct));
                 avatarUrlToSend = cloudResp?.url || cloudResp?.secure_url || avatarUrlToSend;
                 // update preview to the final URL when available
                 setPreviewAvatar(avatarUrlToSend);

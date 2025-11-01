@@ -344,13 +344,12 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
               const currentItem = hasItem ? list[currentHeroImage % list.length] : null;
               const imageUrl = currentItem?.imageUrl;
 
+              // Treat absolute http(s) URLs as remote. Cloudinary build-time envs
+              // were removed during the S3 migration so we only rely on protocol.
               const isRemote = (url) => {
                 if (!url) return false;
                 try {
-                  // treat absolute http(s) or cloudinary host as remote
                   if (url.startsWith('http://') || url.startsWith('https://')) return true;
-                  const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
-                  if (cloudName && url.includes(cloudName)) return true;
                 } catch (e) {}
                 return false;
               };
@@ -465,7 +464,7 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
                       const videoUrl = uploadResp?.url || uploadResp?.secure_url || uploadResp?.secureUrl;
                   
                       if (!videoUrl) {
-                        throw new Error('Cloudinary did not return a URL.');
+                        throw new Error('Upload endpoint did not return a URL.');
                       }
                   
                       const itemToUpdate = trendingVideos.find((t) => t.position === replacePosition);

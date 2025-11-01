@@ -94,11 +94,12 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
     }
   };
 
-  const uploadToCloudinary = (file, onProgress) => {
+  const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('folder', 'YARITU/stores');
+      // optional folder; server stores at bucket root
+      // formData.append('folder', 'YARITU/stores');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);
@@ -125,7 +126,7 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
     if (selectedFile) {
       setUploading(true);
       try {
-        const newImageUrl = await uploadToCloudinary(selectedFile, setUploadProgress);
+  const newImageUrl = await uploadToS3(selectedFile, setUploadProgress);
         finalData.imageUrl = newImageUrl;
       } catch (err) {
         console.error(err);

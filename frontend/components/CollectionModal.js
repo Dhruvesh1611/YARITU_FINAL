@@ -73,7 +73,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
   const existingOtherImages = initial?.otherImages || initial?.otherImageUrls || initial?.otherImageUrls || [];
 
   const [mainImagePreview, setMainImagePreview] = useState(existingMainImage || '');
-  // When using direct-to-Cloudinary uploads we'll store the uploaded URL here.
+  // When using direct uploads to the server (which stores files in S3) we'll store the uploaded URL here.
   const [mainImageFile, setMainImageFile] = useState(null);
   const [mainImage2Preview, setMainImage2Preview] = useState(existingMainImage2 || '');
   const [mainImage2File, setMainImage2File] = useState(null);
@@ -112,13 +112,14 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
 
   // Upload helper: post file to our server-side S3 upload endpoint
   // Accepts optional onProgress callback which receives a number 0-100
-  function uploadToCloudinary(file, onProgress) {
+  function uploadToS3(file, onProgress) {
     const url = '/api/upload';
     return new Promise((resolve, reject) => {
       try {
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('folder', 'YARITU/collections');
+  // folder is optional; server stores uploads at the bucket root
+  // fd.append('folder', 'YARITU/collections');
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.upload.onprogress = (e) => {
@@ -218,10 +219,10 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
 
     setMainImageFile(file);
-    // upload immediately to Cloudinary using unsigned preset with progress
-    setMainImageUploading(true);
-    setMainImageUploadProgress(0);
-    uploadToCloudinary(file, (pct) => setMainImageUploadProgress(pct))
+  // upload immediately to our server (S3) with progress
+  setMainImageUploading(true);
+  setMainImageUploadProgress(0);
+  uploadToS3(file, (pct) => setMainImageUploadProgress(pct))
       .then(url => {
         if (url) {
           setMainImagePreview(url);
@@ -253,7 +254,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     setMainImage2File(file);
     setMainImage2Uploading(true);
     setMainImage2UploadProgress(0);
-    uploadToCloudinary(file, (pct) => setMainImage2UploadProgress(pct))
+  uploadToS3(file, (pct) => setMainImage2UploadProgress(pct))
       .then(url => {
         if (url) {
           setMainImage2Preview(url);
@@ -294,7 +295,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
       setErrors(prev => ({ ...prev, otherImages: null }));
     }
 
-    // We'll upload selected files to Cloudinary immediately and keep their URLs in otherImagesPreview
+  // We'll upload selected files to our server (S3) immediately and keep their URLs in otherImagesPreview
       const allowedCount = Math.max(0, 4 - otherImagesPreview.length);
     const toUpload = filteredFiles.slice(0, allowedCount);
     if (toUpload.length === 0) return;
@@ -310,7 +311,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
       return copy;
     });
 
-    const uploadPromises = toUpload.map((f, idx) => uploadToCloudinary(f, (pct) => {
+  const uploadPromises = toUpload.map((f, idx) => uploadToS3(f, (pct) => {
       setOtherUploadsProgress(prev => {
         const copy = [...prev];
         copy[baseIndex + idx] = pct;
@@ -384,7 +385,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     if (!validateForm()) return;
 
     setLoading(true);
-    // Build JSON payload sending image URLs (we've uploaded images directly to Cloudinary)
+  // Build JSON payload sending image URLs (we've uploaded images to the server/S3)
     const payload = {};
     Object.keys(state).forEach(key => { payload[key] = state[key]; });
 

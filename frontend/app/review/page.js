@@ -309,8 +309,8 @@ export default function Review() {
   }
 
   // Convenience wrapper that uploads without progress callback and returns the uploaded URL
-  async function uploadToCloudinary(file, folder = 'YARITU') {
-    // kept name for backwards compatibility with existing call sites
+  async function uploadToS3(file, folder = 'YARITU') {
+    // lightweight wrapper around uploadWithProgress which talks to our server-side /api/upload (S3-backed)
     const result = await uploadWithProgress(file, () => {}, folder);
     return result;
   }

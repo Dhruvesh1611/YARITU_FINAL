@@ -31,7 +31,7 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
       setUploadProgress(0);
       setUploadError(null);
       try {
-        finalImageUrl = await uploadToCloudinary(selectedFile, setUploadProgress);
+        finalImageUrl = await uploadToS3(selectedFile, setUploadProgress);
       } catch (error) {
         console.error(error);
         setUploadError('Image upload failed. Please try again.');
@@ -75,8 +75,8 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
     }
   };
 
-  // Reusable Cloudinary upload function with progress tracking
-  const uploadToCloudinary = (file, onProgress) => {
+  // Reusable server-backed upload function with progress tracking (uploads to /api/upload -> S3)
+  const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -94,7 +94,7 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           const response = JSON.parse(xhr.responseText);
-          resolve(response.url || response.secure_url);
+          resolve(response.url || response.secure_url || response.secureUrl || null);
         } else {
           reject(new Error('Upload failed'));
         }

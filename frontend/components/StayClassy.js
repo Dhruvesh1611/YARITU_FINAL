@@ -96,12 +96,13 @@ const StayClassy = () => {
     }
   };
 
+  // Treat absolute http(s) URLs as remote. Legacy Cloudinary env vars were removed
+  // during the migration to S3; any existing Cloudinary-hosted URLs are still
+  // remote (they start with http(s)).
   const isRemote = (url) => {
     if (!url) return false;
     try {
       if (url.startsWith('http://') || url.startsWith('https://')) return true;
-      const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
-      if (cloudName && url.includes(cloudName)) return true;
     } catch (e) {}
     return false;
   };
@@ -110,14 +111,14 @@ const StayClassy = () => {
   const saveEdit = async () => {
     let newImageUrl = filePreview; // Start with the current preview URL
 
-    // Step 1: Upload the image to Cloudinary IF a new file was selected
+    // Step 1: Upload the image to our server (/api/upload -> S3) IF a new file was selected
     if (selectedFile) {
       setUploading(true);
       setUploadProgress(0);
       setUploadError(null);
 
       try {
-        const url = await uploadToCloudinary(selectedFile, setUploadProgress);
+        const url = await uploadToS3(selectedFile, setUploadProgress);
         newImageUrl = url; // On success, update the image URL
       } catch (error) {
         console.error(error);
@@ -128,48 +129,52 @@ const StayClassy = () => {
       setUploading(false);
     }
 
-    // Step 2: Save only the image URL. Keep existing category/collection data intact.
+    // Step 2: Save only the image URL (S3 or legacy remote URL). Keep existing category/collection data intact.
     const existing = metadata[editingIndex] || {};
     const next = {
       ...metadata,
       [editingIndex]: {
         ...existing,
-        imageUrl: newImageUrl, // Save the new Cloudinary URL only
+  imageUrl: newImageUrl, // Save the new image URL (S3 or legacy remote)
       },
     };
     setMetadata(next);
     closeEdit();
   };
 
-  // NEW: Reusable Cloudinary upload function with progress tracking
-  const uploadToCloudinary = (file, onProgress) => {
+  // NEW: Reusable server-backed upload function with progress tracking (uploads to /api/upload -> S3)
+  const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'yaritu_preset'); // YOUR UPLOAD PRESET
-      formData.append('folder', 'YARITU');
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('folder', 'YARITU');
 
-      const xhr = new XMLHttpRequest();
-  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, true); // YOUR CLOUD NAME
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload', true);
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percentCompleted = Math.round((event.loaded * 100) / event.total);
-          onProgress(percentCompleted);
-        }
-      };
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && typeof onProgress === 'function') {
+            const percentCompleted = Math.round((event.loaded * 100) / event.total);
+            try { onProgress(percentCompleted); } catch (e) { /* ignore callback errors */ }
+          }
+        };
 
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response.secure_url);
-        } else {
-          reject(new Error('Upload failed'));
-        }
-      };
+        xhr.onload = () => {
+          try {
+            const parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+            if (xhr.status >= 200 && xhr.status < 300 && parsed) {
+              resolve(parsed.url || parsed.secure_url || parsed.secureUrl || null);
+            } else {
+              const message = parsed?.error || parsed?.message || xhr.responseText || `Upload failed (${xhr.status})`;
+              reject(new Error(message));
+            }
+          } catch (err) { reject(err); }
+        };
 
-      xhr.onerror = () => reject(new Error('Network error during upload'));
-      xhr.send(formData);
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(fd);
+      } catch (err) { reject(err); }
     });
   };
 

@@ -114,8 +114,7 @@ const MultipleOffers = () => {
     if (!url) return false;
     try {
       if (url.startsWith('http://') || url.startsWith('https://')) return true;
-      const cloudName = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '');
-      if (cloudName && url.includes(cloudName)) return true;
+      // S3-hosted files will be full https URLs; no Cloudinary checks required.
     } catch (e) {}
     return false;
   };

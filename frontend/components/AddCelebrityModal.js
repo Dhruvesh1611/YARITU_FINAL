@@ -19,7 +19,7 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
     setUploadError(null);
     
     try {
-      const secureUrl = await uploadToCloudinary(file, setUploadProgress);
+      const secureUrl = await uploadToS3(file, setUploadProgress);
       setForm((p) => ({ ...p, videoUrl: secureUrl }));
     } catch (err) {
       console.error(err);
@@ -29,12 +29,14 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
     }
   };
 
-  // Reusable Cloudinary upload function with progress tracking
-  const uploadToCloudinary = (file, onProgress) => {
+  // Reusable upload function with progress tracking that posts to our
+  // `/api/upload` endpoint which stores files in S3 and returns a public URL.
+  const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('folder', 'YARITU/celebrities');
+      // folder is accepted but server stores at bucket root
+      // formData.append('folder', 'YARITU/celebrities');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);
