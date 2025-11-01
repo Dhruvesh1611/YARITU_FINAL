@@ -47,7 +47,7 @@ export default function HeaderClient() {
 
                   <Link href="/" className={styles.navLogo}>
                     <Image
-                        src="/images/yaritu_logo_black.png"
+                        src="/images/yaritu_logo_black.svg"
                         alt="Yaritu Logo"
                         fill
                         sizes="(max-width: 480px) 100px, 160px"
@@ -83,7 +83,7 @@ export default function HeaderClient() {
       <div className={`${styles.mobileNav} ${isMenuOpen ? styles.open : ''}`}>
           <div className={styles.mobileLogoWrap}>
            <Link href="/" onClick={closeMenu}>
-             <Image src="/images/yaritu_logo_black.png" alt="Yaritu" width={90} height={66} style={{ width: 'auto', height: 'auto' }} />
+             <Image src="/images/yaritu_logo_black.svg" alt="Yaritu" width={90} height={66} style={{ width: 'auto', height: 'auto' }} />
            </Link>
          </div>
           <Link href="/" className={styles.mobileNavLink} onClick={closeMenu}>Home</Link>

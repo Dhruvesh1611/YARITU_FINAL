@@ -10,7 +10,7 @@ export default function Footer() {
             <div className="footer-about">
                 <div className="footer-logo" style={{ position: 'relative', width: '320px', height: '90px' }}>
                     <Image
-                        src="/images/yaritu_logo_white.png"
+                        src="/images/yaritu_logo_white.svg"
                         alt="Yaritu Logo"
                         fill
                         sizes="(max-width: 600px) 160px, (max-width: 992px) 200px, 254px"

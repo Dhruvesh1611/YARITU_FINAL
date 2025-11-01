@@ -70,7 +70,7 @@
 
 .flip-card-front {
   background-color: #2a3a4d; /* Matching the new logo's background */
-  background-image: url('/images/yaritu_flip_logo.png');
+  background-image: url('/images/yaritu_flip_logo.svg');
   background-size: 500% 500%;
 }
 
