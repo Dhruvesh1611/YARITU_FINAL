@@ -18,23 +18,16 @@ export default function AddStoreModal({ onClose, onAdd }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('upload_preset', 'yaritu_preset'); // Make sure this is your Cloudinary preset
-      fd.append('folder', 'YARITU');
+      fd.append('folder', 'YARITU/stores');
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
-        method: 'POST',
-        body: fd,
-      });
-
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) {
         const text = await res.text().catch(() => 'Failed to get error details');
         throw new Error(`Upload failed: ${res.status} ${res.statusText}. ${text}`);
       }
-
       const data = await res.json();
-      const secureUrl = data.secure_url;
-      if (!secureUrl) throw new Error('Cloudinary response missing secure_url');
-
+      const secureUrl = data.url || data.secure_url;
+      if (!secureUrl) throw new Error('Upload response missing url');
       setFormData((prev) => ({ ...prev, imageUrl: secureUrl }));
     } catch (err) {
       console.error('Image upload error', err);

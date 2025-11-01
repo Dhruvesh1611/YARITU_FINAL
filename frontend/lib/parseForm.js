@@ -1,12 +1,20 @@
 // lib/parseForm.js
-import { v2 as cloudinary } from 'cloudinary';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-// Cloudinary config
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+const bucketName = process.env.AWS_BUCKET_NAME;
+const region = process.env.AWS_REGION;
+const s3Client = new S3Client({
+  region,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
+
+function buildS3Url(bucket, region, key) {
+  if (!region || region === 'us-east-1') return `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`;
+  return `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+}
 
 
 /**
@@ -43,31 +51,28 @@ export const parseForm = async (request) => {
  * (Optimization steps hata diye gaye hain speed test karne ke liye)
  */
 export const processImage = async (file) => {
-  if (!file) {
-    return null;
-  }
+  if (!file) return null;
+  if (!bucketName) throw new Error('Server not configured (missing AWS_BUCKET_NAME)');
 
   try {
-    // 1. File ko Buffer mein convert karo
-    const buffer = await file.arrayBuffer();
-    const bytes = Buffer.from(buffer);
+    const ab = await file.arrayBuffer();
+    const buffer = Buffer.from(ab);
 
-    // 2. Buffer ko Base64 Data URI mein convert karo
-    const base64String = `data:${file.type};base64,${bytes.toString('base64')}`;
+    const filename = file.name ? file.name.replace(/\s+/g, '_') : `${Date.now()}`;
+    const key = `YARITU/${Date.now()}-${filename}`;
 
-    // 3. 'upload' method ka istemal karo (BINA optimization ke)
-    // Hum check kar rahe hain ki kya optimization ki vajah se slow tha
-    const result = await cloudinary.uploader.upload(base64String, {
-      resource_type: 'auto', 
-      // Saare transformation aur quality options hata diye gaye hain
-      // taaki upload raw aur fast ho.
-    });
-    
-    return result;
+    const putParams = {
+      Bucket: bucketName,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type || 'application/octet-stream',
+    };
 
+    await s3Client.send(new PutObjectCommand(putParams));
+    const url = buildS3Url(bucketName, region, key);
+    return { secure_url: url, url };
   } catch (err) {
-    console.error("Cloudinary upload error in processImage:", err);
-    // Error ko aage bhejo taaki API route use handle kar sake
+    console.error('S3 upload error in processImage:', err);
     throw err;
   }
 };

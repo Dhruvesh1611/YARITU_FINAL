@@ -188,13 +188,12 @@ const CelebritySection = () => {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('upload_preset', 'yaritu_preset');
-      fd.append('folder', 'YARITU');
+      fd.append('folder', 'YARITU/celebrity');
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, { method: 'POST', body: fd });
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      const videoUrl = data.secure_url;
+      const videoUrl = data.url || data.secure_url;
 
       const putRes = await fetch(`/api/celebrity/${current._id}`, {
         method: 'PUT',

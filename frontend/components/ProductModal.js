@@ -73,6 +73,45 @@ const ProductModal = ({ product, onClose }) => {
     mainWrapperRef.current.style.setProperty('--scale', '2.2');
   };
 
+  // --- Mobile touch handlers: set transform-origin based on touch point ---
+  const handleMainTouchPoint = (touch) => {
+    if (!mainWrapperRef.current) return;
+    const rect = mainWrapperRef.current.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      mainWrapperRef.current.style.setProperty('--ox', `${Math.min(100, Math.max(0, x))}%`);
+      mainWrapperRef.current.style.setProperty('--oy', `${Math.min(100, Math.max(0, y))}%`);
+      mainWrapperRef.current.style.setProperty('--scale', '2.6');
+    });
+  };
+
+  const handleMainTouchStart = (e) => {
+    // Only run touch handlers on non-hover devices
+    if (supportsHover.current) return;
+    if (!e.touches || e.touches.length === 0) return;
+    handleMainTouchPoint(e.touches[0]);
+  };
+
+  const handleMainTouchMove = (e) => {
+    if (supportsHover.current) return;
+    if (!e.touches || e.touches.length === 0) return;
+    // prevent the page from scrolling while the user is interacting with the image
+    // but keep it natural: only when touch is on the image container
+    e.preventDefault();
+    handleMainTouchPoint(e.touches[0]);
+  };
+
+  const handleMainTouchEnd = () => {
+    if (!mainWrapperRef.current) return;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    // Reset to default after finger lifted
+    mainWrapperRef.current.style.setProperty('--scale', '1');
+    mainWrapperRef.current.style.setProperty('--ox', '50%');
+    mainWrapperRef.current.style.setProperty('--oy', '50%');
+  };
+
   // Effect to set active image and lock body scroll
   useEffect(() => {
     setActiveImage(finalGallery[0]);
@@ -117,7 +156,16 @@ const ProductModal = ({ product, onClose }) => {
         
         <div className="product-modal-content">
             <div className="image-gallery">
-            <div className="main-image-container" ref={mainWrapperRef} onMouseMove={handleMainMouseMove} onMouseLeave={handleMainMouseLeave} onMouseEnter={handleMainMouseEnter}>
+            <div
+              className="main-image-container"
+              ref={mainWrapperRef}
+              onMouseMove={handleMainMouseMove}
+              onMouseLeave={handleMainMouseLeave}
+              onMouseEnter={handleMainMouseEnter}
+              onTouchStart={handleMainTouchStart}
+              onTouchMove={handleMainTouchMove}
+              onTouchEnd={handleMainTouchEnd}
+            >
               {activeImage && (
                 <Image
                   key={activeImage}

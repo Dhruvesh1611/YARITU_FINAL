@@ -98,19 +98,20 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'yaritu_preset');
-      formData.append('folder', 'YARITU');
+      formData.append('folder', 'YARITU/stores');
 
       const xhr = new XMLHttpRequest();
-  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, true);
+      xhr.open('POST', '/api/upload', true);
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           onProgress(Math.round((event.loaded * 100) / event.total));
         }
       };
       xhr.onload = () => {
-        if (xhr.status === 200) resolve(JSON.parse(xhr.responseText).secure_url);
-        else reject(new Error('Upload failed'));
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const parsed = JSON.parse(xhr.responseText);
+          resolve(parsed.url || parsed.secure_url);
+        } else reject(new Error('Upload failed'));
       };
       xhr.onerror = () => reject(new Error('Network error'));
       xhr.send(formData);

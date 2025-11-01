@@ -11,14 +11,13 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Helper: unsigned Cloudinary upload (images) with XHR to report progress
-    const uploadToCloudinaryUnsigned = (cloudName, uploadPreset, file, onProgress) => {
+    // Helper: upload image to our server-side S3 upload endpoint with XHR progress
+    const uploadToCloudinaryUnsigned = (file, onProgress) => {
         return new Promise((resolve, reject) => {
-            const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+            const url = '/api/upload';
             const fd = new FormData();
             fd.append('file', file);
-            fd.append('upload_preset', uploadPreset);
-            fd.append('folder', 'YARITU');
+            fd.append('folder', 'YARITU/testimonials');
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', url, true);
@@ -32,7 +31,7 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
                 try {
                     const parsed = JSON.parse(xhr.responseText);
                     if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
-                    else reject(new Error(parsed?.error?.message || `Upload failed: ${xhr.status}`));
+                    else reject(new Error(parsed?.error || `Upload failed: ${xhr.status}`));
                 } catch (err) {
                     reject(new Error('Failed to parse upload response'));
                 }
@@ -75,13 +74,10 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
         try {
             // If a new file was selected, upload it directly to Cloudinary unsigned so client shows progress
             let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
-            if (selectedFile) {
-                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-                if (!cloudName || !uploadPreset) throw new Error('Cloudinary unsigned config missing');
+                if (selectedFile) {
                 setUploadProgress(0);
-                const cloudResp = await uploadToCloudinaryUnsigned(cloudName, uploadPreset, selectedFile, (pct) => setUploadProgress(pct));
-                avatarUrlToSend = cloudResp?.secure_url || cloudResp?.secureUrl || cloudResp?.url || avatarUrlToSend;
+                const cloudResp = await uploadToCloudinaryUnsigned(selectedFile, (pct) => setUploadProgress(pct));
+                avatarUrlToSend = cloudResp?.url || cloudResp?.secure_url || avatarUrlToSend;
                 // update preview to the final URL when available
                 setPreviewAvatar(avatarUrlToSend);
             }

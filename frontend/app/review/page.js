@@ -259,8 +259,9 @@ export default function Review() {
   const [fileForUpload, setFileForUpload] = useState(null);
   const prevPreviewRef = React.useRef(null);
 
-  const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const CLOUDINARY_UNSIGNED_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
+  // NOTE: This app now uses the server-side `/api/upload` endpoint (S3-backed).
+  // Old Cloudinary env vars were removed — keep the code compatible with
+  // both legacy Cloudinary-hosted URLs and newly uploaded S3 URLs.
 
   // upload progress state
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -270,58 +271,46 @@ export default function Review() {
   const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
   const [avatarUploadedUrl, setAvatarUploadedUrl] = useState('');
 
-  // Use XHR to allow progress events while uploading to our server-side upload route
+  // Use XHR to upload files to our server-side /api/upload (S3-backed) and report progress
   function uploadWithProgress(file, onProgress, folder = 'YARITU') {
-    // Direct unsigned upload to Cloudinary so we avoid sending large files through our server
-    // Requires NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET in env
     return new Promise((resolve, reject) => {
       try {
-        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
-        const unsignedPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET || '';
-        if (!cloudName || !unsignedPreset) return reject(new Error('Cloudinary public env vars not configured'));
-
-        const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+        const url = `/api/upload`;
         const xhr = new XMLHttpRequest();
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('upload_preset', unsignedPreset);
         fd.append('folder', folder);
 
-        // If this is a video, inform Cloudinary to treat it as video
-        if ((file.type || '').startsWith('video/')) {
-          fd.append('resource_type', 'video');
-        }
-
-        xhr.open('POST', url);
+        xhr.open('POST', url, true);
         xhr.upload.onprogress = function (e) {
           if (e.lengthComputable && typeof onProgress === 'function') {
             const percent = Math.round((e.loaded / e.total) * 100);
-            onProgress(percent);
+            try { onProgress(percent); } catch (err) { /* ignore callback errors */ }
           }
         };
         xhr.onload = function () {
           try {
-            const ct = xhr.getResponseHeader('content-type') || '';
-            const responseText = xhr.responseText || '';
-            const res = ct.includes('application/json') ? JSON.parse(responseText) : { error: responseText };
-            if (xhr.status >= 200 && xhr.status < 300 && res) {
-              // Cloudinary returns secure_url
-              resolve(res.secure_url || res.secureUrl || res.url || res.secureUrl);
+            const parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+            if (xhr.status >= 200 && xhr.status < 300 && parsed) {
+              // server returns { url }
+              resolve(parsed.url || parsed.secure_url || parsed.secureUrl || null);
             } else {
-              reject(new Error(res?.error?.message || res?.error || res?.message || `Upload failed (${xhr.status})`));
+              const message = parsed?.error || parsed?.message || xhr.responseText || `Upload failed (${xhr.status})`;
+              reject(new Error(message));
             }
-          } catch (err) { reject(err); }
+          } catch (err) {
+            reject(err);
+          }
         };
-        xhr.onerror = function () { reject(new Error('Network error during upload to Cloudinary')); };
+        xhr.onerror = function () { reject(new Error('Network error during upload')); };
         xhr.send(fd);
       } catch (err) { reject(err); }
     });
   }
 
-  // Convenience helper that uploads to our server-side upload route and returns the secure URL
-  // Simple convenience wrapper that uploads directly to Cloudinary (unsigned)
+  // Convenience wrapper that uploads without progress callback and returns the uploaded URL
   async function uploadToCloudinary(file, folder = 'YARITU') {
-    // Reuse uploadWithProgress but without a progress callback
+    // kept name for backwards compatibility with existing call sites
     const result = await uploadWithProgress(file, () => {}, folder);
     return result;
   }
@@ -912,8 +901,8 @@ export default function Review() {
                     </select>
                   </div>
                   <div style={{ width: 220 }}>
-                    <div style={{ width: 160, height: 160, borderRadius: '50%', background: '#eee', marginBottom: 8, overflow: 'hidden' }}>
-                      <img src={avatarUploadedUrl || filePreview || form.avatarUrl || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ width: 160, height: 160, borderRadius: '50%', background: '#eee', marginBottom: 8, overflow: 'hidden' }}>
+                      <img src={avatarUploadedUrl || filePreview || form.avatarUrl || '/images/Rectangle 4.png'} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <input
                       type="file"
@@ -926,8 +915,8 @@ export default function Review() {
                         // immediate visible feedback
                         setUploadStatusMessage('Preparing upload...');
 
-                        // We'll upload via the server-side upload route (/api/upload)
-                        // Ensure your server has CLOUDINARY_API_KEY/SECRET set; client doesn't need the unsigned preset.
+                          // We'll upload via the server-side upload route (`/api/upload`) which stores files in S3.
+                          // Ensure your server has the required AWS env vars set (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_BUCKET_NAME).
 
                         try {
                           // create local preview
@@ -1034,7 +1023,7 @@ export default function Review() {
                     <div style={{ marginBottom: 8 }}>
                       {/* small helper preview for selection area (not the main preview panel) */}
                       <div style={{ width: 160, height: 160, borderRadius: '8px', background: '#eee', overflow: 'hidden' }}>
-                        <img src={thumbFilePreview || thumbUploadedUrl || videos[editingVideoIndex]?.thumbnail || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={thumbFilePreview || thumbUploadedUrl || videos[editingVideoIndex]?.thumbnail || '/images/Rectangle 4.png'} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     </div>
                     <input type="file" accept="image/*" onChange={async (e) => {
@@ -1088,7 +1077,7 @@ export default function Review() {
                               muted
                             />
                           ) : (
-                            <img src={posterSrc || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt="thumbnail preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={posterSrc || '/images/Rectangle 4.png'} alt="thumbnail preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           )}
                         </div>
                       );

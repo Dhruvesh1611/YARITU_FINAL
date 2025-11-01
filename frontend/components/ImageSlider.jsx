@@ -156,18 +156,27 @@ const ImageSlider = () => {
                         >
                             <AnimatePresence key={total}>
                                 {visibleImages.map((image) => (
-                                    <motion.div
-                                        // FIX: Key ko sirf position rakha hai, total count se remount hoga
-                                        key={image.position}
+                                <motion.div
+                                        // Use a stable key per image so AnimatePresence can animate src changes
+                                        // prefer unique _id, fallback to src, fallback to position
+                                        key={image._id || image.src || image.position}
                                         className={styles.imageCard}
                                         variants={isMobile ? mobileVariants : desktopVariants}
                                         initial={false}
                                         animate={image.position}
                                         transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-                                        onClick={() => router.push('/collection')}
-                                        role="link"
-                                        tabIndex={0}
-                                        style={{ cursor: 'pointer' }}
+                                        // Only the center image should navigate to the collection page
+                                        onClick={image.position === 'center' ? () => router.push('/collection') : undefined}
+                                        role={image.position === 'center' ? 'link' : undefined}
+                                        tabIndex={image.position === 'center' ? 0 : -1}
+                                        onKeyDown={(e) => {
+                                            if (image.position !== 'center') return;
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                router.push('/collection');
+                                            }
+                                        }}
+                                        style={{ cursor: image.position === 'center' ? 'pointer' : 'default' }}
                                     >
                                         {image.src ? (
                                             <Image

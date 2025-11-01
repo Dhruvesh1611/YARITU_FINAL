@@ -110,18 +110,15 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     setOtherImagesPreview(newPreviews);
   };
 
-  // Upload helper: unsigned Cloudinary upload using client-side preset
+  // Upload helper: post file to our server-side S3 upload endpoint
   // Accepts optional onProgress callback which receives a number 0-100
   function uploadToCloudinary(file, onProgress) {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-    if (!cloudName || !uploadPreset) return Promise.reject(new Error('Cloudinary not configured (set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET)'));
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+    const url = '/api/upload';
     return new Promise((resolve, reject) => {
       try {
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('upload_preset', uploadPreset);
+        fd.append('folder', 'YARITU/collections');
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.upload.onprogress = (e) => {
@@ -133,7 +130,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const json = JSON.parse(xhr.responseText);
-              resolve(json.secure_url || json.url || null);
+              resolve(json.url || json.secure_url || null);
             } catch (e) {
               reject(e);
             }
@@ -280,7 +277,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    // Validate file sizes and limit to 5 total images
+  // Validate file sizes and limit to 4 total images
     const filteredFiles = [];
     let tooLarge = false;
     for (const f of files) {
@@ -298,16 +295,11 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     }
 
     // We'll upload selected files to Cloudinary immediately and keep their URLs in otherImagesPreview
-    const allowedCount = Math.max(0, 5 - otherImagesPreview.length);
+      const allowedCount = Math.max(0, 4 - otherImagesPreview.length);
     const toUpload = filteredFiles.slice(0, allowedCount);
     if (toUpload.length === 0) return;
 
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-    if (!cloudName || !uploadPreset) {
-      setErrors(prev => ({ ...prev, otherImages: 'Cloudinary not configured.' }));
-      return;
-    }
+    // Use the same server-backed upload helper as main image. No Cloudinary client-side config required.
 
     setUploadingImages(true);
     const baseIndex = otherImagesPreview.length;
@@ -329,7 +321,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
     Promise.all(uploadPromises)
       .then(urls => {
         const successful = (urls || []).filter(Boolean);
-        const combined = [...otherImagesPreview, ...successful].slice(0, 5);
+    const combined = [...otherImagesPreview, ...successful].slice(0, 4);
         setOtherImagesPreview(combined);
       })
       .finally(() => {
@@ -629,9 +621,9 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
               )}
             </div>
             
-            <div className="form-group">
-                <label>Other Images (up to 5)</label>
-                <div className="other-images-container">
+      <div className="form-group">
+        <label>Other Images (up to 4)</label>
+        <div className="other-images-container">
                     {otherImagesPreview.map((src, i) => (
                         <div key={i} className="other-image-item">
                             <img src={src} alt={`other preview ${i+1}`} />
@@ -647,7 +639,7 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
                         <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>{p}%</div>
                       </div>
                     ))}
-                    {otherImagesPreview.length < 5 && (
+          {otherImagesPreview.length < 4 && (
                         <div className="image-uploader-small" onClick={() => otherFilesInputRef.current?.click()}>
                              <input type="file" accept="image/*" multiple ref={otherFilesInputRef} onChange={handleOtherImagesChange} style={{ display: 'none' }} />
                             <span>+ Add</span>

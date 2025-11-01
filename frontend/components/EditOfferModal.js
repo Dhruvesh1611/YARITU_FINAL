@@ -80,11 +80,10 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'yaritu_preset'); // YOUR UPLOAD PRESET
       formData.append('folder', 'YARITU/offers');
 
       const xhr = new XMLHttpRequest();
-  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, true); // YOUR CLOUD NAME
+      xhr.open('POST', '/api/upload', true);
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -93,9 +92,9 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
         }
       };
       xhr.onload = () => {
-        if (xhr.status === 200) {
+        if (xhr.status >= 200 && xhr.status < 300) {
           const response = JSON.parse(xhr.responseText);
-          resolve(response.secure_url);
+          resolve(response.url || response.secure_url);
         } else {
           reject(new Error('Upload failed'));
         }

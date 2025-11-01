@@ -74,13 +74,11 @@ export default function FeaturedImageCard({ item, onUpdate, onDelete }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('upload_preset', 'yaritu_preset');
-      fd.append('folder', 'YARITU');
-      // Cloudinary upload URL (Environment variables ka dhyaan rakhein)
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
+      fd.append('folder', 'YARITU/featured');
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      setForm((p) => ({ ...p, src: data.secure_url }));
+      setForm((p) => ({ ...p, src: data.url || data.secure_url }));
     } catch (err) { console.error(err); alert('Upload failed'); } finally { setUploading(false); }
   };
 

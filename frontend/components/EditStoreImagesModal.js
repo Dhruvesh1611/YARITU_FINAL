@@ -21,33 +21,21 @@ export default function EditStoreImagesModal({ store, onClose, onSaved }) {
 
   if (!isAdmin) return null;
 
-  const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-
   const handleFileUpload = async (file) => {
     if (!file) return;
-    if (!CLOUD_NAME || !UPLOAD_PRESET) {
-      alert('Cloudinary environment variables not set. Please check NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET.');
-      return;
-    }
-
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('folder', 'YARITU/stores');
 
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-
+      const response = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error?.message || 'Image upload failed.');
+        throw new Error(data.error || 'Image upload failed.');
       }
-      setMainImage(data.secure_url);
-      setIsDirty(true); // Mark as dirty when image is uploaded
+      setMainImage(data.url || data.secure_url);
+      setIsDirty(true);
     } catch (error) {
       console.error('Upload error:', error);
       alert(error.message);

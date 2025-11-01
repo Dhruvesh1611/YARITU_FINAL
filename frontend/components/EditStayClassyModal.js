@@ -13,14 +13,13 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('upload_preset', 'yaritu_preset');
-      fd.append('folder', 'YARITU');
+      fd.append('folder', 'YARITU/celebrity');
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, { method: 'POST', body: fd });
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      const secureUrl = data.secure_url || data.secureUrl;
-      if (!secureUrl) throw new Error('Cloudinary missing secure_url');
+      const secureUrl = data.url || data.secure_url;
+      if (!secureUrl) throw new Error('Upload missing url');
       setForm((p) => ({ ...p, videoUrl: secureUrl }));
     } catch (err) {
       console.error(err);

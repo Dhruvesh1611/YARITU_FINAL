@@ -19,13 +19,12 @@ export default function AddTrendingModal({ onAdd }) {
     try {
       const form = new FormData();
       form.append('file', file);
-      form.append('upload_preset', 'yaritu_preset');
-      form.append('folder', 'YARITU');
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, { method: 'POST', body: form });
+      form.append('folder', 'YARITU/trending');
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      const secureUrl = data.secure_url || data.secureUrl;
-      if (!secureUrl) throw new Error('Cloudinary missing secure_url');
+      const secureUrl = data.url || data.secure_url;
+      if (!secureUrl) throw new Error('Upload missing url');
 
       setUploading(false);
       setCreating(true);

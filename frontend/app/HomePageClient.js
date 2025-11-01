@@ -146,29 +146,37 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
     return () => clearTimeout(timer);
   }, [isStoresLoading, stores]);
 
-  // Helper to upload directly to Cloudinary unsigned with XHR so we can get progress
-  const uploadToCloudinaryUnsigned = (cloudName, formData, onProgress) => {
+  // Helper to upload files to local /api/upload using XHR so we can get progress
+  const uploadToServer = (file, folder = 'YARITU/trending', onProgress) => {
     return new Promise((resolve, reject) => {
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', url, true);
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable && typeof onProgress === 'function') {
-          const pct = Math.round((event.loaded * 100) / event.total);
-          onProgress(pct);
-        }
-      };
-      xhr.onload = () => {
-        try {
-          const parsed = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
-          else reject(new Error(parsed?.error?.message || `Upload failed: ${xhr.status}`));
-        } catch (err) {
-          reject(new Error('Failed to parse Cloudinary response'));
-        }
-      };
-      xhr.onerror = () => reject(new Error('Network error during upload'));
-      xhr.send(formData);
+      try {
+        const url = `/api/upload`;
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('folder', folder);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && typeof onProgress === 'function') {
+            const pct = Math.round((event.loaded * 100) / event.total);
+            onProgress(pct);
+          }
+        };
+        xhr.onload = () => {
+          try {
+            const parsed = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
+            else reject(new Error(parsed?.error?.message || `Upload failed: ${xhr.status}`));
+          } catch (err) {
+            reject(new Error('Failed to parse upload response'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(fd);
+      } catch (err) {
+        reject(err);
+      }
     });
   };
 
@@ -446,27 +454,15 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
                     setReplacing(true);
                   
                     try {
-                      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                      // === YAHAN BADLAAV KIYA GAYA HAI ===
-                      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-
-                      if (!cloudName || !uploadPreset) {
-                        throw new Error("Cloudinary configuration is missing. Check NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET in your .env file.");
-                      }
-
-                      const formData = new FormData();
-                      formData.append('file', file);
-                      formData.append('upload_preset', uploadPreset);
-
-                      // Use XHR upload so we can show progress to admins
+                      // Upload to local server (S3-backed /api/upload) instead of Cloudinary
                       setUploadProgress(0);
-                      let cloudinaryData;
+                      let uploadResp;
                       try {
-                        cloudinaryData = await uploadToCloudinaryUnsigned(cloudName, formData, (pct) => setUploadProgress(pct));
+                        uploadResp = await uploadToServer(file, 'YARITU/trending', (pct) => setUploadProgress(pct));
                       } catch (err) {
                         throw err;
                       }
-                      const videoUrl = cloudinaryData.secure_url || cloudinaryData.secureUrl || cloudinaryData.url;
+                      const videoUrl = uploadResp?.url || uploadResp?.secure_url || uploadResp?.secureUrl;
                   
                       if (!videoUrl) {
                         throw new Error('Cloudinary did not return a URL.');

@@ -89,16 +89,12 @@ export default function EditStoreModal({ open, onClose, store, idx, onSaved }) {
         if (file) {
           const fd = new FormData();
           fd.append('file', file);
-          fd.append('upload_preset', 'yaritu_preset');
-          fd.append('folder', 'YARITU');
+          fd.append('folder', 'YARITU/stores');
 
-          const resCloud = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
-            method: 'POST',
-            body: fd,
-          });
-          if (!resCloud.ok) throw new Error('Cloudinary upload failed');
+          const resCloud = await fetch('/api/upload', { method: 'POST', body: fd });
+          if (!resCloud.ok) throw new Error('Upload failed');
           const cloudJson = await resCloud.json();
-          imageUrl = cloudJson.secure_url;
+          imageUrl = cloudJson.url || cloudJson.secure_url;
         }
 
         const payload = { address, phone };

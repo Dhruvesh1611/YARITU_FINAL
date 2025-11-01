@@ -11,13 +11,12 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Helper: unsigned Cloudinary upload (images) with XHR to report progress
-    const uploadToCloudinaryUnsigned = (cloudName, uploadPreset, file, onProgress) => {
+    // Helper: upload file to local server /api/upload using XHR to preserve progress reporting
+    const uploadToServer = (file, onProgress) => {
         return new Promise((resolve, reject) => {
-            const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+            const url = `/api/upload`;
             const fd = new FormData();
             fd.append('file', file);
-            fd.append('upload_preset', uploadPreset);
             fd.append('folder', 'YARITU');
 
             const xhr = new XMLHttpRequest();
@@ -76,12 +75,10 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
             // If a new file was selected, upload it directly to Cloudinary unsigned so client shows progress
             let avatarUrlToSend = item?.avatarUrl || item?.avatar || '';
             if (selectedFile) {
-                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET;
-                if (!cloudName || !uploadPreset) throw new Error('Cloudinary unsigned config missing');
                 setUploadProgress(0);
-                const cloudResp = await uploadToCloudinaryUnsigned(cloudName, uploadPreset, selectedFile, (pct) => setUploadProgress(pct));
-                avatarUrlToSend = cloudResp?.secure_url || cloudResp?.secureUrl || cloudResp?.url || avatarUrlToSend;
+                const resp = await uploadToServer(selectedFile, (pct) => setUploadProgress(pct));
+                // response shape may contain { url } or legacy { secure_url }
+                avatarUrlToSend = resp?.url || resp?.secure_url || resp?.secureUrl || avatarUrlToSend;
                 // update preview to the final URL when available
                 setPreviewAvatar(avatarUrlToSend);
             }

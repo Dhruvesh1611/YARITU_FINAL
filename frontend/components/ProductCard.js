@@ -106,9 +106,22 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
         wrapperRef.current.style.setProperty('--scale', '1.06');
     };
 
+    const openProduct = () => onProductClick && onProductClick({ ...product, image: imageUrl, name: title, images: allImages });
+
     return (
-        <article className={styles['product-card']} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') onProductClick && onProductClick({ ...product, image: imageUrl, name: title, images: allImages }); }} onClick={() => onProductClick && onProductClick({ ...product, image: imageUrl, name: title, images: allImages })}>
-            <div ref={wrapperRef} className={styles['product-image-wrapper']} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onMouseEnter={handleMouseEnter}>
+        <article className={styles['product-card']}>
+            <div
+                ref={wrapperRef}
+                className={styles['product-image-wrapper']}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onMouseEnter={handleMouseEnter}
+                onClick={openProduct}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProduct(); } }}
+                tabIndex={0}
+                role="button"
+                aria-label={title ? `Open ${title} details` : 'Open product details'}
+            >
                 {imageUrl ? (
                     <>
                         <Image

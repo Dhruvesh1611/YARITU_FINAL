@@ -38,11 +38,10 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'yaritu_preset');
-      formData.append('folder', 'YARITU');
+      formData.append('folder', 'YARITU/celebrity');
 
       const xhr = new XMLHttpRequest();
-  xhr.open('POST', `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/video/upload`, true);
+      xhr.open('POST', '/api/upload', true);
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -50,8 +49,9 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
         }
       };
       xhr.onload = () => {
-        if (xhr.status === 200) {
-          resolve(JSON.parse(xhr.responseText).secure_url);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const parsed = JSON.parse(xhr.responseText);
+          resolve(parsed.url || parsed.secure_url);
         } else {
           reject(new Error('Upload failed'));
         }

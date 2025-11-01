@@ -1,69 +1,59 @@
 import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
-
-// --- THIS IS THE FIX ---
-// Configure Cloudinary with your credentials from .env.local
-cloudinary.config({ 
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-  api_key: process.env.CLOUDINARY_API_KEY, 
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-});
-// -----------------------
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 export const runtime = 'nodejs';
+
+const bucketName = process.env.AWS_BUCKET_NAME;
+const region = process.env.AWS_REGION;
+
+const s3Client = new S3Client({
+  region: region,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+
+function buildS3Url(bucket, region, key) {
+  if (!region || region === 'us-east-1') return `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`;
+  return `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+}
 
 export async function POST(req) {
   try {
     const form = await req.formData();
     const file = form.get('file');
-    if (!file) return NextResponse.json({ success: false, message: 'No file provided' }, { status: 400 });
+    const folder = form.get('folder') || 'YARITU';
+
+    if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!bucketName) return NextResponse.json({ error: 'Server not configured (missing AWS_BUCKET_NAME)' }, { status: 500 });
 
     const maxSizeBytes = 150 * 1024 * 1024; // 150MB limit
     if (file.size && file.size > maxSizeBytes) {
-      return NextResponse.json({ success: false, error: `File too large. Max ${maxSizeBytes / (1024 * 1024)}MB` }, { status: 413 });
+      return NextResponse.json({ error: `File too large. Max ${maxSizeBytes / (1024 * 1024)}MB` }, { status: 413 });
     }
 
-    console.log('Received upload', { name: file.name, size: file.size, type: file.type });
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    // Try streaming the incoming Web File to Cloudinary to avoid buffering large files
-    const folder = 'YARITU';
-    let uploadResult;
+    const filename = file.name ? file.name.replace(/\s+/g, '_') : `${Date.now()}`;
+    const key = `${folder.replace(/\/+$/, '')}/${Date.now()}-${filename}`;
 
-    if (file.stream && typeof file.stream === 'function') {
-      // Convert Web ReadableStream -> Node Readable and pipe to Cloudinary
-      const { Readable } = await import('stream');
-      const webStream = file.stream();
-      const nodeStream = Readable.fromWeb(webStream);
+    const putParams = {
+      Bucket: bucketName,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type || 'application/octet-stream',
+      // Do NOT set ACL here; many buckets enforce object ownership which rejects ACLs.
+      // Keep bucket policy / object ownership to manage public access in production.
+    };
 
-      uploadResult = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream({ resource_type: 'auto', folder }, (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        });
-        nodeStream.pipe(uploadStream);
-      });
-    } else {
-      // Fallback to buffer if web stream isn't available
-      const ab = await file.arrayBuffer();
-      const buffer = Buffer.from(ab);
-      uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream({ resource_type: 'auto', folder }, (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        });
-        stream.end(buffer);
-      });
-    }
+    await s3Client.send(new PutObjectCommand(putParams));
 
-    if (!uploadResult) return NextResponse.json({ success: false, error: 'Cloudinary returned no result' }, { status: 502 });
-
-    console.log('Cloudinary upload succeeded', { public_id: uploadResult.public_id, secure_url: uploadResult.secure_url });
-    return NextResponse.json({ success: true, data: uploadResult });
-
+    const url = buildS3Url(bucketName, region, key);
+    return NextResponse.json({ url });
   } catch (err) {
-    console.error('Server upload error', err);
-    const message = err && (err.message || err.name) ? (err.message || err.name) : 'Upload failed';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    console.error('S3 upload error', err);
+    return NextResponse.json({ error: err?.message || 'Upload failed' }, { status: 500 });
   }
 }

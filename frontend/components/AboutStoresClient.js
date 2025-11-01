@@ -87,7 +87,7 @@ export default function AboutStoresClient() {
           const images = Array.isArray(store.images) && store.images.length
             ? store.images
             : (store.imageUrl ? [store.imageUrl] : []);
-          return (
+              return (
             <div key={store._id || index} className={`${styles.aboutStoreCard} ${index % 2 !== 0 ? styles.cardReverse : ''}`}>
               <div className={styles.storeDetails}>
                 <h3>{name}</h3>
@@ -109,7 +109,8 @@ export default function AboutStoresClient() {
               </div>
               <a href={mapHref} target="_blank" rel="noopener noreferrer" className={styles.storeImage}>
                 <div className={styles.storeImageInner}>
-                  <StoreImageGalleryClient images={images} alt={`${name} Store Interior`} />
+                  {/* Make the first two store images eager to avoid visible lazy-load jank on mobile */}
+                  <StoreImageGalleryClient images={images} alt={`${name} Store Interior`} eager={index < 2} />
                 </div>
               </a>
             </div>

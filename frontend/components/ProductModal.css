@@ -79,6 +79,8 @@
   border-radius: 6px;
   overflow: hidden;
   background-color: #f0f0f0;
+  /* Prevent default touch scrolling while interacting with the image so touchmove can control zoom/origin */
+  touch-action: none;
 }
 
 /* Cursor-follow zoom: use CSS variables for origin and scale. JS will update

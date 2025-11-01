@@ -1,21 +1,39 @@
 import { NextResponse } from 'next/server';
 import { auth } from '../../auth/[...nextauth]/route';
-import { v2 as cloudinary } from 'cloudinary';
 import dbConnect from '../../../../lib/dbConnect';
 import OfferContent from '../../../../models/OfferContent';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+const bucketName = process.env.AWS_BUCKET_NAME;
+const region = process.env.AWS_REGION;
+const s3Client = new S3Client({
+  region,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
-async function uploadBase64ToCloudinary(base64) {
+function buildS3Url(bucket, region, key) {
+  if (!region || region === 'us-east-1') return `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`;
+  return `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+}
+
+async function uploadBase64ToS3(base64) {
+  if (!bucketName) throw new Error('Server not configured (missing AWS_BUCKET_NAME)');
   try {
-    const res = await cloudinary.uploader.upload(base64, { folder: 'YARITU/offers', resource_type: 'image' });
-    return res.secure_url || res.url;
+    // base64 expected to be data:<type>;base64,<data>
+    const m = base64.match(/^data:(.+);base64,(.+)$/);
+    if (!m) throw new Error('Invalid base64 data');
+    const contentType = m[1];
+    const b64 = m[2];
+    const buffer = Buffer.from(b64, 'base64');
+    const filename = `offers-${Date.now()}.png`;
+    const key = `YARITU/offers/${Date.now()}-${filename}`;
+  await s3Client.send(new PutObjectCommand({ Bucket: bucketName, Key: key, Body: buffer, ContentType: contentType }));
+    return buildS3Url(bucketName, region, key);
   } catch (err) {
-    console.error('Cloudinary upload error', err);
+    console.error('S3 upload error', err);
     throw err;
   }
 }
@@ -51,10 +69,10 @@ export async function POST(req) {
     if (id) target = await OfferContent.findById(id);
     if (!target && typeof position === 'number') target = await OfferContent.findOne({ position: Number(position) });
 
-    // upload imageBase64 to Cloudinary if provided
+    // upload imageBase64 to S3 if provided
     let imageUrl = image;
     if (imageBase64) {
-      imageUrl = await uploadBase64ToCloudinary(imageBase64);
+      imageUrl = await uploadBase64ToS3(imageBase64);
     }
 
     if (target) {

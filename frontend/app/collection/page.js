@@ -622,12 +622,52 @@ return (
                 <p className={styles['collection-count']}>{(() => {
                     // If in jewellery mode, show jewellery items count
                     if (jewelleryMode) return `${jewelleryItems.length || 0} items`;
-                    // Otherwise show count for the active category (ALL or specific)
+
+                    // Build a filtered list that mirrors the product filtering logic so the
+                    // displayed count matches what the grid will show when filters are active.
+                    const src = Array.isArray(collections) ? collections.slice() : [];
                     const cat = (activeCategory || 'ALL').toString().toUpperCase();
-                    if (cat === 'ALL') return `${collections.length || 0} items`;
-                    // Count collections where category matches
-                    const cnt = (collections || []).filter(p => ((p.category || '').toString().toUpperCase() === cat)).length;
-                    return `${cnt} items`;
+                    let items = [];
+                    if (cat === 'ALL') {
+                        items = src;
+                    } else {
+                        items = src.filter(p => ((p.category || '').toString().toUpperCase() === cat));
+                    }
+
+                    // Apply subcategory/type/occasion filters consistent with the main filter
+                    if (activeSubcategory) {
+                        const sub = activeSubcategory.toString().toUpperCase();
+                        if (activeCategory === 'CHILDREN') {
+                            items = items.filter(p => {
+                                const group = (p.childCategory || p.collectionGroup || '').toString().toUpperCase();
+                                if (activeType) {
+                                    const t = (p.collectionType || p.type || '').toString().toUpperCase();
+                                    const typeMatches = (t === activeType.toUpperCase()) || (p.description || '').toUpperCase().includes(activeType.toUpperCase());
+                                    return (group === sub && typeMatches) || (!group && typeMatches);
+                                }
+                                return group === sub || (p.description || '').toUpperCase().includes(sub);
+                            });
+                        } else {
+                            items = items.filter(p => ((p.collectionType || p.type || '').toUpperCase() === sub) || ((p.description||'').toUpperCase().includes(sub)));
+                        }
+                    }
+
+                    if (activeType) {
+                        const t = activeType.toUpperCase();
+                        items = items.filter(p => ((p.collectionType || p.type || '').toUpperCase() === t) || ((p.description||'').toUpperCase().includes(t)) || ((p.title||p.name||'').toUpperCase().includes(t)));
+                    } else if (activeOccasion) {
+                        const wanted = activeOccasion.toString().toUpperCase();
+                        items = items.filter(p => {
+                            const occ = p.occasion;
+                            if (!occ) return false;
+                            if (Array.isArray(occ)) {
+                                return occ.some(o => (o || '').toString().toUpperCase() === wanted);
+                            }
+                            return (occ || '').toString().toUpperCase() === wanted;
+                        });
+                    }
+
+                    return `${(items || []).length} items`;
                 })()}</p>
         {jewelleryMode && (
             <p style={{ marginTop: -10, color: '#666', fontSize: 14, fontWeight: 700 }}>Only available in Ahmedabad ( Nikol, Gota ), Surat (Yogi Chowk ), Indore, Udaipur, Jaipur</p>
@@ -637,6 +677,59 @@ return (
 
 {/* Header action area */}
 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12, alignItems: 'center' }}>
+    {/* Mobile-only view mode toggles: show two icons to switch between two-per-row and single-per-row */}
+    {typeof window !== 'undefined' && window.innerWidth <= 768 && (
+        <div style={{ display: 'flex', gap: 8, marginRight: 'auto', alignItems: 'center' }}>
+            <button
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                title="Two per row"
+                style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    border: viewMode === 'grid' ? '1px solid #111' : '1px solid #ddd',
+                    background: viewMode === 'grid' ? '#111' : '#fff',
+                    color: viewMode === 'grid' ? '#fff' : '#111',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 6,
+                }}
+            >
+                {/* simple 2-up grid icon */}
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="7" height="7" rx="1" fill="currentColor" />
+                    <rect x="10" y="1" width="7" height="7" rx="1" fill="currentColor" />
+                    <rect x="1" y="10" width="7" height="7" rx="1" fill="currentColor" />
+                    <rect x="10" y="10" width="7" height="7" rx="1" fill="currentColor" />
+                </svg>
+            </button>
+            <button
+                onClick={() => setViewMode('single-column')}
+                aria-pressed={viewMode === 'single-column'}
+                title="Single per row"
+                style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    border: viewMode === 'single-column' ? '1px solid #111' : '1px solid #ddd',
+                    background: viewMode === 'single-column' ? '#111' : '#fff',
+                    color: viewMode === 'single-column' ? '#fff' : '#111',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 6,
+                }}
+            >
+                {/* simple single-column icon */}
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="16" height="5" rx="1" fill="currentColor" />
+                    <rect x="1" y="12" width="16" height="5" rx="1" fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+    )}
     {(activeCategory || jewelleryMode) && !jewelleryMode && isAdmin && (
         <button onClick={() => { setEditingCollection(null); setShowModal(true); }} style={{ padding: '8px 12px', borderRadius: 6 }}>Add New Collection</button>
     )}

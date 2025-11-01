@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 
-export default function StoreImageGalleryClient({ images = [], alt = 'Store image', className, style, intervalMs = 1000 }) {
+export default function StoreImageGalleryClient({ images = [], alt = 'Store image', className, style, intervalMs = 1000, eager = false }) {
   const validImages = Array.isArray(images) ? images.filter(Boolean) : [];
   const [idx, setIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (validImages.length <= 1) return; // no rotation if single/empty
@@ -21,7 +22,23 @@ export default function StoreImageGalleryClient({ images = [], alt = 'Store imag
 
   const current = validImages[Math.min(idx, validImages.length - 1)];
 
+  // When source changes, mark not yet loaded to trigger fade-in
+  useEffect(() => {
+    setLoaded(false);
+  }, [current]);
+
+  if (!current) return null;
+
   return (
-    <img src={current} alt={alt} className={className} style={{ ...style, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+    <img
+      src={current}
+      alt={alt}
+      className={className}
+      style={{ ...style, width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: loaded ? 1 : 0, transition: 'opacity 260ms ease', willChange: 'opacity, transform' }}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      fetchPriority={eager ? 'high' : 'auto'}
+      onLoad={() => setLoaded(true)}
+    />
   );
 }

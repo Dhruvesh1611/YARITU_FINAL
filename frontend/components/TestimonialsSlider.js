@@ -112,7 +112,7 @@ const TestimonialsSlider = ({ location = 'home' }) => {
                         {uniqueItems.map((item) => (
                             <div key={item._id || item.id} className={styles.adminRow}>
                                 <div className={styles.cellUser}>
-                                    <img src={item.avatarUrl  || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt={item.name} className={styles.adminAvatar} />
+                                    <img src={item.avatarUrl || '/images/Rectangle 4.png'} alt={item.name} className={styles.adminAvatar} />
                                     <span>{item.name || '—'}</span>
                                 </div>
                                 <div className={styles.cellReview}>
@@ -192,7 +192,7 @@ function ClickableTrack({ isPaused, items, onCardClick }) {
                     <div className={styles.cardInner}>
                         <div className={styles.cardTop}>
                             <div className={styles.cardAvatar}>
-                                <Image src={item.avatarUrl || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME}/image/upload/v1759495226/reel3_fr67pj.png`} alt={`${item.name} avatar`} width={72} height={72} loading="lazy" />
+                                <Image src={item.avatarUrl || '/images/Rectangle 4.png'} alt={`${item.name} avatar`} width={72} height={72} loading="lazy" />
                             </div>
                             <div className={styles.cardMeta}>
                                 <div className={styles.cardName}>{item.name}</div>

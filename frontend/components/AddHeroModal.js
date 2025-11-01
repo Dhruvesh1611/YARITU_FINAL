@@ -43,50 +43,19 @@ export default function AddHeroModal({ onClose, onAdd }) {
   // Reusable Cloudinary upload function using fetch (no fine-grained progress)
   // Signature preserved: (file, onProgress) => Promise<string>
   const uploadToCloudinary = (file, onProgress) => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
-        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
-        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UNSIGNED_PRESET || process.env.CLOUDINARY_UNSIGNED_PRESET || 'yaritu_preset';
-
-        // If we don't have client env vars (e.g. not exposed), fallback to proxy (no fine-grained progress)
-        if (!cloudName || !uploadPreset) {
-          try {
-            const proxyForm = new FormData();
-            proxyForm.append('file', file);
-            proxyForm.append('folder', 'YARITU/hero');
-
-            const proxyResp = await fetch('/api/cloudinary/upload', { method: 'POST', body: proxyForm });
-            const proxyJson = await proxyResp.json().catch(() => null);
-            if (!proxyResp.ok || !proxyJson?.success) {
-              return reject(new Error(proxyJson?.error || 'Server-side Cloudinary upload failed'));
-            }
-            const secure = proxyJson.data?.secure_url || proxyJson.data?.secureUrl || proxyJson.data?.url;
-            if (!secure) return reject(new Error('Upload did not return a secure URL from proxy.'));
-            try { if (typeof onProgress === 'function') onProgress(100); } catch (e) {}
-            return resolve(secure);
-          } catch (err) {
-            return reject(err);
-          }
-        }
-
-        const isVideo = !!(file && file.type && file.type.startsWith('video/'));
-        const endpointType = isVideo ? 'video' : 'image';
-        const url = `https://api.cloudinary.com/v1_1/${cloudName}/${endpointType}/upload`;
-
+        const url = '/api/upload';
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('upload_preset', uploadPreset);
         formData.append('folder', 'YARITU/hero');
 
-        // Use XHR so we can report upload progress back to the caller
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url, true);
 
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable && typeof onProgress === 'function') {
-            try {
-              onProgress(Math.round((event.loaded * 100) / event.total));
-            } catch (e) {}
+            try { onProgress(Math.round((event.loaded * 100) / event.total)); } catch (e) {}
           }
         };
 
@@ -94,14 +63,14 @@ export default function AddHeroModal({ onClose, onAdd }) {
           try {
             if (xhr.status >= 200 && xhr.status < 300) {
               const parsed = JSON.parse(xhr.responseText);
-              const secure = parsed?.secure_url || parsed?.secureUrl || parsed?.url;
-              if (!secure) return reject(new Error('Upload did not return a secure URL.'));
+              const secure = parsed?.url || parsed?.secure_url;
+              if (!secure) return reject(new Error('Upload did not return a URL.'));
               try { if (typeof onProgress === 'function') onProgress(100); } catch (e) {}
               return resolve(secure);
             }
             let parsed = null;
             try { parsed = JSON.parse(xhr.responseText); } catch (e) {}
-            return reject(new Error(parsed?.error?.message || `Upload failed with status ${xhr.status}`));
+            return reject(new Error(parsed?.error || `Upload failed with status ${xhr.status}`));
           } catch (err) {
             return reject(err);
           }
