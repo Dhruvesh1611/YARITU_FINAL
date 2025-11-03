@@ -49,8 +49,12 @@ export async function PUT(request) {
     const allowed = await requireAdmin(request);
     if (!allowed) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     await dbConnect();
-    const body = await request.json();
-    const { id, ...updates } = body;
+    const body = await request.json().catch(() => ({}));
+    // Accept id either in the JSON body or as a query param (some clients send ?id=...)
+    const url = typeof request.url === 'string' ? new URL(request.url) : null;
+    const qid = url ? url.searchParams.get('id') : null;
+    const { id: bodyId, ...updates } = body || {};
+    const id = bodyId || qid;
     if (!id) return NextResponse.json({ success: false, error: 'id required' }, { status: 400 });
     const doc = await Jewellery.findByIdAndUpdate(id, updates, { new: true });
     if (!doc) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });

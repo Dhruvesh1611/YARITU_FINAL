@@ -31,34 +31,39 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
 
   // Reusable upload function with progress tracking that posts to our
   // `/api/upload` endpoint which stores files in S3 and returns a public URL.
-  const uploadToS3 = (file, onProgress) => {
-    return new Promise((resolve, reject) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      // folder is accepted but server stores at bucket root
-      // formData.append('folder', 'YARITU/celebrities');
+  // Signature: uploadToS3(file, onProgress, folder = 'YARITU/celebrity')
+  // This allows callers to pass (file, setUploadProgress) and still have the
+  // correct default folder for celebrity uploads.
+  const uploadToS3 = (file, onProgress, folder = 'YARITU/celebrity') => {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder); // ✅ pass folder name
 
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/upload', true);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload', true);
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percentCompleted = Math.round((event.loaded * 100) / event.total);
-          onProgress(percentCompleted);
-        }
-      };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response.url || response.secure_url);
-        } else {
-          reject(new Error(`Upload failed with status: ${xhr.status}`));
-        }
-      };
-      xhr.onerror = () => reject(new Error('Network error during upload'));
-      xhr.send(formData);
-    });
-  };
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percentCompleted = Math.round((event.loaded * 100) / event.total);
+        onProgress(percentCompleted);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const response = JSON.parse(xhr.responseText);
+        resolve(response.url || response.secure_url);
+      } else {
+        reject(new Error(`Upload failed with status: ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.send(formData);
+  });
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

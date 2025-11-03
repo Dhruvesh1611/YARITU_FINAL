@@ -82,15 +82,15 @@ export async function POST(request) {
     // store keys so we know which result belongs where
     const keys = [];
 
-    if (mainFile) { uploadPromises.push(processImage(mainFile)); keys.push('main'); }
+  if (mainFile) { uploadPromises.push(processImage(mainFile, fields.folder)); keys.push('main'); }
     else { keys.push('main'); uploadPromises.push(Promise.resolve(null)); }
 
-    if (mainFile2) { uploadPromises.push(processImage(mainFile2)); keys.push('main2'); }
+  if (mainFile2) { uploadPromises.push(processImage(mainFile2, fields.folder)); keys.push('main2'); }
     else { keys.push('main2'); uploadPromises.push(Promise.resolve(null)); }
 
     // other images - upload each (or none)
     for (let i = 0; i < otherFiles.length; i++) {
-      uploadPromises.push(processImage(otherFiles[i]));
+  uploadPromises.push(processImage(otherFiles[i], fields.folder));
       keys.push(`other_${i}`);
     }
 

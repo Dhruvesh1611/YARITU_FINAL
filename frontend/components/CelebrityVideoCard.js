@@ -36,10 +36,9 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
   
   const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      // folder is optional and ignored by server which stores at bucket root
-      // formData.append('folder', 'YARITU/celebrity');
+  const formData = new FormData();
+  // ensure full prefix so server stores under YARITU/celebrity
+  formData.append('folder', 'YARITU/celebrity'); // 👈 use full prefix
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);

@@ -812,22 +812,24 @@ collections={collections}
 />
 )}
 
-{showJewelleryModal && (
-    <JewelleryModal
-        initial={editingCollection}
-        onClose={() => { setShowJewelleryModal(false); setEditingCollection(null); }}
-        onSaved={(saved) => {
-            setJewelleryItems(prev => {
-                if (!saved) return prev;
-                const filtered = (prev || []).filter(j => j._id !== saved._id);
-                return [saved, ...filtered];
-            });
-            setShowJewelleryModal(false);
-            setEditingCollection(null);
-        }}
-        stores={storesList}
-    />
-)}
+ {showJewelleryModal && (
+     <JewelleryModal
+         initial={editingCollection}
+         // Pass activeCategory so uploads can be stored at YARITU/JEWELLERY/<CATEGORY>
+         category={activeCategory}
+         onClose={() => { setShowJewelleryModal(false); setEditingCollection(null); }}
+         onSaved={(saved) => {
+             setJewelleryItems(prev => {
+                 if (!saved) return prev;
+                 const filtered = (prev || []).filter(j => j._id !== saved._id);
+                 return [saved, ...filtered];
+             });
+             setShowJewelleryModal(false);
+             setEditingCollection(null);
+         }}
+         stores={storesList}
+     />
+ )}
 
 {showMetaEditor && editorCategory && (
     <CategoryMetaEditor

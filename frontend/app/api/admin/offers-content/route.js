@@ -4,7 +4,7 @@ import dbConnect from '../../../../lib/dbConnect';
 import OfferContent from '../../../../models/OfferContent';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const bucketName = process.env.AWS_BUCKET_NAME;
+const bucketName = process.env.AWS_S3_BUCKET_NAME;
 const region = process.env.AWS_REGION;
 const s3Client = new S3Client({
   region,
@@ -15,12 +15,14 @@ const s3Client = new S3Client({
 });
 
 function buildS3Url(bucket, region, key) {
-  if (!region || region === 'us-east-1') return `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`;
-  return `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+  if (!region || region === 'us-east-1') {
+    return `https://${bucket}.s3.amazonaws.com/${key}`;
+  }
+  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 }
 
 async function uploadBase64ToS3(base64) {
-  if (!bucketName) throw new Error('Server not configured (missing AWS_BUCKET_NAME)');
+  if (!bucketName) throw new Error('Server not configured (missing AWS_S3_BUCKET_NAME)');
   try {
     // base64 expected to be data:<type>;base64,<data>
     const m = base64.match(/^data:(.+);base64,(.+)$/);
@@ -28,8 +30,9 @@ async function uploadBase64ToS3(base64) {
     const contentType = m[1];
     const b64 = m[2];
     const buffer = Buffer.from(b64, 'base64');
-    const filename = `offers-${Date.now()}.png`;
-    const key = `YARITU/offers/${Date.now()}-${filename}`;
+  const filename = `offers-${Date.now()}.png`;
+  // Store offers content images under REVIEW_PAGE per new requirement
+  const key = `YARITU/OFFER_PAGE/${Date.now()}-${filename}`;
   await s3Client.send(new PutObjectCommand({ Bucket: bucketName, Key: key, Body: buffer, ContentType: contentType }));
     return buildS3Url(bucketName, region, key);
   } catch (err) {

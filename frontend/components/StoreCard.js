@@ -99,7 +99,7 @@ export default function StoreCard({ store, index, onUpdate, onDelete }) {
       const formData = new FormData();
       formData.append('file', file);
       // optional folder; server stores at bucket root
-      // formData.append('folder', 'YARITU/stores');
+  // formData.append('folder', 'YARITU/store');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);

@@ -47,10 +47,10 @@ export default function AddHeroModal({ onClose, onAdd }) {
     return new Promise((resolve, reject) => {
       try {
         const url = '/api/upload';
-        const formData = new FormData();
-        formData.append('file', file);
-        // server now stores files at bucket root; folder is ignored by server
-        // formData.append('folder', 'YARITU/hero');
+  const formData = new FormData();
+  formData.append('file', file);
+  // ensure hero uploads go into the correct prefix
+  formData.append('folder', 'YARITU/hero');
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url, true);

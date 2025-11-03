@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './JewelleryModal.module.css'; // CSS Module ko import karein
 
-export default function JewelleryModal({ initial = null, onClose, onSaved, stores = [] }) {
+export default function JewelleryModal({ initial = null, onClose, onSaved, stores = [], category = null }) {
   const isEdit = Boolean(initial && initial._id);
   const [name, setName] = useState(initial?.name || '');
   // store selection removed — we no longer show a store dropdown in the modal
@@ -26,10 +26,27 @@ export default function JewelleryModal({ initial = null, onClose, onSaved, store
   const uploadFile = async (file) => {
     const fd = new FormData();
     fd.append('file', file, file.name);
+    // Include folder hint so server stores files under YARITU/JEWELLERY/<CATEGORY>
+    try {
+      const cat = (category || initial?.category || 'ALL').toString().toUpperCase();
+      fd.append('folder', `YARITU/JEWELLERY/${cat}`);
+    } catch (e) {
+      // ignore
+    }
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
-    const j = await res.json();
-    if (res.ok && j.success && j.data && j.data.secure_url) return j.data.secure_url;
-    throw new Error(j.error || 'Upload failed');
+    const j = await res.json().catch(() => ({}));
+    // Support multiple response shapes:
+    // - New: { url: 'https://bucket.s3.region.amazonaws.com/...' }
+    // - New (alt): { success: true, data: { url: '...' } }
+    // - Legacy Cloudinary proxy: { success: true, data: { secure_url: '...' } }
+    if (res.ok) {
+      const candidate = j.url || j.secure_url || (j.data && (j.data.url || j.data.secure_url)) || (j.data && j.data[0] && j.data[0].secure_url);
+      if (candidate) return candidate;
+      // Some older endpoints returned { success: true, data: { url } }
+      if (j.success && j.data && typeof j.data === 'string') return j.data;
+      throw new Error(j.error || 'Upload failed: unexpected response');
+    }
+    throw new Error(j.error || `Upload failed (status ${res.status})`);
   };
 
   const handleMainImageChange = (e) => {

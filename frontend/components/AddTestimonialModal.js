@@ -17,7 +17,9 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
             const url = `/api/upload`;
             const fd = new FormData();
             fd.append('file', file);
-            fd.append('folder', 'YARITU');
+            // Place home testimonials under YARITU/home_review, otherwise use the location
+            const folderToUse = (location === 'home') ? 'YARITU/home_review' : `YARITU/${location}`;
+            fd.append('folder', folderToUse);
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', url, true);

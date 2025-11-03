@@ -13,7 +13,7 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('folder', 'YARITU/celebrity');
+  fd.append('folder', 'YARITU/stayclassy');
 
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');

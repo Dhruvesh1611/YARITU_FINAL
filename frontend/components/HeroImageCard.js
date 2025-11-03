@@ -36,10 +36,10 @@ export default function HeroImageCard({ item, onUpdate, onDelete }) {
 
   const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      // folder optional; server will store at bucket root
-      // formData.append('folder', 'YARITU/hero');
+  const formData = new FormData();
+  formData.append('file', file);
+  // explicitly request hero folder so server mapping stores under YARITU/hero
+  formData.append('folder', 'YARITU/hero');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);

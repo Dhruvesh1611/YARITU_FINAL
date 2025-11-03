@@ -89,7 +89,7 @@ export default function EditStoreModal({ open, onClose, store, idx, onSaved }) {
         if (file) {
           const fd = new FormData();
           fd.append('file', file);
-          fd.append('folder', 'YARITU/stores');
+          fd.append('folder', 'YARITU/store');
 
           const resCloud = await fetch('/api/upload', { method: 'POST', body: fd });
           if (!resCloud.ok) throw new Error('Upload failed');

@@ -27,7 +27,7 @@ export default function EditStoreImagesModal({ store, onClose, onSaved }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('folder', 'YARITU/stores');
+  formData.append('folder', 'YARITU/store');
 
       const response = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await response.json();

@@ -55,7 +55,7 @@ export async function PUT(request, { params }) {
     
     if (files.mainImage) {
     const mainImageFile = files.mainImage;
-    const result = await processImage(mainImageFile);
+    const result = await processImage(mainImageFile, fields.folder);
     if (result) {
       updateData.mainImage = result.secure_url;
     }
@@ -65,7 +65,7 @@ export async function PUT(request, { params }) {
 
   if (files.mainImage2) {
     const mainImage2File = files.mainImage2;
-    const result = await processImage(mainImage2File);
+    const result = await processImage(mainImage2File, fields.folder);
     if (result) {
       updateData.mainImage2 = result.secure_url;
     }
@@ -83,7 +83,7 @@ export async function PUT(request, { params }) {
   if (files.otherImages) {
     const otherImageFiles = Array.isArray(files.otherImages) ? files.otherImages : [files.otherImages];
     for (const file of otherImageFiles) {
-      const result = await processImage(file);
+      const result = await processImage(file, fields.folder);
       if (result) {
         otherImageUrls.push(result.secure_url);
       }

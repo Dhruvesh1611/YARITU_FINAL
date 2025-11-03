@@ -76,11 +76,12 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
   };
 
   // Reusable server-backed upload function with progress tracking (uploads to /api/upload -> S3)
-  const uploadToS3 = (file, onProgress) => {
+    const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('folder', 'YARITU/offers');
+      // Store offer images under the REVIEW_PAGE prefix so they show up in the review page listing
+      formData.append('folder', 'YARITU/REVIEW_PAGE');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);

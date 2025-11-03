@@ -18,7 +18,7 @@ export default function AddStoreModal({ onClose, onAdd }) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('folder', 'YARITU/stores');
+  fd.append('folder', 'YARITU/store');
 
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) {

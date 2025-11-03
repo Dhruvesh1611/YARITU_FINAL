@@ -148,7 +148,8 @@ const StayClassy = () => {
       try {
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('folder', 'YARITU');
+  // ensure StayClassy uploads go into the stayclassy prefix
+  fd.append('folder', 'YARITU/stayclassy');
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload', true);

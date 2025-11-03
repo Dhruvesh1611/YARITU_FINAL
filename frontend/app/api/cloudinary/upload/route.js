@@ -13,8 +13,9 @@ const s3Client = new S3Client({
 });
 
 function buildS3Url(bucket, region, key) {
-  return `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 }
+
 
 export async function POST(req) {
   try {

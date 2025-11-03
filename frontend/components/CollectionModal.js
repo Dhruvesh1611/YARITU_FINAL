@@ -118,8 +118,15 @@ export default function CollectionModal({ initial = null, onClose, onSaved, meta
       try {
         const fd = new FormData();
         fd.append('file', file);
-  // folder is optional; server stores uploads at the bucket root
-  // fd.append('folder', 'YARITU/collections');
+        // For collection uploads we want them stored under a predictable
+        // prefix: YARITU/COLLECTION/<CATEGORY> where CATEGORY is MEN/WOMEN/CHILDREN
+        // state.category is UPPERCASE (e.g. 'MEN') so include it directly.
+        try {
+          const cat = state?.category ? state.category.toString().toUpperCase() : 'MEN';
+          fd.append('folder', `YARITU/COLLECTION/${cat}`);
+        } catch (e) {
+          // fallback: do not block upload if category isn't available for some reason
+        }
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.upload.onprogress = (e) => {

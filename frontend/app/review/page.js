@@ -916,7 +916,7 @@ export default function Review() {
                         setUploadStatusMessage('Preparing upload...');
 
                           // We'll upload via the server-side upload route (`/api/upload`) which stores files in S3.
-                          // Ensure your server has the required AWS env vars set (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_BUCKET_NAME).
+                          // Ensure your server has the required AWS env vars set (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET_NAME).
 
                         try {
                           // create local preview
