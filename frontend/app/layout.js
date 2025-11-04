@@ -6,7 +6,7 @@ import Header from '../components/Header'; // <-- Dekhein, ab hum original Heade
 import Footer from '../components/Footer';
 import Providers from '../components/Providers'; // <-- Naya Providers component import kiya
 import Script from 'next/script';
-import GA4Analytics from '../components/Analytics';
+import Analytics from '../components/Analytics';
 import './globals.css';
 import WhatsAppChat from '../components/WhatsAppChat';
 import { WHATSAPP_NUMBER } from '../lib/siteConfig';
@@ -64,7 +64,7 @@ gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', { send_page_view: false${proc
               Wrap in Suspense to avoid CSR-bailout errors during prerendering (Next.js requirement).
           */}
           <Suspense fallback={null}>
-            <GA4Analytics />
+            <Analytics />
           </Suspense>
         </Providers>
       </body>

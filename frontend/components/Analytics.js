@@ -3,10 +3,9 @@
 import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { pageview } from '../app/lib/gtag';
-import { Analytics } from "@vercel/analytics/next"
 
 // Simple Analytics client component — delegates to app/lib/gtag.js helpers.
-export default function GA4Analytics() {
+export default function Analytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
