@@ -39,6 +39,10 @@ export default function AddCelebrityModal({ onClose, onAdd }) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', folder); // ✅ pass folder name
+    // Preserve uploaded filename on S3 (server will sanitize). Helpful so
+    // uploaded celebrity videos keep their original names instead of being
+    // prefixed with a timestamp.
+    formData.append('preserveName', 'true');
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/upload', true);

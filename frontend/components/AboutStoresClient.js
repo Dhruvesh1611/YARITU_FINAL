@@ -6,11 +6,12 @@ import EditStoreImagesModal from './EditStoreImagesModal';
 import styles from '../app/about/about.module.css';
 import { buildGoogleMapsUrl } from '../utils/maps';
 
-export default function AboutStoresClient() {
+export default function AboutStoresClient({ initialStores = [] }) {
   const { data: session } = useSession();
   const isAdmin = !!(session?.user?.isAdmin || session?.user?.role === 'admin');
-  const [stores, setStores] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // If the server provided initial stores, use them to avoid client-side loading jank.
+  const [stores, setStores] = useState(Array.isArray(initialStores) && initialStores.length ? initialStores : []);
+  const [loading, setLoading] = useState(!Array.isArray(initialStores) || initialStores.length === 0);
   const [error, setError] = useState('');
   const [editingStore, setEditingStore] = useState(null);
 
@@ -37,14 +38,16 @@ export default function AboutStoresClient() {
 
 
   useEffect(() => {
+    // Only fetch client-side if we didn't receive initialStores from the server.
+    if (Array.isArray(initialStores) && initialStores.length) return;
     let isMounted = true;
     const load = async () => {
       setLoading(true);
       try {
         const res = await fetch('/api/stores', { cache: 'no-store' });
         const j = await res.json();
-  if (!res.ok || !j.success) throw new Error(j.error || j.message || 'Failed to load stores');
-  if (isMounted) setStores(sortStoresByName(Array.isArray(j.data) ? j.data : []));
+        if (!res.ok || !j.success) throw new Error(j.error || j.message || 'Failed to load stores');
+        if (isMounted) setStores(sortStoresByName(Array.isArray(j.data) ? j.data : []));
       } catch (e) {
         console.error(e);
         if (isMounted) setError(e.message || 'Failed to load stores');
@@ -54,7 +57,7 @@ export default function AboutStoresClient() {
     };
     load();
     return () => { isMounted = false; };
-  }, []);
+  }, [initialStores]);
 
   const onSaved = (updated) => {
     setStores(prev => {

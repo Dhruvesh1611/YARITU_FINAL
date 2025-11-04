@@ -25,6 +25,14 @@ export default function AddFeaturedModal({ onClose, onAdd, isEditing = false, it
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'YARITU/featured');
+      // Preserve filename on S3 so uploaded file keeps its original name
+      fd.append('preserveName', 'true');
+      // If editing an existing item, tell the server which object to remove
+      if (isEditing && item?.src) {
+        const canon = String(item.src).split('?')[0].split('#')[0];
+        fd.append('existingUrl', canon);
+        fd.append('replaceWithNewName', 'true');
+      }
 
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');

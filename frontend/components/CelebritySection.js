@@ -188,6 +188,13 @@ const CelebritySection = () => {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'YARITU/celebrity');
+      // Ask the server to preserve the uploaded filename and remove the
+      // previous object. Send the canonical existing URL so server can
+      // convert it to an S3 key and delete it after uploading the new file.
+      const canonicalExisting = current.videoUrl ? String(current.videoUrl).split('?')[0].split('#')[0] : null;
+      if (canonicalExisting) fd.append('existingUrl', canonicalExisting);
+      fd.append('preserveName', 'true');
+      fd.append('replaceWithNewName', 'true');
 
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');

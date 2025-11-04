@@ -24,7 +24,11 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
     setUploadError(null);
 
     try {
-      const secureUrl = await uploadToS3(file, setUploadProgress);
+      // If editing an existing video, send the canonical existing URL so the
+      // server can delete the previous object and optionally preserve the
+      // uploaded filename.
+      const canonicalExisting = form.videoUrl ? String(form.videoUrl).split('?')[0].split('#')[0] : null;
+      const secureUrl = await uploadToS3(file, setUploadProgress, canonicalExisting, true);
       setForm((p) => ({ ...p, videoUrl: secureUrl }));
     } catch (err) {
       console.error(err);
@@ -34,11 +38,24 @@ export default function CelebrityVideoCard({ item, onUpdate, onDelete }) {
     }
   };
   
-  const uploadToS3 = (file, onProgress) => {
+  const uploadToS3 = (file, onProgress, existingUrl = null, replaceWithNewName = false) => {
     return new Promise((resolve, reject) => {
   const formData = new FormData();
+  // include the file itself
+  formData.append('file', file);
   // ensure full prefix so server stores under YARITU/celebrity
   formData.append('folder', 'YARITU/celebrity'); // 👈 use full prefix
+  // Preserve uploaded filename on S3 (server will sanitize). Useful for
+  // celebrity assets so names remain readable.
+  formData.append('preserveName', 'true');
+
+  if (existingUrl) {
+    try {
+      const canon = String(existingUrl).split('?')[0].split('#')[0];
+      formData.append('existingUrl', canon);
+    } catch (e) { /* ignore */ }
+  }
+  if (replaceWithNewName) formData.append('replaceWithNewName', 'true');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);
