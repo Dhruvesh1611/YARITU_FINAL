@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { urlToKey, deleteObjectByKey } from '../../../lib/s3';
 
 export const runtime = 'nodejs';
 
@@ -83,6 +84,10 @@ export async function POST(req) {
           if (k === 'review' || k === 'review_page' || k === 'review-page' || k === 'reviews') {
             return `YARITU/REVIEW_PAGE`;
           }
+            // Map testimonials to client_review (new folder name)
+            if (k === 'testimonials') {
+              return `YARITU/client_review`;
+            }
           // return uppercase segment for readability and consistency
           return `YARITU/${k.toString().toUpperCase()}`;
         }
@@ -114,9 +119,55 @@ export async function POST(req) {
   // Normalize any leading 'yaritu' (case-insensitive) to uppercase 'YARITU'
   folderPrefix = folderPrefix.replace(/^yaritu/i, 'YARITU');
 
+  // Map legacy or lowercase variants like 'offer_page' or 'offer-page' to the new home_offer folder
+  try {
+    const lp = (folderPrefix || '').toString().toLowerCase();
+    if (lp.includes('offer_page') || lp.includes('offer-page') || lp.includes('/offer_page') || lp.includes('/offer-page')) {
+      folderPrefix = 'YARITU/home_offer';
+    }
+  } catch (e) {
+    // ignore
+  }
+
     // Clean filename and build key
-    const filename = file.name ? file.name.replace(/\s+/g, '_') : `${Date.now()}`;
-    const key = `${folderPrefix}/${Date.now()}-${filename}`;
+  const filename = file.name ? file.name.replace(/\s+/g, '_') : `${Date.now()}`;
+  // Support optional overwrite: client may send an existing S3 URL or a targetKey to overwrite
+  const existingUrlField = (form.get('existingUrl') || form.get('overwriteUrl') || form.get('targetKey') || '').toString();
+  let overwriteKey = '';
+  try {
+    // If client supplied a full S3 URL, convert it to a key
+    if (existingUrlField) {
+      if (existingUrlField.startsWith('http://') || existingUrlField.startsWith('https://')) {
+        const possible = urlToKey(existingUrlField);
+        if (possible) overwriteKey = possible;
+      } else {
+        // treat it as a raw key or path; sanitize and use as-is (allow folder/subpath)
+        const cleaned = sanitize(existingUrlField);
+        if (cleaned) overwriteKey = cleaned;
+      }
+    }
+  } catch (e) {
+    // ignore and fall back to normal key generation
+    overwriteKey = '';
+  }
+  // Optional: client can request to create a new key using the uploaded filename
+  // and delete the previous object. Useful when you want the saved URL to match
+  // the uploaded filename (e.g., email.png) instead of overwriting the old key.
+  const replaceWithNewNameFlag = (form.get('replaceWithNewName') || '').toString().toLowerCase();
+  const replaceWithNewName = replaceWithNewNameFlag === '1' || replaceWithNewNameFlag === 'true' || replaceWithNewNameFlag === 'yes';
+  // Support optional preserveName form flag. If client sets preserveName=true (or '1'),
+  // we store the object using the original filename (sanitized) without a timestamp prefix.
+  // This avoids automatic Date.now() prefix when the client explicitly wants the original name.
+  const preserveNameFlag = (form.get('preserveName') || '').toString().toLowerCase();
+  const preserveName = preserveNameFlag === '1' || preserveNameFlag === 'true' || preserveNameFlag === 'yes';
+  // Decide final key. If replaceWithNewName is true, force a new key using uploaded filename.
+  let key = '';
+  if (replaceWithNewName) {
+    key = `${folderPrefix}/${filename}`;
+  } else {
+    // If overwriteKey is present, use it directly (this will overwrite existing object)
+    key = overwriteKey ? overwriteKey : (preserveName ? `${folderPrefix}/${filename}` : `${folderPrefix}/${Date.now()}-${filename}`);
+  }
 
     const putParams = {
       Bucket: bucketName,
@@ -129,6 +180,15 @@ export async function POST(req) {
     await s3Client.send(new PutObjectCommand(putParams));
 
     const url = buildS3Url(bucketName, region, key);
+    // If we created a new key as requested, and an overwriteKey existed previously,
+    // delete the old object so there are not duplicate files in the bucket.
+    try {
+      if (replaceWithNewName && overwriteKey && overwriteKey !== key) {
+        await deleteObjectByKey(overwriteKey);
+      }
+    } catch (e) {
+      console.error('Failed to delete previous object after replaceWithNewName:', e);
+    }
     return NextResponse.json({ url });
   } catch (err) {
     console.error('S3 upload error', err);

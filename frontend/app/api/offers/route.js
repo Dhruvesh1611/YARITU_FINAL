@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/dbConnect';
 import OfferContent from '../../../models/OfferContent';
+import { deleteObjectByUrl, isS3Url } from '../../../lib/s3';
+export const runtime = 'nodejs';
 
 // We'll keep a fixed set of 5 positions (0..4). Each document may have an optional `position` field.
 // GET: return array of length 5, filling missing positions with defaults.
@@ -72,6 +74,17 @@ export async function PUT(request) {
         else doc[k] = body[k];
       }
     });
+
+    // If image was changed, attempt to delete old S3 object
+    try {
+      if (Object.prototype.hasOwnProperty.call(body, 'image')) {
+        const old = doc.image;
+        const nw = body.image;
+        if (old && old !== nw && isS3Url(old)) {
+          try { await deleteObjectByUrl(old); } catch (e) { console.error('Failed deleting old offer image from S3', e); }
+        }
+      }
+    } catch (e) { console.error('Offer image cleanup error', e); }
 
     await doc.save();
     return NextResponse.json({ success: true, data: doc }, { status: 200 });

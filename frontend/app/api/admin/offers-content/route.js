@@ -3,6 +3,8 @@ import { auth } from '../../auth/[...nextauth]/route';
 import dbConnect from '../../../../lib/dbConnect';
 import OfferContent from '../../../../models/OfferContent';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { deleteObjectByUrl, isS3Url } from '../../../../lib/s3';
+export const runtime = 'nodejs';
 
 const bucketName = process.env.AWS_S3_BUCKET_NAME;
 const region = process.env.AWS_REGION;
@@ -31,8 +33,8 @@ async function uploadBase64ToS3(base64) {
     const b64 = m[2];
     const buffer = Buffer.from(b64, 'base64');
   const filename = `offers-${Date.now()}.png`;
-  // Store offers content images under REVIEW_PAGE per new requirement
-  const key = `YARITU/OFFER_PAGE/${Date.now()}-${filename}`;
+  // Store offers content images under home_offer for home page multiple offers
+  const key = `YARITU/home_offer/${Date.now()}-${filename}`;
   await s3Client.send(new PutObjectCommand({ Bucket: bucketName, Key: key, Body: buffer, ContentType: contentType }));
     return buildS3Url(bucketName, region, key);
   } catch (err) {
@@ -85,7 +87,15 @@ export async function POST(req) {
       if (validity) target.validity = validity;
       if (typeof position !== 'undefined') target.position = Number(position);
       if (typeof store !== 'undefined') target.store = store;
-      if (imageUrl) target.image = imageUrl;
+      if (imageUrl) {
+        // delete previous image if stored on our bucket and changed
+        try {
+          if (target.image && target.image !== imageUrl && isS3Url(target.image)) {
+            await deleteObjectByUrl(target.image);
+          }
+        } catch (e) { console.error('Failed deleting old offer content image from S3', e); }
+        target.image = imageUrl;
+      }
       await target.save();
       return NextResponse.json({ success: true, data: target });
     }
@@ -112,8 +122,12 @@ export async function DELETE(req) {
     }
 
     await dbConnect();
-    const removed = await OfferContent.findByIdAndDelete(id);
+    const removed = await OfferContent.findById(id);
     if (!removed) return NextResponse.json({ success: false, message: 'Item not found' }, { status: 404 });
+
+    try { if (removed.image && isS3Url(removed.image)) await deleteObjectByUrl(removed.image); } catch (e) { console.error('Failed deleting offer content image from S3', e); }
+
+    await OfferContent.findByIdAndDelete(id);
     return NextResponse.json({ success: true, data: { id: removed._id } });
   } catch (err) {
     console.error('Delete offers content error', err);

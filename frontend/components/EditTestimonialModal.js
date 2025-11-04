@@ -18,8 +18,8 @@ export default function AddTestimonialModal({ location = 'home', item = null, on
             const url = '/api/upload';
             const fd = new FormData();
             fd.append('file', file);
-            // folder optional; server stores at bucket root
-            // fd.append('folder', 'YARITU/testimonials');
+            // Explicitly upload testimonial avatars to the new folder name
+            fd.append('folder', 'YARITU/client_review');
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', url, true);
