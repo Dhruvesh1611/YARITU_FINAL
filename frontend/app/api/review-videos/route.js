@@ -3,12 +3,16 @@ import dbConnect from '../../../lib/dbConnect';
 import ReviewVideo from '../../../models/ReviewVideo';
 import { deleteObjectByUrl, isS3Url } from '../../../lib/s3';
 export const runtime = 'nodejs';
+export const revalidate = 60;
 
 export async function GET() {
   try {
     await dbConnect();
     const items = await ReviewVideo.find({}).sort({ position: 1, createdAt: -1 }).lean();
-    return NextResponse.json({ success: true, data: items });
+    return NextResponse.json(
+      { success: true, data: items },
+      { status: 200, headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
+    );
   } catch (e) {
     console.error(e);
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });

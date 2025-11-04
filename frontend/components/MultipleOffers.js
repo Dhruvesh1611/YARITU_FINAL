@@ -15,12 +15,12 @@ const offers = [
   { id: 5, image: '/images/offer5.png', discount: 'UP TO 70% OFF', category: 'OOTD' },
 ];
 
-const MultipleOffers = () => {
+const MultipleOffers = ({ initialOffers }) => {
   const router = useRouter();
   const { data: session } = useSession();
   const isAdmin = !!(session?.user?.role === 'admin' || session?.user?.isAdmin);
-  const [offersState, setOffersState] = useState(offers);
-  const [isLoading, setIsLoading] = useState(false);
+  const [offersState, setOffersState] = useState((initialOffers && Array.isArray(initialOffers) && initialOffers.length > 0) ? initialOffers : offers);
+  const [isLoading, setIsLoading] = useState(!(initialOffers && Array.isArray(initialOffers) && initialOffers.length > 0));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
 
@@ -34,6 +34,12 @@ const MultipleOffers = () => {
 
   // Fetch offers from server if an API exists; show skeletons while loading
   useEffect(() => {
+    // If the server already provided offers, skip client fetch.
+    if (initialOffers && Array.isArray(initialOffers) && initialOffers.length > 0) {
+      setIsLoading(false);
+      return;
+    }
+
     let mounted = true;
     const loadOffers = async () => {
       setIsLoading(true);
@@ -66,7 +72,7 @@ const MultipleOffers = () => {
 
     loadOffers();
     return () => { mounted = false; };
-  }, []);
+  }, [initialOffers]);
 
   useEffect(() => {
     if (isLoading) return;

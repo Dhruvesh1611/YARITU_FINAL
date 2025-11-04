@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/dbConnect';
 import Testimonial from '../../../models/Testimonial';
 import { auth } from '../auth/[...nextauth]/route';
+export const revalidate = 60;
 
 export async function GET(request) {
   try {
@@ -12,7 +13,10 @@ export async function GET(request) {
     console.debug('GET /api/testimonials requested location=', location);
     const filter = location ? { location } : {};
     const items = await Testimonial.find(filter).sort({ createdAt: -1 });
-    return NextResponse.json({ success: true, data: items });
+    return NextResponse.json(
+      { success: true, data: items },
+      { status: 200, headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
+    );
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

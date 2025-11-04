@@ -8,6 +8,7 @@ import { auth } from '../../auth/[...nextauth]/route';
 import { parseForm, processImage } from '../../../../lib/parseForm';
 import { deleteObjectByUrl, isS3Url } from '../../../../lib/s3';
 export const runtime = 'nodejs';
+export const revalidate = 60;
 
 export async function GET(request, { params }) {
     const { id } = params;
@@ -16,7 +17,10 @@ export async function GET(request, { params }) {
       await dbConnect();
       const item = await Collection.findById(id).lean();
       if (!item) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
-      return NextResponse.json({ success: true, data: item });
+  return NextResponse.json(
+    { success: true, data: item },
+    { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
+  );
     } catch (err) {
       console.error(err);
       return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
