@@ -6,7 +6,7 @@ import { pageview } from '../app/lib/gtag';
 import { Analytics } from "@vercel/analytics/next"
 
 // Simple Analytics client component — delegates to app/lib/gtag.js helpers.
-export default function Analytics() {
+export default function GA4Analytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
