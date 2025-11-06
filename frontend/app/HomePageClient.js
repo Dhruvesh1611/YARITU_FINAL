@@ -30,7 +30,7 @@ const heroImages = [
   '/images/hero3.png'
 ];
 
-export default function HomePageClient({ initialHeroItems, initialStores, initialTrendingVideos, initialOffers }) {
+export default function HomePageClient({ initialHeroItems, initialStores, initialTrendingVideos }) {
   const router = useRouter();
   const [currentHeroImage, setCurrentHeroImage] = useState(0);
   
@@ -587,7 +587,7 @@ export default function HomePageClient({ initialHeroItems, initialStores, initia
           </div>
         </section>
         
-  <MultipleOffers initialOffers={initialOffers} />
+        <MultipleOffers />
         <StayClassy />
 
         <section id="home-stores" className="section-container home-stores">

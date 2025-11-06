@@ -75,14 +75,6 @@ export default function FeaturedImageCard({ item, onUpdate, onDelete }) {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'YARITU/featured');
-      // Preserve filename on S3 so uploaded file keeps its original name
-      fd.append('preserveName', 'true');
-      // If replacing an existing featured image, ask the server to remove the old object
-      const canonicalExisting = item?.src ? String(item.src).split('?')[0].split('#')[0] : null;
-      if (canonicalExisting) {
-        fd.append('existingUrl', canonicalExisting);
-        fd.append('replaceWithNewName', 'true');
-      }
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();

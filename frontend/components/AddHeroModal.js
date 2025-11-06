@@ -51,9 +51,6 @@ export default function AddHeroModal({ onClose, onAdd }) {
   formData.append('file', file);
   // ensure hero uploads go into the correct prefix
   formData.append('folder', 'YARITU/hero');
-  // Preserve original filename on S3 (server will sanitize). Helpful so uploaded
-  // hero images keep their original names (e.g. Group.svg) instead of timestamped.
-  formData.append('preserveName', 'true');
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url, true);

@@ -31,12 +31,7 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
       setUploadProgress(0);
       setUploadError(null);
       try {
-        // If we're editing an existing offer item that already has an image,
-        // send the canonical existing URL (strip any query/hash) and request
-        // replaceWithNewName so the server will save the new filename and
-        // delete the previous S3 object.
-        const canonicalExisting = item?.image ? String(item.image).split('?')[0].split('#')[0] : null;
-        finalImageUrl = await uploadToS3(selectedFile, setUploadProgress, canonicalExisting, true);
+        finalImageUrl = await uploadToS3(selectedFile, setUploadProgress);
       } catch (error) {
         console.error(error);
         setUploadError('Image upload failed. Please try again.');
@@ -81,27 +76,12 @@ export default function EditOfferModal({ item, onClose, onSave, position = null 
   };
 
   // Reusable server-backed upload function with progress tracking (uploads to /api/upload -> S3)
-    const uploadToS3 = (file, onProgress, existingUrl = null, replaceWithNewName = false) => {
+    const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  // Store offer images under the home_offer prefix for home page multiple offers
-  formData.append('folder', 'YARITU/home_offer');
-  // Preserve the original filename on S3 (sanitized on server). Set to 'true' to opt-in.
-  formData.append('preserveName', 'true');
-  // If caller provided an existing S3 URL, include it so the server can
-  // overwrite or delete the previous object as requested.
-  if (existingUrl) {
-    try {
-      const canon = String(existingUrl).split('?')[0].split('#')[0];
-      formData.append('existingUrl', canon);
-    } catch (e) {
-      // ignore any weird values
-    }
-  }
-  if (replaceWithNewName) {
-    formData.append('replaceWithNewName', 'true');
-  }
+      const formData = new FormData();
+      formData.append('file', file);
+      // Store offer images under the REVIEW_PAGE prefix so they show up in the review page listing
+      formData.append('folder', 'YARITU/REVIEW_PAGE');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);

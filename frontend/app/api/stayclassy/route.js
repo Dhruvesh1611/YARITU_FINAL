@@ -2,16 +2,11 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/dbConnect';
 import StayClassyImage from '../../../models/StayClassyImage';
 
-export const revalidate = 60;
-
 export async function GET() {
   try {
     await dbConnect();
     const items = await StayClassyImage.find({}).sort({ createdAt: 1 });
-    return NextResponse.json(
-      { success: true, data: items },
-      { status: 200, headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
-    );
+    return NextResponse.json({ success: true, data: items });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

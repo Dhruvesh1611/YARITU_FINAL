@@ -67,6 +67,27 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
     const rafRef = useRef(null);
     const supportsHover = useRef(true);
 
+    // Listen for modal-close events so we can reset zoom if the modal closed
+    useEffect(() => {
+        function onModalClosed(e) {
+            try {
+                const closedId = e?.detail?.id;
+                // If id is provided, only reset when it matches this product; otherwise always reset
+                if (!closedId || closedId === (product._id || product.id)) {
+                    handleMouseLeave();
+                }
+            } catch (err) {
+                // ignore
+            }
+        }
+        if (typeof window !== 'undefined') {
+            window.addEventListener('yaritu:modal-closed', onModalClosed);
+        }
+        return () => {
+            if (typeof window !== 'undefined') window.removeEventListener('yaritu:modal-closed', onModalClosed);
+        };
+    }, [product._id, product.id]);
+
     useEffect(() => {
         // Detect if the device supports hover; disable the follow-cursor effect on touch devices
         if (typeof window !== 'undefined' && window.matchMedia) {
@@ -106,6 +127,80 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
         wrapperRef.current.style.setProperty('--scale', '1.06');
     };
 
+    // Touch handlers: replicate the desktop hover/leave behaviour for touch devices
+    const handleTouchStart = (e) => {
+        if (supportsHover.current) return;
+        if (!wrapperRef.current) return;
+        const touch = e.touches && e.touches[0];
+        if (!touch) return;
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const x = ((touch.clientX - rect.left) / rect.width) * 100;
+        const y = ((touch.clientY - rect.top) / rect.height) * 100;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            wrapperRef.current.style.setProperty('--ox', `${Math.min(100, Math.max(0, x))}%`);
+            wrapperRef.current.style.setProperty('--oy', `${Math.min(100, Math.max(0, y))}%`);
+            wrapperRef.current.style.setProperty('--scale', '1.08');
+        });
+    };
+
+    const handleTouchMove = (e) => {
+        if (supportsHover.current) return;
+        if (!wrapperRef.current) return;
+        const touch = e.touches && e.touches[0];
+        if (!touch) return;
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const x = ((touch.clientX - rect.left) / rect.width) * 100;
+        const y = ((touch.clientY - rect.top) / rect.height) * 100;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            wrapperRef.current.style.setProperty('--ox', `${Math.min(100, Math.max(0, x))}%`);
+            wrapperRef.current.style.setProperty('--oy', `${Math.min(100, Math.max(0, y))}%`);
+            wrapperRef.current.style.setProperty('--scale', '1.08');
+        });
+    };
+
+    const handleTouchEnd = () => {
+        // Reset to default same as mouse leave
+        handleMouseLeave();
+    };
+
+    // Pointer handlers to cover touch + mouse in one set of events (fixes DevTools emulation)
+    const handlePointerDown = (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (!wrapperRef.current) return;
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            wrapperRef.current.style.setProperty('--ox', `${Math.min(100, Math.max(0, x))}%`);
+            wrapperRef.current.style.setProperty('--oy', `${Math.min(100, Math.max(0, y))}%`);
+            wrapperRef.current.style.setProperty('--scale', '1.08');
+        });
+    };
+
+    const handlePointerMove = (e) => {
+        if (!wrapperRef.current) return;
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            wrapperRef.current.style.setProperty('--ox', `${Math.min(100, Math.max(0, x))}%`);
+            wrapperRef.current.style.setProperty('--oy', `${Math.min(100, Math.max(0, y))}%`);
+            wrapperRef.current.style.setProperty('--scale', '1.08');
+        });
+    };
+
+    const handlePointerUp = () => {
+        handleMouseLeave();
+    };
+
     const openProduct = () => onProductClick && onProductClick({ ...product, image: imageUrl, name: title, images: allImages });
 
     return (
@@ -116,6 +211,15 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 onMouseEnter={handleMouseEnter}
+                onMouseUp={handleMouseLeave}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
                 onClick={openProduct}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProduct(); } }}
                 tabIndex={0}

@@ -20,8 +20,6 @@ export default function AddTrendingModal({ onAdd }) {
       const form = new FormData();
       form.append('file', file);
       form.append('folder', 'YARITU/trending');
-  // Preserve the original filename on S3 (server will sanitize)
-  form.append('preserveName', 'true');
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();

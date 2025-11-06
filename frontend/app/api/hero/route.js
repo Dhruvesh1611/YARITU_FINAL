@@ -3,19 +3,13 @@ import dbConnect from '../../../lib/dbConnect';
 import HeroImage from '../../../models/HeroImage';
 import { auth } from '../auth/[...nextauth]/route';
 
-// Cache policy: keep a short CDN cache and allow stale-while-revalidate for quick responses
-export const revalidate = 60;
-
 export async function GET() {
   try {
     await dbConnect();
     const items = await HeroImage.find({}).sort({ order: 1 });
     // ensure legacy documents without visibility default to 'both'
     const normalized = items.map(it => ({ ...it.toObject ? it.toObject() : it, visibility: (it.visibility || 'both') }));
-    return NextResponse.json(
-      { success: true, data: normalized },
-      { status: 200, headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
-    );
+    return NextResponse.json({ success: true, data: normalized });
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

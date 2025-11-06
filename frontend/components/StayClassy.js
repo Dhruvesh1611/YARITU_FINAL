@@ -118,16 +118,8 @@ const StayClassy = () => {
       setUploadError(null);
 
       try {
-        // upload returns canonical S3 URL (no cache-buster)
-        const uploadedUrl = await uploadToS3(selectedFile, setUploadProgress);
-        const canonicalUrl = uploadedUrl || '';
-        // create a preview URL with cache-buster so the browser requests fresh bytes
-        const cb = Date.now();
-        const previewUrl = canonicalUrl ? (canonicalUrl.includes('?') ? `${canonicalUrl}&cb=${cb}` : `${canonicalUrl}?cb=${cb}`) : '';
-        // persist canonical URL in metadata
-        newImageUrl = canonicalUrl;
-        // update immediate modal preview to the cache-busted URL (or fallback to local blob)
-        setFilePreview(previewUrl || URL.createObjectURL(selectedFile));
+        const url = await uploadToS3(selectedFile, setUploadProgress);
+        newImageUrl = url; // On success, update the image URL
       } catch (error) {
         console.error(error);
         setUploadError('Image upload failed. Please try again.');
@@ -158,19 +150,6 @@ const StayClassy = () => {
         fd.append('file', file);
   // ensure StayClassy uploads go into the stayclassy prefix
   fd.append('folder', 'YARITU/stayclassy');
-        
-        // If we are editing an existing item and it already has an S3 URL,
-        // include that URL (stripped of any cache-busting query) so the server can overwrite the same S3 key
-        try {
-          const existing = editingIndex !== null && metadata[editingIndex] ? metadata[editingIndex].imageUrl : null;
-          if (existing && existing.toString().startsWith('http')) {
-            const existingCanonical = existing.split('?')[0].split('#')[0];
-            fd.append('existingUrl', existingCanonical);
-            // Request server to use the uploaded filename as the new key and
-            // delete the previous object so the saved URL matches the new file name.
-            fd.append('replaceWithNewName', 'true');
-          }
-        } catch (e) { /* ignore */ }
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/upload', true);

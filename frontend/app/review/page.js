@@ -932,7 +932,7 @@ export default function Review() {
                           setAvatarUploadProgress(0);
                           setUploadStatusMessage('Uploading avatar...');
                           try {
-                            const uploaded = await uploadWithProgress(f, (p) => { setAvatarUploadProgress(p); setUploadStatusMessage(`Uploading avatar: ${p}%`); }, 'YARITU/client_review');
+                            const uploaded = await uploadWithProgress(f, (p) => { setAvatarUploadProgress(p); setUploadStatusMessage(`Uploading avatar: ${p}%`); }, 'YARITU/testimonials');
                             setAvatarUploadedUrl(uploaded);
                             setUploadStatusMessage('Avatar uploaded');
                             // successful upload - clear the staged file

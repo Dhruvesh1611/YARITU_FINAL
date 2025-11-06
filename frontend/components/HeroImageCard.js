@@ -24,11 +24,7 @@ export default function HeroImageCard({ item, onUpdate, onDelete }) {
     setUploadError(null);
 
     try {
-      // If replacing an existing hero image, send the canonical existing URL
-      // and request replaceWithNewName so server can save the uploaded filename
-      // (e.g. "Group.svg") and delete the old timestamped object.
-      const canonicalExisting = form.imageUrl ? String(form.imageUrl).split('?')[0].split('#')[0] : null;
-      const secureUrl = await uploadToS3(file, setUploadProgress, canonicalExisting, true);
+      const secureUrl = await uploadToS3(file, setUploadProgress);
       setForm((p) => ({ ...p, imageUrl: secureUrl }));
     } catch (err) {
       console.error(err);
@@ -38,24 +34,12 @@ export default function HeroImageCard({ item, onUpdate, onDelete }) {
     }
   };
 
-  const uploadToS3 = (file, onProgress, existingUrl = null, replaceWithNewName = false) => {
+  const uploadToS3 = (file, onProgress) => {
     return new Promise((resolve, reject) => {
   const formData = new FormData();
   formData.append('file', file);
   // explicitly request hero folder so server mapping stores under YARITU/hero
   formData.append('folder', 'YARITU/hero');
-  // Preserve filename on S3 (server will sanitize). Opt-in by default for hero uploads.
-  formData.append('preserveName', 'true');
-
-  if (existingUrl) {
-    try {
-      const canon = String(existingUrl).split('?')[0].split('#')[0];
-      formData.append('existingUrl', canon);
-    } catch (e) {
-      // ignore
-    }
-  }
-  if (replaceWithNewName) formData.append('replaceWithNewName', 'true');
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/upload', true);

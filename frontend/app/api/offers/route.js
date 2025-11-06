@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/dbConnect';
 import OfferContent from '../../../models/OfferContent';
-import { deleteObjectByUrl, isS3Url } from '../../../lib/s3';
-export const runtime = 'nodejs';
-export const revalidate = 60;
 
 // We'll keep a fixed set of 5 positions (0..4). Each document may have an optional `position` field.
 // GET: return array of length 5, filling missing positions with defaults.
@@ -14,10 +11,7 @@ export async function GET() {
     // Previously this endpoint returned a fixed 5-length array; returning the
     // actual documents makes store-based filtering on the client reliable.
     const docs = await OfferContent.find({}).sort({ position: 1, createdAt: 1 }).lean();
-    return NextResponse.json(
-      { success: true, data: docs },
-      { status: 200, headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
-    );
+    return NextResponse.json({ success: true, data: docs }, { status: 200 });
   } catch (error) {
     console.error('Error fetching offers from DB', error);
     return NextResponse.json({ success: false, error: 'Server Error' }, { status: 500 });
@@ -78,17 +72,6 @@ export async function PUT(request) {
         else doc[k] = body[k];
       }
     });
-
-    // If image was changed, attempt to delete old S3 object
-    try {
-      if (Object.prototype.hasOwnProperty.call(body, 'image')) {
-        const old = doc.image;
-        const nw = body.image;
-        if (old && old !== nw && isS3Url(old)) {
-          try { await deleteObjectByUrl(old); } catch (e) { console.error('Failed deleting old offer image from S3', e); }
-        }
-      }
-    } catch (e) { console.error('Offer image cleanup error', e); }
 
     await doc.save();
     return NextResponse.json({ success: true, data: doc }, { status: 200 });

@@ -5,16 +5,14 @@ import MetaOption from '../../../models/MetaOption';
 import { auth } from '../auth/[...nextauth]/route';
 
 export const runtime = 'nodejs';
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET() {
   try {
     await dbConnect();
     const items = await MetaOption.find({}).sort({ key: 1, value: 1 }).lean();
-    return NextResponse.json(
-      { success: true, data: items },
-      { status: 200, headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
-    );
+    return NextResponse.json({ success: true, data: items });
   } catch (err) {
     console.error('Error fetching meta-options', err);
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });

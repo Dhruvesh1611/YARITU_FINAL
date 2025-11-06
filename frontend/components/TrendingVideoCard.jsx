@@ -35,15 +35,6 @@ export default function TrendingVideoCard({ item, onUpdate }) {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'YARITU/trending');
-      // Preserve uploaded filename on S3 (server will sanitize)
-      fd.append('preserveName', 'true');
-      // If replacing an existing trending video, include existingUrl so server
-      // can delete the old object and save the new filename.
-      const canonicalExisting = form.videoUrl ? String(form.videoUrl).split('?')[0].split('#')[0] : null;
-      if (canonicalExisting) {
-        fd.append('existingUrl', canonicalExisting);
-        fd.append('replaceWithNewName', 'true');
-      }
       const res = await fetch('/api/upload', { method: 'POST', body: fd });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();

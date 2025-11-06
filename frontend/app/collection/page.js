@@ -39,6 +39,23 @@ const [openDropdown, setOpenDropdown] = useState(null);
 const [showMetaEditor, setShowMetaEditor] = useState(false);
 const [editorCategory, setEditorCategory] = useState(null);
 
+// Client/window aware state to avoid hydration mismatches
+const [isClient, setIsClient] = useState(false);
+const [isMobileWidth, setIsMobileWidth] = useState(false);
+
+useEffect(() => {
+    // mark client after mount to allow conditional rendering that depends on window
+    setIsClient(true);
+    const check = () => setIsMobileWidth(window.innerWidth <= 768);
+    if (typeof window !== 'undefined') {
+        check();
+        window.addEventListener('resize', check);
+    }
+    return () => {
+        if (typeof window !== 'undefined') window.removeEventListener('resize', check);
+    };
+}, []);
+
 const collectionTitleRef = useRef(null);
 const collectionContentRef = useRef(null);
 const dropdownsContainerRef = useRef(null);
@@ -220,7 +237,18 @@ const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 const currentProducts = filteredProducts.slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE);
 const handlePageChange = (page) => setCurrentPage(page);
 const handleProductClick = (product) => setSelectedProduct(product);
-const handleCloseModal = () => setSelectedProduct(null);
+// Keep a ref to the selected product so close handler can announce which item closed
+const selectedProductRef = useRef(null);
+useEffect(() => { selectedProductRef.current = selectedProduct; }, [selectedProduct]);
+
+const handleCloseModal = () => {
+        const id = selectedProductRef.current ? (selectedProductRef.current._id || selectedProductRef.current.id) : null;
+        setSelectedProduct(null);
+        try {
+            // Announce modal close so ProductCard instances can reset their zoom state
+            window.dispatchEvent(new CustomEvent('yaritu:modal-closed', { detail: { id } }));
+        } catch (e) { /* ignore in environments without window */ }
+};
 
 const scrollToCollectionTitle = () => {
     if (dropdownsContainerRef.current) {
@@ -268,7 +296,7 @@ const handleCategoryTap = (category) => {
     setJewelleryMode(false); 
 
     // Mobile logic (<= 768px)
-    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+    if (isClient && isMobileWidth) {
         
         // Agar yeh dropdown pehle se hi khula hai (i.e., Second Tap)
         if (openDropdown === category) {
@@ -454,7 +482,7 @@ return (
     className={`${styles['category-button-container']} ${openDropdown === 'MEN' ? styles.open : ''}`}
     onClick={(e) => {
             // Only handle container tap on small screens to avoid duplicate desktop hover behavior
-            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+            if (isClient && isMobileWidth) {
                 // If the click originated inside the dropdown menu (e.g. user tapped a filter link),
                 // ignore here so the link's own handler runs without this toggling the menu.
                 const menu = e.currentTarget.querySelector(`.${styles['dropdown-menu']}`);
@@ -507,7 +535,7 @@ return (
 <div
     className={`${styles['category-button-container']} ${openDropdown === 'WOMEN' ? styles.open : ''}`}
     onClick={(e) => {
-            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+            if (isClient && isMobileWidth) {
                 const menu = e.currentTarget.querySelector(`.${styles['dropdown-menu']}`);
                 if (menu && menu.contains(e.target)) return;
                 e.stopPropagation();
@@ -558,7 +586,7 @@ return (
 <div
     className={`${styles['category-button-container']} ${openDropdown === 'CHILDREN' ? styles.open : ''}`}
     onClick={(e) => {
-            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+            if (isClient && isMobileWidth) {
                 const menu = e.currentTarget.querySelector(`.${styles['dropdown-menu']}`);
                 if (menu && menu.contains(e.target)) return;
                 e.stopPropagation();
@@ -678,7 +706,7 @@ return (
 {/* Header action area */}
 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12, alignItems: 'center' }}>
     {/* Mobile-only view mode toggles: show two icons to switch between two-per-row and single-per-row */}
-    {typeof window !== 'undefined' && window.innerWidth <= 768 && (
+        {isClient && isMobileWidth && (
         <div style={{ display: 'flex', gap: 8, marginRight: 'auto', alignItems: 'center' }}>
             <button
                 onClick={() => setViewMode('grid')}
@@ -805,7 +833,10 @@ return (
 {showModal && (
 <CollectionModal
 initial={editingCollection}
-onClose={() => setShowModal(false)}
+    onClose={() => {
+        setShowModal(false);
+        try { window.dispatchEvent(new CustomEvent('yaritu:modal-closed', { detail: {} })); } catch (e) {}
+    }}
 onSaved={handleSaveCollection}
 metaOptions={metaOptions}
 collections={collections}
@@ -817,7 +848,7 @@ collections={collections}
          initial={editingCollection}
          // Pass activeCategory so uploads can be stored at YARITU/JEWELLERY/<CATEGORY>
          category={activeCategory}
-         onClose={() => { setShowJewelleryModal(false); setEditingCollection(null); }}
+        onClose={() => { setShowJewelleryModal(false); setEditingCollection(null); try { window.dispatchEvent(new CustomEvent('yaritu:modal-closed', { detail: {} })); } catch (e) {} }}
          onSaved={(saved) => {
              setJewelleryItems(prev => {
                  if (!saved) return prev;

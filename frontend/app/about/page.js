@@ -5,24 +5,8 @@ import styles from './about.module.css';
 import Image from 'next/image';
 import Link from 'next/link';
 import AboutStoresClient from '../../components/AboutStoresClient';
-import dbConnect from '../../lib/dbConnect';
-import Store from '../../models/Store';
 
-// Fetch stores server-side so the About page can render stores immediately
-// and avoid client-side fetch jank when users visit the page.
-async function getStoresServerSide() {
-  try {
-    await dbConnect();
-    const stores = await Store.find({});
-    return Array.isArray(stores) ? stores : [];
-  } catch (e) {
-    console.error('Server-side stores fetch error:', e);
-    return [];
-  }
-}
-
-export default async function About() {
-  const initialStores = await getStoresServerSide();
+export default function About() {
   return (
     <>
       <section id="our-story" className={styles.heroStorySection}>
@@ -98,7 +82,7 @@ export default async function About() {
       </section>
       
       <section id="about-stores" className={`${styles.storesSection} ${styles.aboutStores}`}>
-        <AboutStoresClient initialStores={initialStores} />
+        <AboutStoresClient />
       </section>
     </>
   );
