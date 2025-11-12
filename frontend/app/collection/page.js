@@ -150,7 +150,14 @@ useEffect(() => {
                 const rj = await fetch('/api/jewellery');
                 if (rj.ok) {
                     const jj = await rj.json();
-                    if (jj.success) setJewelleryItems(jj.data || []);
+                    if (jj.success) {
+                        // Normalize description key across returned items so UI components see 'description'
+                        const normalized = (jj.data || []).map(item => ({
+                            ...item,
+                            description: item.description || item.desc || item.shortDescription || item.details || item.about || ''
+                        }));
+                        setJewelleryItems(normalized);
+                    }
                 }
             } catch (_) {}
             const j = await resCollections.json();

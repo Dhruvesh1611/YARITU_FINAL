@@ -199,7 +199,7 @@ const ProductModal = ({ product, onClose }) => {
           <div className="product-details">
             {/* ... Product details ka JSX waise hi rahega ... */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <h1 className="product-title" style={{ margin: 0 }}>{product.title || product.name}</h1>
+              <h1 className="product-title" style={{ margin: 20 }}>{product.title || product.name}</h1>
               {/* Status badge: show Available / Not available */}
               <div className={`product-status-badge ${isAvailable ? 'available' : 'unavailable'}`} style={{ fontSize: 14, padding: '6px 10px', borderRadius: 6, fontWeight: 700 }}>
                 {isAvailable ? 'Available' : 'Out Of Stock'}
@@ -217,7 +217,13 @@ const ProductModal = ({ product, onClose }) => {
                 )}
               </div>
             )}
-            <p className="product-description">{product.description || "Elegant and finely crafted attire..."}</p>
+            {/* Render description from any of several common fields so items saved with different keys still show */}
+            {(() => {
+              const desc = product.description || product.desc || product.shortDescription || product.details || product.about || '';
+              return (
+                <p className="product-description">{desc && desc.trim() ? desc : "Elegant and finely crafted attire..."}</p>
+              );
+            })()}
             <div className="price-container">
               {product.discountedPrice && product.discountedPrice > 0 && product.discountedPrice < product.price ? (
                 <>

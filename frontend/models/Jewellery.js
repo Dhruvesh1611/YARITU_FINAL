@@ -7,6 +7,7 @@ const JewellerySchema = new mongoose.Schema({
 	discountedPrice: { type: Number },
 	status: { type: String, enum: ['Available', 'Out of Stock', 'Coming Soon'], default: 'Available' },
 	mainImage: { type: String },
+	description: { type: String },
 	otherImages: { type: [String], default: [] },
 	createdAt: { type: Date, default: Date.now },
 	updatedAt: { type: Date, default: Date.now },

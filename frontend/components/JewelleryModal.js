@@ -13,9 +13,13 @@ export default function JewelleryModal({ initial = null, onClose, onSaved, store
   const [mainImagePreview, setMainImagePreview] = useState(initial?.mainImage || '');
   const [otherFiles, setOtherFiles] = useState([]);
   const [otherPreviews, setOtherPreviews] = useState(initial?.otherImages || []);
+  const [description, setDescription] = useState(initial?.description || '');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (isEdit && initial) {
+      setDescription(initial.description || '');
+    }
     return () => {
       // revoke created blob URLs
       if (mainImagePreview && mainImagePreview.startsWith('blob:')) URL.revokeObjectURL(mainImagePreview);
@@ -96,6 +100,7 @@ export default function JewelleryModal({ initial = null, onClose, onSaved, store
 
       const payload = { 
         name, 
+        description,
         price: Number(price) || 0, 
         discountedPrice: Number(discountedPrice) || 0, 
         status, 
@@ -127,6 +132,18 @@ export default function JewelleryModal({ initial = null, onClose, onSaved, store
         <div className={styles.formGroup}>
           <label htmlFor="name">Name</label>
           <input id="name" className={styles.input} value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="description">Description</label>
+          <textarea
+            id="description"
+            className={styles.input}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder="Short description of this jewellery item"
+          />
         </div>
 
         <div className={styles.grid2}>

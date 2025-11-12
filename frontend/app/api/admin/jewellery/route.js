@@ -32,11 +32,11 @@ export async function POST(request) {
     if (!allowed) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     await dbConnect();
-    const body = await request.json();
-    const { name, store, price, discountedPrice, status, mainImage, otherImages } = body;
-    if (!name) return NextResponse.json({ success: false, error: 'Name required' }, { status: 400 });
+  const body = await request.json();
+  const { name, store, price, discountedPrice, status, mainImage, otherImages, description } = body;
+  if (!name) return NextResponse.json({ success: false, error: 'Name required' }, { status: 400 });
 
-    const doc = await Jewellery.create({ name, store, price, discountedPrice, status, mainImage, otherImages: otherImages || [] });
+  const doc = await Jewellery.create({ name, store, price, discountedPrice, status, mainImage, otherImages: otherImages || [], description });
     return NextResponse.json({ success: true, data: doc }, { status: 201 });
   } catch (err) {
     console.error('POST admin/jewellery', err);
@@ -49,7 +49,7 @@ export async function PUT(request) {
     const allowed = await requireAdmin(request);
     if (!allowed) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     await dbConnect();
-    const body = await request.json().catch(() => ({}));
+  const body = await request.json().catch(() => ({}));
     // Accept id either in the JSON body or as a query param (some clients send ?id=...)
     const url = typeof request.url === 'string' ? new URL(request.url) : null;
     const qid = url ? url.searchParams.get('id') : null;

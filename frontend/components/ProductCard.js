@@ -60,7 +60,8 @@ export default function ProductCard({ product, isAdmin, onProductClick, onEdit, 
     const imagePending = !!product.imagePending;
 
     const title = product.title || product.name;
-    const description = product.description || '';
+    // Support multiple possible description keys saved by different flows
+    const description = product.description || product.desc || product.shortDescription || product.details || product.about || '';
     const allImages = [product.mainImage, product.mainImage2, ...(product.otherImages || [])].filter(Boolean);
 
     const wrapperRef = useRef(null);
